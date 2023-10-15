@@ -41,6 +41,28 @@ void generateRandomBinFile(const char* filename, long long fileSize, double zero
 }
 
 
+double getFileSize(const char* filename)
+{
+    std::ifstream file(filename, std::ios::binary);
+    if (!file) {
+        std::cerr << "Error: Unable to open the file for reading." << std::endl;
+        return 1;
+    }
+
+    // Seek to the end to get the file size
+    file.seekg(0, std::ios::end);
+    double fileSize = file.tellg();
+
+    // Close the file
+    file.close();
+
+    if (fileSize < 0) {
+        std::cerr << "Error: Unable to determine the file size." << std::endl;
+        return 1;
+    }
+    return fileSize;
+}
+
 // Function to perform run-length encoding
 std::vector<std::pair<bool, int>> runLengthEncode(const std::vector<char>& input) {
     std::vector<std::pair<bool, int>> runLengthEncoded;
@@ -149,26 +171,48 @@ std::vector<char> lzwDecode(const std::vector<int>& input) {
     return lzwDecoded;
 }
 
-double getFileSize(const char* filename)
-{
-    std::ifstream file(filename, std::ios::binary);
-    if (!file) {
-        std::cerr << "Error: Unable to open the file for reading." << std::endl;
-        return 1;
+// Function to perform bitwise compression
+std::vector<bool> bitwiseCompress(const std::vector<char>& input) {
+    std::vector<bool> compressedBits;
+    if (input.empty()) {
+        return compressedBits;
     }
 
-    // Seek to the end to get the file size
-    file.seekg(0, std::ios::end);
-    double fileSize = file.tellg();
+    bool current = input[0];
+    int count = 1;
 
-    // Close the file
-    file.close();
-
-    if (fileSize < 0) {
-        std::cerr << "Error: Unable to determine the file size." << std::endl;
-        return 1;
+    for (size_t i = 1; i < input.size(); ++i) {
+        if (input[i] == current) {
+            count++;
+        } else {
+            // Append the bit and its count to the compressed data
+            compressedBits.push_back(current);
+            compressedBits.push_back(count % 2); // Using count % 2 to represent even/odd count
+            current = input[i];
+            count = 1;
+        }
     }
-    return fileSize;
+
+    // Append the last bit and its count
+    compressedBits.push_back(current);
+    compressedBits.push_back(count % 2);
+
+    return compressedBits;
+}
+
+// Function to perform bitwise decompression
+std::vector<char> bitwiseDecompress(const std::vector<bool>& input) {
+    std::vector<char> decompressedData;
+
+    for (size_t i = 0; i < input.size(); i += 2) {
+        bool bit = input[i];
+        int count = input[i + 1] ? 1 : 2; // Convert even/odd count back to actual count
+        for (int j = 0; j < count; ++j) {
+            decompressedData.push_back(static_cast<char>(bit));
+        }
+    }
+
+    return decompressedData;
 }
 int main() {
     const int numIterations = 10;
@@ -177,6 +221,8 @@ int main() {
     const char* runLengthDecodedFilename = "run_length_decoded.bin";
     const char* lzwEncodedFilename = "lzw_encoded.bin";
     const char* lzwDecodedFilename = "lzw_decoded.bin";
+    const char* bitwiseEncodedFilename = "bitwise_compressed.bin";
+    const char* bitwiseDecodedFilename = "bitwise_decompressed.bin";
     long long file_size = 10000000; // Adjust the file size as needed
     double zeroProbability = 0.5; // Adjust the probability of 0s
 
@@ -184,6 +230,8 @@ int main() {
     double avgRunLengthTimeMs = 0;
     double avgLzwSizeBytes = 0;
     double avgLzwTimeMs = 0;
+    double avgBitwiseSizeBytes = 0;
+    double avgBitwiseTimeMs = 0;
 
     for (int i = 0; i < numIterations; ++i) {
 
@@ -275,19 +323,41 @@ int main() {
 
         // open the LZW encoded file and determine the file size
         avgLzwSizeBytes += getFileSize(lzwEncodedFilename);
-
         avgLzwTimeMs += durationLzw.count();
+
+        // Perform bitwise compression
+        auto startBitwise = std::chrono::high_resolution_clock::now();
+        std::vector<bool> bitwiseCompressed = bitwiseCompress(binaryData);
+        auto stopBitwise = std::chrono::high_resolution_clock::now();
+        auto durationBitwise = std::chrono::duration_cast<std::chrono::milliseconds>(stopBitwise - startBitwise);
+
+        // Perform bitwise decompression
+        std::vector<char> bitwiseDecompressed = bitwiseDecompress(bitwiseCompressed);
+
+        // Verify that no data is lost by comparing decoded data with the original data
+        bool bitwiseDataMatches = binaryData == bitwiseDecompressed;
+        std::cout << "Bitwise Data Matches: " << (bitwiseDataMatches ? "Yes" : "No") << std::endl;
+
+        // Calculate the size in bytes for the bitwise compressed data
+        avgBitwiseSizeBytes += (bitwiseCompressed.size() / 8); // Convert bits to bytes
+
+        avgBitwiseTimeMs += durationBitwise.count();
     }
 
     avgRunLengthSizeBytes /= numIterations;
     avgRunLengthTimeMs /= numIterations;
     avgLzwSizeBytes /= numIterations;
     avgLzwTimeMs /= numIterations;
+    avgBitwiseSizeBytes /= numIterations;
+    avgBitwiseTimeMs /= numIterations;
 
     std::cout << "Average Run-Length Encoded File Size: " << avgRunLengthSizeBytes << " bytes" << std::endl;
     std::cout << "Average Run-Length Encoding Time: " << avgRunLengthTimeMs << " ms" << std::endl;
     std::cout << "Average LZW Encoded File Size: " << avgLzwSizeBytes << " bytes" << std::endl;
     std::cout << "Average LZW Encoding Time: " << avgLzwTimeMs << " ms" << std::endl;
+    std::cout << "Average Bitwise Compressed File Size: " << avgBitwiseSizeBytes << " bytes" << std::endl;
+    std::cout << "Average Bitwise Compression Time: " << avgBitwiseTimeMs << " ms" << std::endl;
+
 
     return 0;
 }
