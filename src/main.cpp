@@ -339,8 +339,28 @@ int main() {
         std::cout << "Bitwise Data Matches: " << (bitwiseDataMatches ? "Yes" : "No") << std::endl;
 
         // Calculate the size in bytes for the bitwise compressed data
-        avgBitwiseSizeBytes += (bitwiseCompressed.size() / 8); // Convert bits to bytes
+        std::ofstream bitwiseOutFile(bitwiseEncodedFilename, std::ios::binary);
+        std::ofstream bitwiseDecodedOutFile(bitwiseDecodedFilename, std::ios::binary);
+        if(!bitwiseOutFile || !bitwiseDecodedOutFile) {
+            std::cerr << "Error: Unable to create the bitwise compressed or decompressed file." << std::endl;
+            return 1;
+        }
 
+        for(size_t i = 0; i < bitwiseCompressed.size(); ++i) {
+            bool bit = bitwiseCompressed[i];
+            bitwiseOutFile.write(reinterpret_cast<const char*>(&bit), sizeof(bool));
+        }
+
+        for(size_t i = 0; i < bitwiseDecompressed.size(); ++i) {
+            char byte = bitwiseDecompressed[i];
+            bitwiseDecodedOutFile.write(reinterpret_cast<const char*>(&byte), sizeof(char));
+        }
+
+        bitwiseOutFile.close();
+        bitwiseDecodedOutFile.close();
+
+        // open the bitwise compressed file and determine the file size
+        avgBitwiseSizeBytes += getFileSize(bitwiseEncodedFilename);
         avgBitwiseTimeMs += durationBitwise.count();
     }
 
