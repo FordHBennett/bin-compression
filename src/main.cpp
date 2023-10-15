@@ -214,6 +214,79 @@ std::vector<char> bitwiseDecompress(const std::vector<bool>& input) {
 
     return decompressedData;
 }
+
+// Function to perform differential encoding
+std::vector<char> differentialEncode(const std::vector<char>& input) {
+    std::vector<char> encodedData;
+    char prevBit = input[0];
+
+    for (size_t i = 1; i < input.size(); ++i) {
+        char diff = input[i] - prevBit;
+        encodedData.push_back(diff);
+        prevBit = input[i];
+    }
+
+    return encodedData;
+}
+
+// Function to perform differential decoding
+std::vector<char> differentialDecode(const std::vector<char>& encodedData) {
+    std::vector<char> decodedData;
+    char prevBit = encodedData[0];
+    decodedData.push_back(prevBit);
+
+    for (size_t i = 1; i < encodedData.size(); ++i) {
+        char originalBit = prevBit + encodedData[i];
+        decodedData.push_back(originalBit);
+        prevBit = originalBit;
+    }
+
+    return decodedData;
+}
+
+std::vector<char> addBitmask(const std::vector<char>& encodedData) {
+    std::vector<char> compressedData;
+    char prevBit = encodedData[0];
+    int count = 1;
+
+    for (size_t i = 1; i < encodedData.size(); ++i) {
+        char bit = encodedData[i];
+
+        if (bit == prevBit && count < 127) {
+            count++;
+        } else {
+            compressedData.push_back(count);  // Count of consecutive bits
+            compressedData.push_back(prevBit);  // Bit value
+            prevBit = bit;
+            count = 1;
+        }
+    }
+
+    // Add the last run
+    compressedData.push_back(count);  // Count of consecutive bits
+    compressedData.push_back(prevBit);  // Bit value
+
+    return compressedData;
+}
+
+// Function to perform differential decoding
+std::vector<char> removeBitmask(const std::vector<char>& compressedData) {
+    std::vector<char> decompressedData;
+    size_t i = 0;
+
+    while (i < compressedData.size()) {
+        int count = compressedData[i];
+        char bit = compressedData[i + 1];
+        for (int j = 0; j < count; ++j) {
+            decompressedData.push_back(bit);
+        }
+        i += 2;
+    }
+
+    return decompressedData;
+}
+
+
 int main() {
     const int numIterations = 10;
     const char* filename = "random_binary_file.bin";
@@ -223,6 +296,11 @@ int main() {
     const char* lzwDecodedFilename = "lzw_decoded.bin";
     const char* bitwiseEncodedFilename = "bitwise_compressed.bin";
     const char* bitwiseDecodedFilename = "bitwise_decompressed.bin";
+    const char* differentialEncodedFilename = "differential_encoded.bin";
+    const char* differentialDecodedFilename = "differential_decoded.bin";
+    const char* differentialBitmaskEncodedFilename = "differential_bitmask_encoded.bin";
+    const char* differentialBitmaskDecodedFilename = "differential_bitmask_decoded.bin";
+
     long long file_size = 10000000; // Adjust the file size as needed
     double zeroProbability = 0.5; // Adjust the probability of 0s
 
@@ -232,6 +310,10 @@ int main() {
     double avgLzwTimeMs = 0;
     double avgBitwiseSizeBytes = 0;
     double avgBitwiseTimeMs = 0;
+    double avgDifferentialSizeBytes = 0;
+    double avgDifferentialTimeMs = 0;
+    double avgDifferentialBitmaskSizeBytes = 0;
+    double avgDifferentialBitmaskTimeMs = 0;
 
     for (int i = 0; i < numIterations; ++i) {
 
@@ -362,6 +444,83 @@ int main() {
         // open the bitwise compressed file and determine the file size
         avgBitwiseSizeBytes += getFileSize(bitwiseEncodedFilename);
         avgBitwiseTimeMs += durationBitwise.count();
+
+        // Perform differential encoding
+        auto startDifferential = std::chrono::high_resolution_clock::now();
+        std::vector<char> differentialEncoded = differentialEncode(binaryData);
+        auto stopDifferential = std::chrono::high_resolution_clock::now();
+        auto durationDifferential = std::chrono::duration_cast<std::chrono::milliseconds>(stopDifferential - startDifferential);
+
+        // Perform differential decoding
+        std::vector<char> differentialDecoded = differentialDecode(differentialEncoded);
+
+        // Verify that no data is lost by comparing decoded data with the original data
+        bool differentialDataMatches = binaryData == differentialDecoded;
+        std::cout << "Differential Data Matches: " << (differentialDataMatches ? "Yes" : "No") << std::endl;
+
+        // Calculate the size in bytes for the differential encoded data
+        std::ofstream differentialOutFile(differentialEncodedFilename, std::ios::binary);
+        std::ofstream differentialDecodedOutFile(differentialDecodedFilename, std::ios::binary);
+        if(!differentialOutFile || !differentialDecodedOutFile) {
+            std::cerr << "Error: Unable to create the differential encoded or decoded file." << std::endl;
+            return 1;
+        }
+
+        for(size_t i = 0; i < differentialEncoded.size(); ++i) {
+            char byte = differentialEncoded[i];
+            differentialOutFile.write(reinterpret_cast<const char*>(&byte), sizeof(char));
+        }
+
+        for(size_t i = 0; i < differentialDecoded.size(); ++i) {
+            char byte = differentialDecoded[i];
+            differentialDecodedOutFile.write(reinterpret_cast<const char*>(&byte), sizeof(char));
+        }
+
+        differentialOutFile.close();
+        differentialDecodedOutFile.close();
+
+        // open the differential encoded file and determine the file size
+        avgDifferentialSizeBytes += getFileSize(differentialEncodedFilename);
+        avgDifferentialTimeMs += durationDifferential.count();
+
+        // Perform bitwise encoding
+        auto startDifferentialBitmask = std::chrono::high_resolution_clock::now();
+        std::vector<char> differentialBitmaskEncoded = addBitmask(binaryData);
+        auto stopDifferentialBitmask = std::chrono::high_resolution_clock::now();
+        auto durationDifferentialBitmask = std::chrono::duration_cast<std::chrono::milliseconds>(stopDifferentialBitmask - startDifferentialBitmask);
+
+        // Perform bitwise decoding
+        std::vector<char> differentialBitmaskDecoded = removeBitmask(differentialBitmaskEncoded);
+
+        // Verify that no data is lost by comparing decoded data with the original data
+        bool differentialBitmaskDataMatches = binaryData == differentialBitmaskDecoded;
+        std::cout << "Differential Bitmask Data Matches: " << (differentialBitmaskDataMatches ? "Yes" : "No") << std::endl;
+
+        // Calculate the size in bytes for the differential encoded data
+        std::ofstream differentialBitmaskOutFile(differentialBitmaskEncodedFilename, std::ios::binary);
+        std::ofstream differentialBitmaskDecodedOutFile(differentialBitmaskDecodedFilename, std::ios::binary);
+        if(!differentialBitmaskOutFile || !differentialBitmaskDecodedOutFile) {
+            std::cerr << "Error: Unable to create the differential bitmask encoded or decoded file." << std::endl;
+            return 1;
+        }
+
+        for(size_t i = 0; i < differentialBitmaskEncoded.size(); ++i) {
+            char byte = differentialBitmaskEncoded[i];
+            differentialBitmaskOutFile.write(reinterpret_cast<const char*>(&byte), sizeof(char));
+        }
+
+        for(size_t i = 0; i < differentialBitmaskDecoded.size(); ++i) {
+            char byte = differentialBitmaskDecoded[i];
+            differentialBitmaskDecodedOutFile.write(reinterpret_cast<const char*>(&byte), sizeof(char));
+        }
+
+        differentialBitmaskOutFile.close();
+        differentialBitmaskDecodedOutFile.close();
+
+        // open the differential bitmask encoded file and determine the file size
+        avgDifferentialBitmaskSizeBytes += getFileSize(differentialBitmaskEncodedFilename);
+        avgDifferentialBitmaskTimeMs += durationDifferentialBitmask.count();
+
     }
 
     avgRunLengthSizeBytes /= numIterations;
@@ -370,6 +529,10 @@ int main() {
     avgLzwTimeMs /= numIterations;
     avgBitwiseSizeBytes /= numIterations;
     avgBitwiseTimeMs /= numIterations;
+    avgDifferentialSizeBytes /= numIterations;
+    avgDifferentialTimeMs /= numIterations;
+    avgDifferentialBitmaskSizeBytes /= numIterations;
+    avgDifferentialBitmaskTimeMs /= numIterations;
 
     std::cout << "Average Run-Length Encoded File Size: " << avgRunLengthSizeBytes << " bytes" << std::endl;
     std::cout << "Average Run-Length Encoding Time: " << avgRunLengthTimeMs << " ms" << std::endl;
@@ -377,6 +540,10 @@ int main() {
     std::cout << "Average LZW Encoding Time: " << avgLzwTimeMs << " ms" << std::endl;
     std::cout << "Average Bitwise Compressed File Size: " << avgBitwiseSizeBytes << " bytes" << std::endl;
     std::cout << "Average Bitwise Compression Time: " << avgBitwiseTimeMs << " ms" << std::endl;
+    std::cout << "Average Differential Encoded File Size: " << avgDifferentialSizeBytes << " bytes" << std::endl;
+    std::cout << "Average Differential Encoding Time: " << avgDifferentialTimeMs << " ms" << std::endl;
+    std::cout << "Average Differential Bitmask Encoded File Size: " << avgDifferentialBitmaskSizeBytes << " bytes" << std::endl;
+    
 
 
     return 0;
