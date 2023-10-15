@@ -16,10 +16,22 @@ void generateRandomBinFile(const char* filename, long long fileSize, double zero
         std::cerr << "Error: Unable to open the file for writing." << std::endl;
         return;
     }
-    std::default_random_engine generator;
-    std::bernoulli_distribution distribution(zeroProbability);
 
-    for (long long i = 0; i < fileSize; ++i) {
+    // Determine the number of zero bytes to write
+    long long zeroBytes = static_cast<long long>(zeroProbability * fileSize);
+
+    for (long long i = 0; i < zeroBytes; ++i) {
+        char byte = 0;  // Write zero bytes
+        outFile.write(reinterpret_cast<const char*>(&byte), sizeof(char));
+    }
+
+    // Determine the number of non-zero bytes to write
+    long long nonZeroBytes = fileSize - zeroBytes;
+
+    std::default_random_engine generator;
+    std::bernoulli_distribution distribution(0.5); // 50% probability for non-zero bits
+
+    for (long long i = 0; i < nonZeroBytes; ++i) {
         bool bit = distribution(generator);
         char byte = static_cast<char>(bit);
         outFile.write(reinterpret_cast<const char*>(&byte), sizeof(char));
@@ -27,6 +39,7 @@ void generateRandomBinFile(const char* filename, long long fileSize, double zero
 
     outFile.close();
 }
+
 
 // Function to perform run-length encoding
 std::vector<std::pair<bool, int>> runLengthEncode(const std::vector<char>& input) {
