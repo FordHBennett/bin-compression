@@ -1,0 +1,25 @@
+cmake_minimum_required(VERSION 3.12)
+project(geobin_compression)
+set(CMAKE_CXX_STANDARD 20)
+
+# Output directories for release and debug builds
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
+
+# Add the executable target
+add_executable(geobin_compression src/main.cpp)
+
+# Debug build options
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -Wall -g")
+
+# Release build options
+set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3 -DNDEBUG")
+
+# Specify the build type based on CMake build flags
+if(NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE Release CACHE STRING "Choose the type of build (Debug or Release)" FORCE)
+endif()
+
+# Install the executable to the 'bin' directory
+install(TARGETS geobin_compression RUNTIME DESTINATION bin)
