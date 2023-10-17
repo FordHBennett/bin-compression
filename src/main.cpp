@@ -13,8 +13,6 @@
 
 std::mutex mtx;
 
-
-
 int main() {
     const int numIterations = 10;
 
@@ -55,33 +53,10 @@ int main() {
     }
 
     // Calculate the average stats for all files
-    avgTotalRLRStats.setAvgSizeBytes(avgTotalRLRStats.getAvgSizeBytes() / totalFiles);
-    avgTotalRLRStats.setAvgEncodedTimeMs(avgTotalRLRStats.getAvgEncodedTimeMs() / totalFiles);
-    avgTotalRLRStats.setAvgDecodedTimeMs(avgTotalRLRStats.getAvgDecodedTimeMs() / totalFiles);
-    avgTotalRLRStats.setAvgCompressionRatio(avgTotalRLRStats.getAvgCompressionRatio() / totalFiles);
-    avgTotalRLRStats.setAvgPeakMemoryDuringEncoding(avgTotalRLRStats.getAvgPeakMemoryDuringEncoding() / totalFiles);
-    avgTotalRLRStats.setAvgPeakMemoryDuringDecoding(avgTotalRLRStats.getAvgPeakMemoryDuringDecoding() / totalFiles);
-    avgTotalRLRStats.setAvgEncodedThroughput(avgTotalRLRStats.getAvgEncodedThroughput() / totalFiles);
-    avgTotalRLRStats.setAvgThroughputDecoded(avgTotalRLRStats.getAvgThroughputDecoded() / totalFiles);
-
-    avgTotalLZWStats.setAvgSizeBytes(avgTotalLZWStats.getAvgSizeBytes() / totalFiles);
-    avgTotalLZWStats.setAvgEncodedTimeMs(avgTotalLZWStats.getAvgEncodedTimeMs() / totalFiles);
-    avgTotalLZWStats.setAvgDecodedTimeMs(avgTotalLZWStats.getAvgDecodedTimeMs() / totalFiles);
-    avgTotalLZWStats.setAvgCompressionRatio(avgTotalLZWStats.getAvgCompressionRatio() / totalFiles);
-    avgTotalLZWStats.setAvgPeakMemoryDuringEncoding(avgTotalLZWStats.getAvgPeakMemoryDuringEncoding() / totalFiles);
-    avgTotalLZWStats.setAvgPeakMemoryDuringDecoding(avgTotalLZWStats.getAvgPeakMemoryDuringDecoding() / totalFiles);
-    avgTotalLZWStats.setAvgEncodedThroughput(avgTotalLZWStats.getAvgEncodedThroughput() / totalFiles);
-    avgTotalLZWStats.setAvgThroughputDecoded(avgTotalLZWStats.getAvgThroughputDecoded() / totalFiles);
-
-    avgTotalLZPStats.setAvgSizeBytes(avgTotalLZPStats.getAvgSizeBytes() / totalFiles);
-    avgTotalLZPStats.setAvgEncodedTimeMs(avgTotalLZPStats.getAvgEncodedTimeMs() / totalFiles);
-    avgTotalLZPStats.setAvgDecodedTimeMs(avgTotalLZPStats.getAvgDecodedTimeMs() / totalFiles);
-    avgTotalLZPStats.setAvgCompressionRatio(avgTotalLZPStats.getAvgCompressionRatio() / totalFiles);
-    avgTotalLZPStats.setAvgPeakMemoryDuringEncoding(avgTotalLZPStats.getAvgPeakMemoryDuringEncoding() / totalFiles);
-    avgTotalLZPStats.setAvgPeakMemoryDuringDecoding(avgTotalLZPStats.getAvgPeakMemoryDuringDecoding() / totalFiles);
-    avgTotalLZPStats.setAvgEncodedThroughput(avgTotalLZPStats.getAvgEncodedThroughput() / totalFiles);
-    avgTotalLZPStats.setAvgThroughputDecoded(avgTotalLZPStats.getAvgThroughputDecoded() / totalFiles);
-
+    calculateAvgStats(avgTotalRLRStats, totalFiles);
+    calculateAvgStats(avgTotalLZWStats, totalFiles);
+    calculateAvgStats(avgTotalLZPStats, totalFiles);
+    
     // Print the average stats for all files
     printStats(avgTotalRLRStats);
     printStats(avgTotalLZWStats);

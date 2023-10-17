@@ -1,36 +1,8 @@
 #include "stats_functions.h"
 
-void getStatsFromEncodingDecodingFunctions(const char* filename, int numIterations,
-                                            RLR_Stats &avgTotalRLRStats, LZW_Stats &avgTotalLZWStats, LZP_Stats &avgTotalLZPStats)
-{
-    std::cout << "Compressing " << filename << "..." << std::endl;
-    const char* runLengthFilename = "run_length_encoded.bin";
-    const char* runLengthDecodedFilename = "run_length_decoded.bin";
-    const char* lzwEncodedFilename = "lzw_encoded.bin";
-    const char* lzwDecodedFilename = "lzw_decoded.bin";
-    const char* lzpEncodedFileName = "lzp_encoded.bin";
-    const char* lzpDecodedFileName = "lzp_decoded.bin";
 
-    RLR_Stats avgRLRStats;
-    LZW_Stats avgLZWStats;
-    LZP_Stats avgLZPStats;
-
-    for (int i = 0; i < numIterations; ++i) {
-        // Read the binary file
-        std::ifstream inFile(filename, std::ios::binary);
-        if (!inFile) {
-            std::cerr << "Error: Unable to open the file for reading." << std::endl;
-        }
-
-        inFile.seekg(0, std::ios::end);
-        size_t fileSize = inFile.tellg();
-        inFile.seekg(0, std::ios::beg);
-
-        std::vector<char> binaryData(fileSize);
-        inFile.read(binaryData.data(), fileSize);
-        inFile.close();
-
-        // Perform run-length encoding
+void getRLRFileStats(std::vector<char> &binaryData, const char* runLengthFilename, const char* runLengthDecodedFilename, size_t fileSize, RLR_Stats &avgRLRStats){
+            // Perform run-length encoding
         auto startEncodRunLength = std::chrono::high_resolution_clock::now();
         auto runLengthEncoded = runLengthEncode(binaryData);
         auto stopEncodRunLength = std::chrono::high_resolution_clock::now();
@@ -79,8 +51,10 @@ void getStatsFromEncodingDecodingFunctions(const char* filename, int numIteratio
         avgRLRStats.setAvgEncodedTimeMs(avgRLRStats.getAvgEncodedTimeMs() + durationEncodRunLength.count());
         avgRLRStats.setAvgDecodedTimeMs(avgRLRStats.getAvgDecodedTimeMs() + durationDecodRunLength.count());
         avgRLRStats.setAvgCompressionRatio(avgRLRStats.getAvgCompressionRatio() + static_cast<double>(getFileSize(runLengthFilename)) / fileSize);
+}
 
 
+void getLZWFileStats(std::vector<char> &binaryData, const char* lzwEncodedFilename, const char* lzwDecodedFilename, size_t fileSize, LZW_Stats &avgLZWStats){
         // Perform LZW encoding
         auto startEncodeLzw = std::chrono::high_resolution_clock::now();
         std::vector<int> lzwEncoded = lzwEncode(binaryData);
@@ -130,9 +104,10 @@ void getStatsFromEncodingDecodingFunctions(const char* filename, int numIteratio
         avgLZWStats.setAvgEncodedTimeMs(avgLZWStats.getAvgEncodedTimeMs() + durationEncodeLzw.count());
         avgLZWStats.setAvgDecodedTimeMs(avgLZWStats.getAvgDecodedTimeMs() + durationDecodeLzw.count());
         avgLZWStats.setAvgCompressionRatio(avgLZWStats.getAvgCompressionRatio() + static_cast<double>(getFileSize(lzwEncodedFilename)) / fileSize);
+}
 
 
-        // Perform LZP encoding
+void getLZPFileStat(std::vector<char> &binaryData, const char* lzpEncodedFileName, const char* lzpDecodedFileName, size_t fileSize, LZP_Stats &avgLZPStats){
         auto startEncodeLzp = std::chrono::high_resolution_clock::now();
         std::vector<int> lzpEncoded = lzpEncode(binaryData);
         auto stopEncodeLzp = std::chrono::high_resolution_clock::now();
@@ -181,35 +156,87 @@ void getStatsFromEncodingDecodingFunctions(const char* filename, int numIteratio
         avgLZPStats.setAvgEncodedTimeMs(avgLZPStats.getAvgEncodedTimeMs() + durationEncodeLzp.count());
         avgLZPStats.setAvgDecodedTimeMs(avgLZPStats.getAvgDecodedTimeMs() + durationDecodeLzp.count());
         avgLZPStats.setAvgCompressionRatio(avgLZPStats.getAvgCompressionRatio() + static_cast<double>(getFileSize(lzpEncodedFileName)) / fileSize);
+}
+
+
+void calculateAvgStats(RLR_Stats &rlr, int divisor){
+    rlr.setAvgSizeBytes(rlr.getAvgSizeBytes() / divisor);
+    rlr.setAvgEncodedTimeMs(rlr.getAvgEncodedTimeMs() / divisor);
+    rlr.setAvgDecodedTimeMs(rlr.getAvgDecodedTimeMs() / divisor);
+    rlr.setAvgCompressionRatio(rlr.getAvgCompressionRatio() / divisor);
+    rlr.setAvgPeakMemoryDuringEncoding(rlr.getAvgPeakMemoryDuringEncoding() / divisor);
+    rlr.setAvgPeakMemoryDuringDecoding(rlr.getAvgPeakMemoryDuringDecoding() / divisor);
+    rlr.setAvgEncodedThroughput(rlr.getAvgEncodedThroughput() / divisor);
+    rlr.setAvgThroughputDecoded(rlr.getAvgThroughputDecoded() / divisor);
+}
+
+void calculateAvgStats(LZW_Stats &lzw, int divisor) {
+    lzw.setAvgSizeBytes(lzw.getAvgSizeBytes() / divisor);
+    lzw.setAvgEncodedTimeMs(lzw.getAvgEncodedTimeMs() / divisor);
+    lzw.setAvgDecodedTimeMs(lzw.getAvgDecodedTimeMs() / divisor);
+    lzw.setAvgCompressionRatio(lzw.getAvgCompressionRatio() / divisor);
+    lzw.setAvgPeakMemoryDuringEncoding(lzw.getAvgPeakMemoryDuringEncoding() / divisor);
+    lzw.setAvgPeakMemoryDuringDecoding(lzw.getAvgPeakMemoryDuringDecoding() / divisor);
+    lzw.setAvgEncodedThroughput(lzw.getAvgEncodedThroughput() / divisor);
+    lzw.setAvgThroughputDecoded(lzw.getAvgThroughputDecoded() / divisor);
+}
+
+void calculateAvgStats(LZP_Stats &lzp, int divisor) {
+    lzp.setAvgSizeBytes(lzp.getAvgSizeBytes() / divisor);
+    lzp.setAvgEncodedTimeMs(lzp.getAvgEncodedTimeMs() / divisor);
+    lzp.setAvgDecodedTimeMs(lzp.getAvgDecodedTimeMs() / divisor);
+    lzp.setAvgCompressionRatio(lzp.getAvgCompressionRatio() / divisor);
+    lzp.setAvgPeakMemoryDuringEncoding(lzp.getAvgPeakMemoryDuringEncoding() / divisor);
+    lzp.setAvgPeakMemoryDuringDecoding(lzp.getAvgPeakMemoryDuringDecoding() / divisor);
+    lzp.setAvgEncodedThroughput(lzp.getAvgEncodedThroughput() / divisor);
+    lzp.setAvgThroughputDecoded(lzp.getAvgThroughputDecoded() / divisor);
+}
+void getStatsFromEncodingDecodingFunctions(const char* filename, int numIterations,
+                                            RLR_Stats &avgTotalRLRStats, LZW_Stats &avgTotalLZWStats,
+                                            LZP_Stats &avgTotalLZPStats)
+{
+    std::cout << "Compressing " << filename << "..." << std::endl;
+    const char* runLengthFilename = "run_length_encoded.bin";
+    const char* runLengthDecodedFilename = "run_length_decoded.bin";
+    const char* lzwEncodedFilename = "lzw_encoded.bin";
+    const char* lzwDecodedFilename = "lzw_decoded.bin";
+    const char* lzpEncodedFileName = "lzp_encoded.bin";
+    const char* lzpDecodedFileName = "lzp_decoded.bin";
+
+    RLR_Stats avgRLRStats;
+    LZW_Stats avgLZWStats;
+    LZP_Stats avgLZPStats;
+
+    for (int i = 0; i < numIterations; ++i) {
+        // Read the binary file
+        std::ifstream inFile(filename, std::ios::binary);
+        if (!inFile) {
+            std::cerr << "Error: Unable to open the file for reading." << std::endl;
+        }
+
+        inFile.seekg(0, std::ios::end);
+        size_t fileSize = inFile.tellg();
+        inFile.seekg(0, std::ios::beg);
+
+        std::vector<char> binaryData(fileSize);
+        inFile.read(binaryData.data(), fileSize);
+        inFile.close();
+
+        // Perform run-length encoding and decoding
+        getRLRFileStats(binaryData, runLengthFilename, runLengthDecodedFilename, fileSize, avgRLRStats);
+
+        // Perform LZW encoding and decoding
+        getLZWFileStats(binaryData, lzwEncodedFilename, lzwDecodedFilename, fileSize, avgLZWStats);
+
+        // Perform LZP encoding and decoding
+        getLZPFileStat(binaryData, lzpEncodedFileName, lzpDecodedFileName, fileSize, avgLZPStats);
+
     }
 
     // Calculate the average stats for the current file
-    avgRLRStats.setAvgSizeBytes(avgRLRStats.getAvgSizeBytes() / numIterations);
-    avgRLRStats.setAvgEncodedTimeMs(avgRLRStats.getAvgEncodedTimeMs() / numIterations);
-    avgRLRStats.setAvgDecodedTimeMs(avgRLRStats.getAvgDecodedTimeMs() / numIterations);
-    avgRLRStats.setAvgCompressionRatio(avgRLRStats.getAvgCompressionRatio() / numIterations);
-    avgRLRStats.setAvgPeakMemoryDuringEncoding(avgRLRStats.getAvgPeakMemoryDuringEncoding() / numIterations);
-    avgRLRStats.setAvgPeakMemoryDuringDecoding(avgRLRStats.getAvgPeakMemoryDuringDecoding() / numIterations);
-    avgRLRStats.setAvgEncodedThroughput(avgRLRStats.getAvgEncodedThroughput() / numIterations);
-    avgRLRStats.setAvgThroughputDecoded(avgRLRStats.getAvgThroughputDecoded() / numIterations);
-
-    avgLZWStats.setAvgSizeBytes(avgLZWStats.getAvgSizeBytes() / numIterations);
-    avgLZWStats.setAvgEncodedTimeMs(avgLZWStats.getAvgEncodedTimeMs() / numIterations);
-    avgLZWStats.setAvgDecodedTimeMs(avgLZWStats.getAvgDecodedTimeMs() / numIterations);
-    avgLZWStats.setAvgCompressionRatio(avgLZWStats.getAvgCompressionRatio() / numIterations);
-    avgLZWStats.setAvgPeakMemoryDuringEncoding(avgLZWStats.getAvgPeakMemoryDuringEncoding() / numIterations);
-    avgLZWStats.setAvgPeakMemoryDuringDecoding(avgLZWStats.getAvgPeakMemoryDuringDecoding() / numIterations);
-    avgLZWStats.setAvgEncodedThroughput(avgLZWStats.getAvgEncodedThroughput() / numIterations);
-    avgLZWStats.setAvgThroughputDecoded(avgLZWStats.getAvgThroughputDecoded() / numIterations);
-
-    avgLZPStats.setAvgSizeBytes(avgLZPStats.getAvgSizeBytes() / numIterations);
-    avgLZPStats.setAvgEncodedTimeMs(avgLZPStats.getAvgEncodedTimeMs() / numIterations);
-    avgLZPStats.setAvgDecodedTimeMs(avgLZPStats.getAvgDecodedTimeMs() / numIterations);
-    avgLZPStats.setAvgCompressionRatio(avgLZPStats.getAvgCompressionRatio() / numIterations);
-    avgLZPStats.setAvgPeakMemoryDuringEncoding(avgLZPStats.getAvgPeakMemoryDuringEncoding() / numIterations);
-    avgLZPStats.setAvgPeakMemoryDuringDecoding(avgLZPStats.getAvgPeakMemoryDuringDecoding() / numIterations);
-    avgLZPStats.setAvgEncodedThroughput(avgLZPStats.getAvgEncodedThroughput() / numIterations);
-    avgLZPStats.setAvgThroughputDecoded(avgLZPStats.getAvgThroughputDecoded() / numIterations);
+    calculateAvgStats(avgRLRStats, numIterations);
+    calculateAvgStats(avgLZWStats, numIterations);
+    calculateAvgStats(avgLZPStats, numIterations);
 
     avgTotalRLRStats.setAvgSizeBytes(avgTotalRLRStats.getAvgSizeBytes() + avgRLRStats.getAvgSizeBytes());
     avgTotalRLRStats.setAvgEncodedTimeMs(avgTotalRLRStats.getAvgEncodedTimeMs() + avgRLRStats.getAvgEncodedTimeMs());
@@ -237,8 +264,8 @@ void getStatsFromEncodingDecodingFunctions(const char* filename, int numIteratio
     avgTotalLZPStats.setAvgPeakMemoryDuringDecoding(avgTotalLZPStats.getAvgPeakMemoryDuringDecoding() + avgLZPStats.getAvgPeakMemoryDuringDecoding());
     avgTotalLZPStats.setAvgEncodedThroughput(avgTotalLZPStats.getAvgEncodedThroughput() + avgLZPStats.getAvgEncodedThroughput());
     avgTotalLZPStats.setAvgThroughputDecoded(avgTotalLZPStats.getAvgThroughputDecoded() + avgLZPStats.getAvgThroughputDecoded());
-
 }
+
 
 void printStats( RLR_Stats &avgTotalRLRStats){
     std::cout << "Average Run-Length Encoded File Size: " << avgTotalRLRStats.getAvgSizeBytes() << " bytes" << std::endl;
@@ -251,6 +278,7 @@ void printStats( RLR_Stats &avgTotalRLRStats){
     std::cout << "Average Run-Length Decoding Throughput: " << avgTotalRLRStats.getAvgThroughputDecoded() << " bytes/sec" << std::endl << std::endl;
 }
 
+
 void printStats( LZW_Stats &avgTotalLZWStats){
     std::cout << "Average Run-Length Encoded File Size: " << avgTotalLZWStats.getAvgSizeBytes() << " bytes" << std::endl;
     std::cout << "Average Run-Length Encoding Time: " << avgTotalLZWStats.getAvgEncodedTimeMs() << " ms" << std::endl;
@@ -261,6 +289,7 @@ void printStats( LZW_Stats &avgTotalLZWStats){
     std::cout << "Average Run-Length Encoding Throughput: " << avgTotalLZWStats.getAvgEncodedThroughput() << " bytes/sec" << std::endl;
     std::cout << "Average Run-Length Decoding Throughput: " << avgTotalLZWStats.getAvgThroughputDecoded() << " bytes/sec" << std::endl << std::endl;
 }
+
 
 void printStats( LZP_Stats &avgTotalLPWStats){
     std::cout << "Average Run-Length Encoded File Size: " << avgTotalLPWStats.getAvgSizeBytes() << " bytes" << std::endl;

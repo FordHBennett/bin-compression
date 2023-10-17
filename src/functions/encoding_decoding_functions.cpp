@@ -49,6 +49,7 @@ std::vector<std::pair<char, int>> runLengthEncode(const std::vector<char>& input
 
 // Space Complexity:
 // Best, Average, Worst: O(n)
+
 std::vector<char> runLengthDecode(const std::vector<std::pair<char, int>>& input) {
     std::vector<char> runLengthDecoded;
     size_t totalLength = 0;
@@ -110,6 +111,8 @@ std::vector<int> lzwEncode(const std::vector<char>& input) {
 // time since the dictionary is built as the decoding progresses.
 // Space Complexity:
 // Best, Average, Worst:O(n) The dictionary's size grows with the input, plus the output size.
+
+
 std::vector<char> lzwDecode(const std::vector<int>& input) {
     if (input.empty()) {
         return {};
@@ -157,6 +160,7 @@ std::vector<char> lzwDecode(const std::vector<int>& input) {
 // Worst:O(n^2 logn) because of the lexicographical comparison in the worst case.
 // Space Complexity:
 // Best, Average, Worst: O(n)
+
 std::vector<int> lzpEncode(const std::vector<char>& input) {
     std::unordered_map<std::string, int> dictionary;
     std::vector<int> lzpEncoded;
@@ -234,6 +238,8 @@ std::vector<char> lzpDecode(const std::vector<int>& input) {
 // Worst:O(n^2 logn) because of the lexicographical comparison in the worst case.
 // Space Complexity:
 // Best, Average, Worst:O(n)
+
+
 std::vector<char> burrowsWheelerEncode(const std::vector<char>& input) {
     size_t len = input.size();
 
@@ -267,7 +273,6 @@ std::vector<char> burrowsWheelerEncode(const std::vector<char>& input) {
 // Best, Average, Worst: O(n) All operations are linear with respect to the input size.
 // Space Complexity:
 //Best, Average, Worst: O(n)
-
 std::vector<char> burrowsWheelerDecode(const std::vector<char>& input) {
     size_t len = input.size();
 
@@ -303,6 +308,7 @@ std::vector<char> burrowsWheelerDecode(const std::vector<char>& input) {
     }
     return invBwtResult;
 }
+
 
 
 
