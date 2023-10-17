@@ -1,2 +1,7 @@
 build/release/*
 build/debug/*
+PlanetData/Earth/Global/Bathymetry/gebco_08_rev_bath_A1_grey_geo.geometa
+*.geobin
+*.geometa
+PlanetData_2023_10_14.zip
+.DS_Store
