@@ -250,227 +250,21 @@ std::vector<char> lzpDecode(const std::vector<int>& input) {
     return lzpDecoded;
 }
 
-
-// Function to perform LZW encoding using multithreading
-std::vector<int> lzwEncodeMultithread(const std::vector<char>& input) {
-    // Number of threads to use
-    const int numThreads = std::thread::hardware_concurrency();
-
-    std::vector<int> lzwEncoded;
-    std::vector<std::thread> threads;
-    std::vector<std::map<std::string, int>> dictionaries(numThreads);
-
-    // Initialize each dictionary with single-character entries
-    for (int i = 0; i < 256; ++i) {
-        for (int j = 0; j < numThreads; ++j) {
-            dictionaries[j][std::string(1, static_cast<char>(i))] = i;
-        }
-    }
-
-    const size_t chunkSize = input.size() / numThreads;
-
-    for (int i = 0; i < numThreads; ++i) {
-        size_t start = i * chunkSize;
-        size_t end = (i == numThreads - 1) ? input.size() : start + chunkSize;
-
-        threads.emplace_back([start, end, &input, &lzwEncoded, &dictionaries](int threadId) {
-            std::string current = "";
-
-            for (size_t j = start; j < end; ++j) {
-                char c = input[j];
-                std::string next = current + c;
-                auto& dictionary = dictionaries[threadId];
-
-                if (dictionary.find(next) != dictionary.end()) {
-                    // If the current + c is in the dictionary, update the current string
-                    current = next;
-                } else {
-                    // Output the code for the current string and add next to the dictionary
-                    lzwEncoded.push_back(dictionary[current]);
-                    dictionary[next] = dictionary.size();
-                    current = std::string(1, c);
-                }
-            }
-
-            if (!current.empty()) {
-                // Output the code for the remaining current string
-                lzwEncoded.push_back(dictionaries[threadId][current]);
-            }
-        }, i);
-    }
-
-    for (std::thread& thread : threads) {
-        thread.join();
-    }
-
-    return lzwEncoded;
-}
-
-// Function to perform LZW decoding using multithreading
-std::vector<char> lzwDecodeMultithread(const std::vector<int>& input) {
-    std::map<int, std::string> dictionary;
-    std::vector<char> lzwDecoded(input.size());
-
-    // Initialize the dictionary with single-character entries
-    for (int i = 0; i < 256; ++i) {
-        dictionary[i] = std::string(1, static_cast<char>(i));
-    }
-
-    const int numThreads = std::thread::hardware_concurrency();
-    const size_t chunkSize = input.size() / numThreads;
-
-    std::vector<std::thread> threads;
-
-    for (int i = 0; i < numThreads; ++i) {
-        size_t start = i * chunkSize;
-        size_t end = (i == numThreads - 1) ? input.size() : start + chunkSize;
-
-        threads.emplace_back([start, end, &input, &lzwDecoded, &dictionary]() {
-            std::map<int, std::string> localDictionary = dictionary;
-            std::string current = localDictionary[input[start]];
-            std::string entry;
-
-            for (size_t j = start; j < end; ++j) {
-                int code = input[j];
-
-                if (localDictionary.find(code) != localDictionary.end()) {
-                    entry = localDictionary[code];
-                } else if (code == localDictionary.size()) {
-                    entry = current + current[0];
-                } else {
-                    throw std::runtime_error("LZW decoding error: Invalid code.");
-                }
-
-                for (char c : entry) {
-                    lzwDecoded[j] = c;
-                    j++;
-                }
-
-                // Add a new entry to the local dictionary
-                localDictionary[localDictionary.size()] = current + entry[0];
-
-                current = entry;
-            }
-        });
-    }
-
-    for (std::thread& thread : threads) {
-        thread.join();
-    }
-
-    return lzwDecoded;
-}
-
-// Function to perform Lempel-Ziv Parallel (LZP) encoding using multithreading
-std::vector<int> lzpEncodeMultithread(const std::vector<char>& input) {
-    const int numThreads = std::thread::hardware_concurrency();
-    const size_t chunkSize = input.size() / numThreads;
-
-    std::vector<int> lzpEncoded(input.size());
-    std::vector<std::thread> threads;
-
-    for (int i = 0; i < numThreads; ++i) {
-        size_t start = i * chunkSize;
-        size_t end = (i == numThreads - 1) ? input.size() : start + chunkSize;
-
-        threads.emplace_back([start, end, &input, &lzpEncoded]() {
-            std::map<std::string, int> dictionary;
-            int nextCode = 256; // Start with extended ASCII codes
-
-            std::string current;
-            for (size_t j = start; j < end; ++j) {
-                current += input[j];
-                std::string next = current + input[j];
-                if (dictionary.find(next) != dictionary.end()) {
-                    // If the current + c is in the dictionary, update the current string
-                    current = next;
-                } else {
-                    // Output the code for the current string and add next to the dictionary
-                    lzpEncoded[j] = dictionary[current];
-                    dictionary[next] = nextCode++;
-                    current = input[j];
-                }
-            }
-        });
-    }
-
-    for (std::thread& thread : threads) {
-        thread.join();
-    }
-
-    return lzpEncoded;
-}
-
-// Function to perform Lempel-Ziv Parallel (LZP) decoding using multithreading
-std::vector<char> lzpDecodeMultithread(const std::vector<int>& input) {
-    const int numThreads = std::thread::hardware_concurrency();
-    const size_t chunkSize = input.size() / numThreads;
-
-    // Shared dictionary among threads
-    std::map<int, std::string> dictionary;
-    std::mutex dictionaryMutex;
-
-    std::vector<char> lzpDecoded(input.size());
-    std::vector<std::thread> threads;
-
-    for (int i = 0; i < numThreads; ++i) {
-        size_t start = i * chunkSize;
-        size_t end = (i == numThreads - 1) ? input.size() : start + chunkSize;
-
-        threads.emplace_back([start, end, &input, &lzpDecoded, &dictionary, &dictionaryMutex]() {
-            std::map<int, std::string> localDictionary;
-
-            std::string current;
-            for (size_t j = start; j < end; ++j) {
-                int code = input[j];
-                std::string entry;
-
-                {
-                    std::lock_guard<std::mutex> lock(dictionaryMutex);
-
-                    if (dictionary.find(code) != dictionary.end()) {
-                        entry = dictionary[code];
-                    } else if (code == dictionary.size()) {
-                        entry = current + current[0];
-                    } else {
-                        throw std::runtime_error("LZP decoding error: Invalid code.");
-                    }
-                }
-
-                localDictionary[localDictionary.size()] = current + entry[0];
-                current = entry;
-
-                // Append decoded characters to the result
-                for (char c : entry) {
-                    lzpDecoded[j++] = c;
-                }
-            }
-
-            {
-                std::lock_guard<std::mutex> lock(dictionaryMutex);
-                dictionary.insert(localDictionary.begin(), localDictionary.end());
-            }
-        });
-    }
-
-    for (std::thread& thread : threads) {
-        thread.join();
-    }
-
-    return lzpDecoded;
-}
-
 std::vector<char> burrowsWheelerEncode(const std::vector<char>& input) {
     // BWT
-    std::vector<std::vector<char>> rotations(input.size(), input);
-    for (size_t i = 1; i < input.size(); ++i) {
-        std::rotate(rotations[i].begin(), rotations[i].begin() + i, rotations[i].end());
+    size_t len = input.size();
+    std::vector<const char*> rotations(len);
+    for (size_t i = 0; i < len; ++i) {
+        rotations[i] = &input[i];
     }
-    std::sort(rotations.begin(), rotations.end());
 
-    std::vector<char> bwtResult;
-    for (const auto& rotation : rotations) {
-        bwtResult.push_back(rotation.back());
+    std::sort(rotations.begin(), rotations.end(), [&input, len](const char* a, const char* b) {
+        return std::lexicographical_compare(a, a + len, b, b + len);
+    });
+
+    std::vector<char> bwtResult(len);
+    for (size_t i = 0; i < len; ++i) {
+        bwtResult[i] = *(rotations[i] == &input[0] ? &input.back() : rotations[i] - 1);
     }
 
     // MTF
@@ -478,10 +272,11 @@ std::vector<char> burrowsWheelerEncode(const std::vector<char>& input) {
     alphabet.sort();
     alphabet.unique();
 
-    std::vector<char> mtfResult;
-    for (char c : bwtResult) {
+    std::vector<char> mtfResult(len);
+    for (size_t i = 0; i < len; ++i) {
+        char c = bwtResult[i];
         int position = std::distance(alphabet.begin(), std::find(alphabet.begin(), alphabet.end(), c));
-        mtfResult.push_back(static_cast<char>(position));
+        mtfResult[i] = static_cast<char>(position);
         alphabet.remove(c);
         alphabet.push_front(c);
     }
@@ -495,70 +290,34 @@ std::vector<char> burrowsWheelerDecode(const std::vector<char>& input) {
     alphabet.sort();
     alphabet.unique();
 
-    std::vector<char> invMtfResult;
-    for (char pos : input) {
+    size_t len = input.size();
+    std::vector<char> invMtfResult(len);
+    for (size_t i = 0; i < len; ++i) {
+        char pos = input[i];
         auto it = std::next(alphabet.begin(), pos);
         char c = *it;
-        invMtfResult.push_back(c);
+        invMtfResult[i] = c;
         alphabet.erase(it);
         alphabet.push_front(c);
     }
 
     // Inverse BWT
-    // This implementation is a basic version of the inverse BWT
-    size_t len = invMtfResult.size();
     std::vector<std::pair<char, int>> pairs(len);
     for (size_t i = 0; i < len; ++i) {
-        pairs[i] = {invMtfResult[i], i};
+        pairs[i] = {invMtfResult[i], static_cast<int>(i)};
     }
     std::sort(pairs.begin(), pairs.end());
 
-    std::vector<char> invBwtResult;
-    int idx = 0;  // Typically, the original string end character points to the start of the original string
+    std::vector<char> invBwtResult(len);
+    int idx = 0;
     for (size_t i = 0; i < len; ++i) {
-        invBwtResult.push_back(pairs[idx].first);
+        invBwtResult[i] = pairs[idx].first;
         idx = pairs[idx].second;
     }
 
     return invBwtResult;
 }
 
-// Delta Encoding
-std::vector<int> deltaEncode(const std::vector<int>& input) {
-    if (input.empty()) return {};
-
-    std::vector<int> encoded;
-    encoded.reserve(input.size());
-
-    int prev = input[0];
-    encoded.push_back(prev);
-
-    for (size_t i = 1; i < input.size(); ++i) {
-        int diff = input[i] - prev;
-        encoded.push_back(diff);
-        prev = input[i];
-    }
-
-    return encoded;
-}
-
-// Delta Decoding
-std::vector<int> deltaDecode(const std::vector<int>& encoded) {
-    if (encoded.empty()) return {};
-
-    std::vector<int> decoded;
-    decoded.reserve(encoded.size());
-
-    int cumulative = encoded[0];
-    decoded.push_back(cumulative);
-
-    for (size_t i = 1; i < encoded.size(); ++i) {
-        cumulative += encoded[i];
-        decoded.push_back(cumulative);
-    }
-
-    return decoded;
-}
 
 int main() {
     const int numIterations = 10;
@@ -569,17 +328,9 @@ int main() {
     const char* lzwDecodedFilename = "lzw_decoded.bin";
     const char* lzpEncodedFileName = "lzp_encoded.bin";
     const char* lzpDecodedFileName = "lzp_decoded.bin";
-    const char* deltaEndodedFileName = "delta_encoded.bin";
-    const char* deltaDecodedFileName = "delta_decoded.bin";
+
     const char* burrowsWheelerFilename = "burrows_wheeler_encoded.bin";
     const char* burrowsWheelerDecodedFilename = "burrows_wheeler_decoded.bin";
-    const char* lzwMultithreadEncodedFileName = "lzw_multithread_encoded.bin";
-    const char* lzwMultithreadDecodedFileName = "lzw_multithread_decoded.bin";
-    const char* lzpMultithreadEncodedFileName = "lzp_multithread_encoded.bin";
-    const char* lzpMultithreadDecodedFileName = "lzp_multithread_decoded.bin";
-
-    long long file_size = 1000000; // Adjust the file size as needed
-    double zeroProbability = 0.5; // Adjust the probability of 0s
 
     double avgRunLengthSizeBytes = 0;
     double avgEncodedRunLengthTimeMs = 0;
@@ -590,19 +341,11 @@ int main() {
     double avgLzpSizeBytes = 0;
     double avgEncodedLzpTimeMs = 0;
     double avgDecodedLzpTimeMs = 0;
-    double avgDeltaSizeBytes = 0;
-    double avgEncodedDeltaTimeMs = 0;
-    double avgDecodedDeltaTimeMs = 0;
 
     double avgBurrowsWheelerSizeBytes = 0;
     double avgEncodedBurrowsWheelerTimeMs = 0;
     double avgDecodedBurrowsWheelerTimeMs = 0;
 
-
-    double avgLzwMultithreadSizeBytes = 0;
-    double avgLzwMultithreadTimeMs = 0;
-    double avgLzpMultithreadSizeBytes = 0;
-    double avgLzpMultithreadTimeMs = 0;
 
 
     for (int i = 0; i < numIterations; ++i) {
@@ -750,113 +493,65 @@ int main() {
         avgEncodedLzpTimeMs += durationEncodeLzp.count();
         avgDecodedLzpTimeMs += durationDecodeLzp.count();
 
-        // Perform Delta encoding
-        auto startEncodeDelta = std::chrono::high_resolution_clock::now();
-        std::vector<int> deltaEncoded = deltaEncode(lzpEncoded);
-        auto stopEncodeDelta = std::chrono::high_resolution_clock::now();
-        auto durationEncodeDelta = std::chrono::duration_cast<std::chrono::milliseconds>(stopEncodeDelta - startEncodeDelta);
+        // Perform Burrows-Wheeler encoding
+        auto startEncodeBurrowsWheeler = std::chrono::high_resolution_clock::now();
+        std::vector<char> burrowsWheelerEncoded = burrowsWheelerEncode(binaryData);
+        auto stopEncodeBurrowsWheeler = std::chrono::high_resolution_clock::now();
+        auto durationEncodeBurrowsWheeler = std::chrono::duration_cast<std::chrono::milliseconds>(stopEncodeBurrowsWheeler - startEncodeBurrowsWheeler);
 
-        // Perform Delta decoding
-        auto startDecodeDelta = std::chrono::high_resolution_clock::now();
-        std::vector<int> deltaDecoded = deltaDecode(deltaEncoded);
-        auto stopDecodeDelta = std::chrono::high_resolution_clock::now();
-        auto durationDecodeDelta = std::chrono::duration_cast<std::chrono::milliseconds>(stopDecodeDelta - startDecodeDelta);
+        // Perform Burrows-Wheeler decoding
+        auto startDecodeBurrowsWheeler = std::chrono::high_resolution_clock::now();
+        std::vector<char> burrowsWheelerDecoded = burrowsWheelerDecode(burrowsWheelerEncoded);
+        auto stopDecodeBurrowsWheeler = std::chrono::high_resolution_clock::now();
+        auto durationDecodeBurrowsWheeler = std::chrono::duration_cast<std::chrono::milliseconds>(stopDecodeBurrowsWheeler - startDecodeBurrowsWheeler);
 
         // Verify that no data is lost by comparing decoded data with the original data
-        bool deltaDataMatches = lzpEncoded == deltaDecoded;
-        std::cout << "Delta Data Matches: " << (deltaDataMatches ? "Yes" : "No") << std::endl;
+        bool burrowsWheelerDataMatches = binaryData == burrowsWheelerDecoded;
+        std::cout << "Burrows-Wheeler Data Matches: " << (burrowsWheelerDataMatches ? "Yes" : "No") << std::endl;
 
-        // Create a binary file from Delta encoded data for further verification
-        std::ofstream deltaOutFile(deltaEndodedFileName, std::ios::binary);
-        std::ofstream deltaDecodedOutFile(deltaDecodedFileName, std::ios::binary);
-        if (!deltaOutFile || !deltaDecodedOutFile) {
-            std::cerr << "Error: Unable to create the Delta encoded or decoded file." << std::endl;
+        // Create a binary file from Burrows-Wheeler encoded data for further verification
+        std::ofstream burrowsWheelerOutFile(burrowsWheelerFilename, std::ios::binary);
+        std::ofstream burrowsWheelerDecodedOutFile(burrowsWheelerDecodedFilename, std::ios::binary);
+        if (!burrowsWheelerOutFile || !burrowsWheelerDecodedOutFile) {
+            std::cerr << "Error: Unable to create the Burrows-Wheeler encoded or decoded file." << std::endl;
             return 1;
         }
 
-        for (size_t i = 0; i < deltaEncoded.size(); ++i) {
-            int code = deltaEncoded[i];
-            deltaOutFile.write(reinterpret_cast<const char*>(&code), sizeof(int));
+        for (size_t i = 0; i < burrowsWheelerEncoded.size(); ++i) {
+            char byte = burrowsWheelerEncoded[i];
+            burrowsWheelerOutFile.write(reinterpret_cast<const char*>(&byte), sizeof(char));
         }
 
-        for (size_t i = 0; i < deltaDecoded.size(); ++i) {
-            int code = deltaDecoded[i];
-            deltaDecodedOutFile.write(reinterpret_cast<const char*>(&code), sizeof(int));
+        for (size_t i = 0; i < burrowsWheelerDecoded.size(); ++i) {
+            char byte = burrowsWheelerDecoded[i];
+            burrowsWheelerDecodedOutFile.write(reinterpret_cast<const char*>(&byte), sizeof(char));
         }
 
-        deltaOutFile.close();
-        deltaDecodedOutFile.close();
+        burrowsWheelerOutFile.close();
+        burrowsWheelerDecodedOutFile.close();
 
-        // open the Delta encoded file and determine the file size
-        avgDeltaSizeBytes += getFileSize(deltaEndodedFileName);
-        avgEncodedDeltaTimeMs += durationEncodeDelta.count();
-        avgDecodedDeltaTimeMs += durationDecodeDelta.count();
-
-        // // Perform Burrows-Wheeler encoding
-        // auto startEncodeBurrowsWheeler = std::chrono::high_resolution_clock::now();
-        // std::vector<char> burrowsWheelerEncoded = burrowsWheelerEncode(binaryData);
-        // auto stopEncodeBurrowsWheeler = std::chrono::high_resolution_clock::now();
-        // auto durationEncodeBurrowsWheeler = std::chrono::duration_cast<std::chrono::milliseconds>(stopEncodeBurrowsWheeler - startEncodeBurrowsWheeler);
-
-        // // Perform Burrows-Wheeler decoding
-        // auto startDecodeBurrowsWheeler = std::chrono::high_resolution_clock::now();
-        // std::vector<char> burrowsWheelerDecoded = burrowsWheelerDecode(burrowsWheelerEncoded);
-        // auto stopDecodeBurrowsWheeler = std::chrono::high_resolution_clock::now();
-        // auto durationDecodeBurrowsWheeler = std::chrono::duration_cast<std::chrono::milliseconds>(stopDecodeBurrowsWheeler - startDecodeBurrowsWheeler);
-
-        // // Verify that no data is lost by comparing decoded data with the original data
-        // bool burrowsWheelerDataMatches = binaryData == burrowsWheelerDecoded;
-        // std::cout << "Burrows-Wheeler Data Matches: " << (burrowsWheelerDataMatches ? "Yes" : "No") << std::endl;
-
-        // // Create a binary file from Burrows-Wheeler encoded data for further verification
-        // std::ofstream burrowsWheelerOutFile(burrowsWheelerFilename, std::ios::binary);
-        // std::ofstream burrowsWheelerDecodedOutFile(burrowsWheelerDecodedFilename, std::ios::binary);
-        // if (!burrowsWheelerOutFile || !burrowsWheelerDecodedOutFile) {
-        //     std::cerr << "Error: Unable to create the Burrows-Wheeler encoded or decoded file." << std::endl;
-        //     return 1;
-        // }
-
-        // for (size_t i = 0; i < burrowsWheelerEncoded.size(); ++i) {
-        //     char byte = burrowsWheelerEncoded[i];
-        //     burrowsWheelerOutFile.write(reinterpret_cast<const char*>(&byte), sizeof(char));
-        // }
-
-        // for (size_t i = 0; i < burrowsWheelerDecoded.size(); ++i) {
-        //     char byte = burrowsWheelerDecoded[i];
-        //     burrowsWheelerDecodedOutFile.write(reinterpret_cast<const char*>(&byte), sizeof(char));
-        // }
-
-        // burrowsWheelerOutFile.close();
-        // burrowsWheelerDecodedOutFile.close();
-
-        // // open the Burrows-Wheeler encoded file and determine the file size
-        // avgBurrowsWheelerSizeBytes += getFileSize(burrowsWheelerFilename);
-        // avgEncodedBurrowsWheelerTimeMs += durationEncodeBurrowsWheeler.count();
-        // avgDecodedBurrowsWheelerTimeMs += durationDecodeBurrowsWheeler.count();
+        // open the Burrows-Wheeler encoded file and determine the file size
+        avgBurrowsWheelerSizeBytes += getFileSize(burrowsWheelerFilename);
+        avgEncodedBurrowsWheelerTimeMs += durationEncodeBurrowsWheeler.count();
+        avgDecodedBurrowsWheelerTimeMs += durationDecodeBurrowsWheeler.count();
 
     }
 
     avgRunLengthSizeBytes /= numIterations;
     avgEncodedRunLengthTimeMs /= numIterations;
     avgDecodedRunLengthTimeMs /= numIterations;
+
     avgLzwSizeBytes /= numIterations;
     avgEncodedLzwTimeMs /= numIterations;
     avgDecodedLzwTimeMs /= numIterations;
+
     avgLzpSizeBytes /= numIterations;
     avgEncodedLzpTimeMs /= numIterations;
     avgDecodedLzpTimeMs /= numIterations;
-    avgDeltaSizeBytes /= numIterations;
-    avgEncodedDeltaTimeMs /= numIterations;
-    avgDecodedDeltaTimeMs /= numIterations;
 
     avgBurrowsWheelerSizeBytes /= numIterations;
     avgEncodedBurrowsWheelerTimeMs /= numIterations;
     avgDecodedBurrowsWheelerTimeMs /= numIterations;
-
-    avgLzwMultithreadSizeBytes /= numIterations;
-    avgLzpMultithreadTimeMs /= numIterations;
-    avgLzpMultithreadSizeBytes /= numIterations;
-    avgLzpMultithreadTimeMs /= numIterations;
 
     std::cout << "Average Run-Length Encoded File Size: " << avgRunLengthSizeBytes << " bytes" << std::endl;
     std::cout << "Average Run-Length Encoding Time: " << avgEncodedRunLengthTimeMs << " ms" << std::endl;
@@ -871,19 +566,10 @@ int main() {
     std::cout << "Average Lempel-Ziv Parallel (LZP) Encoding Time: " << avgEncodedLzpTimeMs << " ms" << std::endl;
     std::cout << "Average Lempel-Ziv Parallel (LZP) Decoding Time: " << avgDecodedLzpTimeMs << " ms" << std::endl << std::endl;
 
-    std::cout << "Average Delta Encoded File Size: " << avgDeltaSizeBytes << " bytes" << std::endl;
-    std::cout << "Average Delta Encoding Time: " << avgEncodedDeltaTimeMs << " ms" << std::endl;
-    std::cout << "Average Delta Decoding Time: " << avgDecodedDeltaTimeMs << " ms" << std::endl << std::endl;
-
     std::cout << "Average Burrows-Wheeler Encoded File Size: " << avgBurrowsWheelerSizeBytes << " bytes" << std::endl;
     std::cout << "Average Burrows-Wheeler Encoding Time: " << avgEncodedBurrowsWheelerTimeMs << " ms" << std::endl;
     std::cout << "Average Burrows-Wheeler Decoding Time: " << avgDecodedBurrowsWheelerTimeMs << " ms" << std::endl << std::endl;
 
-    std::cout << "Average Lempel-Ziv Parallel (LZP) Multithread Encoded File Size: " << avgLzpMultithreadSizeBytes << " bytes" << std::endl;
-    std::cout << "Average Lempel-Ziv Parallel (LZP) Multithread Encoding Time: " << avgLzpMultithreadTimeMs << " ms" << std::endl;
-
-    std::cout << "Average Lempel-Ziv (LZW) Multithread Encoded File Size: " << avgLzwMultithreadSizeBytes << " bytes" << std::endl;
-    std::cout << "Average Lempel-Ziv (LZW) Multithread Encoding Time: " << avgLzwMultithreadTimeMs << " ms" << std::endl;
 
     return 0;
 }
