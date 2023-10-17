@@ -7,8 +7,32 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 
+# List of source and header files
+set(SOURCES
+    src/main.cpp
+    src/classes/rlr_class.cpp
+    src/classes/lzw_class.cpp
+    src/classes/lzp_class.cpp
+    src/functions/encoding_decoding_functions.cpp
+    src/functions/file_functions.cpp
+    src/functions/stats_functions.cpp
+)
+
+set(HEADERS
+    src/classes/rlr_class.h
+    src/classes/lzw_class.h
+    src/classes/lzp_class.h
+    src/functions/encoding_decoding_functions.h
+    src/functions/file_functions.h
+    src/functions/stats_functions.h
+)
+
 # Add the executable target
-add_executable(geobin_compression src/main.cpp)
+add_executable(geobin_compression ${SOURCES} ${HEADERS})
+
+# Include directories
+include_directories(src/classes)
+include_directories(src/functions)
 
 # Debug build options
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -Wall -g")
@@ -23,3 +47,4 @@ endif()
 
 # Install the executable to the 'bin' directory
 install(TARGETS geobin_compression RUNTIME DESTINATION bin)
+
