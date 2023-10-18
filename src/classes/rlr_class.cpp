@@ -11,6 +11,142 @@ RLR_Stats::RLR_Stats(double avgSizeBytes, double avgEncodedTimeMs, double avgDec
     avgCompressionRatio(avgCompressionRatio), avgPeakMemoryDuringEncoding(avgPeakMemoryDuringEncoding), avgPeakMemoryDuringDecoding(avgPeakMemoryDuringDecoding),
     avgEncodedThroughput(avgEncodedThroughput), avgThroughputDecoded(avgThroughputDecoded) {}
 
+// Run-length encoding
+// Time Complexity:
+// Best, Average, Worst: O(n)
+// Space Complexity:
+// Best, Average, Worst: O(n)
+std::vector<std::pair<char, int>> RLR_Stats::runLengthEncode(const std::vector<char>& input){
+        if (input.empty()) {
+        return {};
+    }
+
+    std::vector<std::pair<char, int>> runLengthEncoded;
+    runLengthEncoded.reserve(input.size()); // Reserve the maximum potential size.
+
+    char currentChar = input[0];
+    int runLength = 1;
+
+    for (size_t i = 1; i < input.size(); ++i) {
+        if (input[i] == currentChar && runLength < 255) {
+            runLength++;
+        } else {
+            runLengthEncoded.emplace_back(currentChar, runLength);
+            currentChar = input[i];
+            runLength = 1;
+        }
+    }
+
+    // After the loop, don't forget to add the last run.
+    runLengthEncoded.emplace_back(currentChar, runLength);
+
+    runLengthEncoded.shrink_to_fit(); // Reduce capacity to fit the actual size.
+
+    return runLengthEncoded;
+}
+
+// Run-length decoding
+// Time Complexity:
+// Best, Average, Worst: O(n)
+// Space Complexity:
+// Best, Average, Worst: O(n)
+std::vector<char> RLR_Stats::runLengthDecode(const std::vector<std::pair<char, int>>& input) {
+    std::vector<char> runLengthDecoded;
+    size_t totalLength = 0;
+
+    // Calculate the total length to reserve capacity.
+    for (const auto& pair : input) {
+        totalLength += pair.second;
+    }
+    runLengthDecoded.reserve(totalLength);
+
+    for (const auto& pair : input) {
+        std::fill_n(std::back_inserter(runLengthDecoded), pair.second, pair.first);
+    }
+
+    return runLengthDecoded;
+}
+
+//functions
+void RLR_Stats::printStats() {
+    std::cout << "Average size in bytes: " << avgSizeBytes << std::endl;
+    std::cout << "Average encoded time in ms: " << avgEncodedTimeMs << std::endl;
+    std::cout << "Average decoded time in ms: " << avgDecodedTimeMs << std::endl;
+    std::cout << "Average compression ratio: " << avgCompressionRatio << std::endl;
+    std::cout << "Average peak memory during encoding: " << avgPeakMemoryDuringEncoding << std::endl;
+    std::cout << "Average peak memory during decoding: " << avgPeakMemoryDuringDecoding << std::endl;
+    std::cout << "Average encoded throughput: " << avgEncodedThroughput << std::endl;
+    std::cout << "Average throughput decoded: " << avgThroughputDecoded << std::endl;
+}
+
+void RLR_Stats::calculateAvgStats(int divisor){
+    avgSizeBytes /= divisor;
+    avgEncodedTimeMs /= divisor;
+    avgDecodedTimeMs /= divisor;
+    avgCompressionRatio /= divisor;
+    avgPeakMemoryDuringEncoding /= divisor;
+    avgPeakMemoryDuringDecoding /= divisor;
+    avgEncodedThroughput /= divisor;
+    avgThroughputDecoded /= divisor;
+}
+
+void RLR_Stats::getFileStats(std::vector<char> &binaryData, const char* runLengthFilename, const char* runLengthDecodedFilename, size_t fileSize){
+        // Perform run-length encoding
+        auto startEncodRunLength = std::chrono::high_resolution_clock::now();
+        auto runLengthEncoded = runLengthEncode(binaryData);
+        auto stopEncodRunLength = std::chrono::high_resolution_clock::now();
+        auto durationEncodRunLength = std::chrono::duration_cast<std::chrono::milliseconds>(stopEncodRunLength - startEncodRunLength);
+
+        // Perform run-length decoding
+        auto startDecodRunLength = std::chrono::high_resolution_clock::now();
+        auto runLengthDecoded = runLengthDecode(runLengthEncoded);
+        auto stopDecodRunLength = std::chrono::high_resolution_clock::now();
+        auto durationDecodRunLength = std::chrono::duration_cast<std::chrono::milliseconds>(stopDecodRunLength - startDecodRunLength);
+
+        // Calculate the peak memory usage
+        // avgRLRStats.setAvgPeakMemoryDuringDecoding(avgRLRStats.getAvgPeakMemoryDuringDecoding() + getPeakMemoryUsage());
+        // avgRLRStats.setAvgPeakMemoryDuringEncoding(avgRLRStats.getAvgPeakMemoryDuringEncoding() + getPeakMemoryUsage());
+
+        // Calculate the throughput for encoding and decoding
+        avgEncodedThroughput += static_cast<double>(fileSize) / durationEncodRunLength.count() * 1000; // bytes per second
+        avgThroughputDecoded += static_cast<double>(fileSize) / durationDecodRunLength.count() * 1000; // bytes per second
+
+        // Verify that no data is lost by comparing decoded data with the original data
+        bool dataMatches = binaryData == runLengthDecoded;
+        std::cout << "RLR Data Matches: " << (dataMatches ? "Yes" : "No") << std::endl;
+
+        // Write the run-length encoded and decoded files
+        std::ofstream runLengthOutFile(runLengthFilename, std::ios::binary);
+        std::ofstream runLengthDecodedOutFile(runLengthDecodedFilename, std::ios::binary);
+        if (!runLengthOutFile || !runLengthDecodedOutFile) {
+            std::cerr << "Error: Unable to create the run-length encoded or decoded file." << std::endl;
+        }
+
+        for (size_t i = 0; i < runLengthEncoded.size(); ++i) {
+            char byte = static_cast<char>(runLengthEncoded[i].first);
+            runLengthOutFile.write(reinterpret_cast<const char*>(&byte), sizeof(char));
+        }
+
+        for (size_t i = 0; i < runLengthDecoded.size(); ++i) {
+            char byte = runLengthDecoded[i];
+            runLengthDecodedOutFile.write(reinterpret_cast<const char*>(&byte), sizeof(char));
+        }
+
+        runLengthOutFile.close();
+        runLengthDecodedOutFile.close();
+
+        // open the run-length encoded file and determine the file size
+        // avgRLRStats.setAvgSizeBytes(avgRLRStats.getAvgSizeBytes() + getFileSize(runLengthFilename));
+        // avgRLRStats.setAvgEncodedTimeMs(avgRLRStats.getAvgEncodedTimeMs() + durationEncodRunLength.count());
+        // avgRLRStats.setAvgDecodedTimeMs(avgRLRStats.getAvgDecodedTimeMs() + durationDecodRunLength.count());
+        // avgRLRStats.setAvgCompressionRatio(avgRLRStats.getAvgCompressionRatio() + static_cast<double>(getFileSize(runLengthFilename)) / fileSize);
+        avgSizeBytes += getFileSize(runLengthFilename);
+        avgEncodedTimeMs += durationEncodRunLength.count();
+        avgDecodedTimeMs += durationDecodRunLength.count();
+        avgCompressionRatio += static_cast<double>(getFileSize(runLengthFilename)) / fileSize;
+        
+}
+
 // Setters
 void RLR_Stats::setAvgSizeBytes(double value) { avgSizeBytes = value; }
 void RLR_Stats::setAvgEncodedTimeMs(double value) { avgEncodedTimeMs = value; }

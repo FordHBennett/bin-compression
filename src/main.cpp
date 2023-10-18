@@ -22,6 +22,12 @@ int main() {
 
     std::vector<std::filesystem::path> geobinFiles;
 
+    std::vector<std::pair<const char*, int>> geometa_dir_row_length;
+    //Write a function to populate geometa_dir_row_length with the directory name and the number of rows in the directory
+    // by reading .geometa files in the directory
+
+    //FIX THE GETPEAKMEMORYUSAGE FUNCTION
+
     int totalFiles = getNumberOfGeobinFilesRecursivelyInDir("PlanetData");
 
     std::filesystem::path planetDataPath("PlanetData");
@@ -53,14 +59,14 @@ int main() {
     }
 
     // Calculate the average stats for all files
-    calculateAvgStats(avgTotalRLRStats, totalFiles);
-    calculateAvgStats(avgTotalLZWStats, totalFiles);
-    calculateAvgStats(avgTotalLZPStats, totalFiles);
-    
+    avgTotalRLRStats.calculateAvgStats(totalFiles);
+    avgTotalLZWStats.calculateAvgStats(totalFiles);
+    avgTotalLZPStats.calculateAvgStats(totalFiles);
+
     // Print the average stats for all files
-    printStats(avgTotalRLRStats);
-    printStats(avgTotalLZWStats);
-    printStats(avgTotalLZPStats);
+    avgTotalRLRStats.printStats();
+    avgTotalLZWStats.printStats();
+    avgTotalLZPStats.printStats();
 
     return 0;
 }

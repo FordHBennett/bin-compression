@@ -1,5 +1,4 @@
-#ifndef FILE_FUNCTIONS_H
-#define FILE_FUNCTIONS_H
+#pragma once
 
 #include <iostream>
 #include <fstream>
@@ -11,7 +10,14 @@
 #include "../classes/lzw_class.h"
 #include "../classes/lzp_class.h"
 
-#include "stats_functions.h"
+#include "../functions/stats_functions.h"
+
+// Forward declarations
+class RLR_Stats;
+class LZW_Stats;
+class LZP_Stats;
+
+
 
 /**
  * Generate a random binary file with a given file size and a probability for zeros.
@@ -45,5 +51,3 @@ int getNumberOfGeobinFilesRecursivelyInDir(const char* dir_name);
  */
 void processFiles(const std::vector<std::filesystem::path>& files, const int numIterations,
                     RLR_Stats& avgTotalRLRStats, LZW_Stats& avgTotalLZWStats, LZP_Stats& avgTotalLZPStats);
-
-#endif // FILE_FUNCTIONS_H

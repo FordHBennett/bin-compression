@@ -1,5 +1,8 @@
 #pragma once
+
 #include <cstddef>
+#include <iostream>
+#include "../functions/file_functions.h"
 
 class LZW_Stats {
 public:
@@ -7,6 +10,34 @@ public:
     LZW_Stats();
     LZW_Stats(double avgSizeBytes, double avgEncodedTimeMs, double avgDecodedTimeMs, double avgCompressionRatio, size_t avgPeakMemoryDuringEncoding, size_t avgPeakMemoryDuringDecoding, double avgEncodedThroughput, double avgThroughputDecoded);
 
+    /**
+     * The function `lzwEncode` takes a vector of characters as input and returns a vector of integers
+     * representing the LZW encoding of the input.
+     *
+     * @param input The input parameter is a vector of characters (std::vector<char>) that represents the
+     * input data to be encoded using the LZW algorithm.
+     *
+     * @return The function `lzwEncode` returns a `std::vector<int>` containing the LZW encoded
+     * representation of the input.
+     */
+    std::vector<int> lzwEncode(const std::vector<char>& input);
+
+    /**
+     * The `lzwDecode` function takes a vector of integers as input and decodes it using the LZW algorithm,
+     * returning a vector of characters.
+     *
+     * @param input The input parameter is a vector of integers representing the LZW-encoded data.
+     *
+     * @return The function `lzwDecode` returns a `std::vector<char>` containing the decoded output of the
+     * LZW algorithm.
+     */
+    std::vector<char> lzwDecode(const std::vector<int>& input);
+
+
+    // Functions
+    void printStats();
+    void calculateAvgStats(int divisors);
+    void getFileStats(std::vector<char> &binaryData, const char* runLengthFilename, const char* runLengthDecodedFilename, size_t fileSize);
 
     // Setters
     void setAvgSizeBytes(double value);
