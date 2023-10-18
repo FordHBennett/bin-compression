@@ -69,14 +69,14 @@ std::vector<char> RLR_Stats::runLengthDecode(const std::vector<std::pair<char, i
 
 //functions
 void RLR_Stats::printStats() {
-    std::cout << "Average size in bytes: " << avgSizeBytes << std::endl;
-    std::cout << "Average encoded time in ms: " << avgEncodedTimeMs << std::endl;
-    std::cout << "Average decoded time in ms: " << avgDecodedTimeMs << std::endl;
-    std::cout << "Average compression ratio: " << avgCompressionRatio << std::endl;
-    std::cout << "Average peak memory during encoding: " << avgPeakMemoryDuringEncoding << std::endl;
-    std::cout << "Average peak memory during decoding: " << avgPeakMemoryDuringDecoding << std::endl;
-    std::cout << "Average encoded throughput: " << avgEncodedThroughput << std::endl;
-    std::cout << "Average throughput decoded: " << avgThroughputDecoded << std::endl;
+    std::cout << "RLR: Average size in bytes: " << avgSizeBytes << std::endl;
+    std::cout << "RLR: Average encoded time in ms: " << avgEncodedTimeMs << std::endl;
+    std::cout << "RLR: Average decoded time in ms: " << avgDecodedTimeMs << std::endl;
+    std::cout << "RLR: Average compression ratio: " << avgCompressionRatio << std::endl;
+    std::cout << "RLR: Average peak memory during encoding: " << avgPeakMemoryDuringEncoding << std::endl;
+    std::cout << "RLR: Average peak memory during decoding: " << avgPeakMemoryDuringDecoding << std::endl;
+    std::cout << "RLR: Average encoded throughput: " << avgEncodedThroughput << std::endl;
+    std::cout << "RLR: Average throughput decoded: " << avgThroughputDecoded << std::endl;
 }
 
 void RLR_Stats::calculateAvgStats(int divisor){
@@ -136,16 +136,52 @@ void RLR_Stats::getFileStats(std::vector<char> &binaryData, const char* runLengt
         runLengthDecodedOutFile.close();
 
         // open the run-length encoded file and determine the file size
-        // avgRLRStats.setAvgSizeBytes(avgRLRStats.getAvgSizeBytes() + getFileSize(runLengthFilename));
-        // avgRLRStats.setAvgEncodedTimeMs(avgRLRStats.getAvgEncodedTimeMs() + durationEncodRunLength.count());
-        // avgRLRStats.setAvgDecodedTimeMs(avgRLRStats.getAvgDecodedTimeMs() + durationDecodRunLength.count());
-        // avgRLRStats.setAvgCompressionRatio(avgRLRStats.getAvgCompressionRatio() + static_cast<double>(getFileSize(runLengthFilename)) / fileSize);
         avgSizeBytes += getFileSize(runLengthFilename);
         avgEncodedTimeMs += durationEncodRunLength.count();
         avgDecodedTimeMs += durationDecodRunLength.count();
         avgCompressionRatio += static_cast<double>(getFileSize(runLengthFilename)) / fileSize;
-        
+
 }
+
+ void RLR_Stats::getStatsFromEncodingDecodingFunctions(const char* filename, int numIterations) {
+    std::cout << "Compressing " << filename << " using RLR " << std::endl;
+    const char* runLengthFilename = "run_length_encoded.bin";
+    const char* runLengthDecodedFilename = "run_length_decoded.bin";
+
+    RLR_Stats avgRLRStats;
+
+    for (int i = 0; i < numIterations; ++i) {
+        // Read the binary file
+        std::ifstream inFile(filename, std::ios::binary);
+        if (!inFile) {
+            std::cerr << "Error: Unable to open the file for reading." << std::endl;
+        }
+
+        inFile.seekg(0, std::ios::end);
+        size_t fileSize = inFile.tellg();
+        inFile.seekg(0, std::ios::beg);
+
+        std::vector<char> binaryData(fileSize);
+        inFile.read(binaryData.data(), fileSize);
+        inFile.close();
+
+        // Perform run-length encoding and decoding
+        avgRLRStats.getFileStats(binaryData, runLengthFilename, runLengthDecodedFilename, fileSize);
+    }
+
+    // Calculate the average stats for the current file
+    avgRLRStats.calculateAvgStats(numIterations);
+
+    avgSizeBytes += avgRLRStats.getAvgSizeBytes();
+    avgEncodedTimeMs += avgRLRStats.getAvgEncodedTimeMs();
+    avgDecodedTimeMs += avgRLRStats.getAvgDecodedTimeMs();
+    avgCompressionRatio += avgRLRStats.getAvgCompressionRatio();
+    avgPeakMemoryDuringEncoding += avgRLRStats.getAvgPeakMemoryDuringEncoding();
+    avgPeakMemoryDuringDecoding += avgRLRStats.getAvgPeakMemoryDuringDecoding();
+    avgEncodedThroughput += avgRLRStats.getAvgEncodedThroughput();
+    avgThroughputDecoded += avgRLRStats.getAvgThroughputDecoded();
+
+ }
 
 // Setters
 void RLR_Stats::setAvgSizeBytes(double value) { avgSizeBytes = value; }

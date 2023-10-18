@@ -93,14 +93,14 @@ std::vector<char> LZW_Stats::lzwDecode(const std::vector<int>& input) {
 
 // Functions
 void LZW_Stats::printStats() {
-    std::cout << "Average size in bytes: " << avgSizeBytes << std::endl;
-    std::cout << "Average encoded time in ms: " << avgEncodedTimeMs << std::endl;
-    std::cout << "Average decoded time in ms: " << avgDecodedTimeMs << std::endl;
-    std::cout << "Average compression ratio: " << avgCompressionRatio << std::endl;
-    std::cout << "Average peak memory during encoding: " << avgPeakMemoryDuringEncoding << std::endl;
-    std::cout << "Average peak memory during decoding: " << avgPeakMemoryDuringDecoding << std::endl;
-    std::cout << "Average encoded throughput: " << avgEncodedThroughput << std::endl;
-    std::cout << "Average throughput decoded: " << avgThroughputDecoded << std::endl;
+    std::cout << "LZW: Average size in bytes: " << avgSizeBytes << std::endl;
+    std::cout << "LZW: Average encoded time in ms: " << avgEncodedTimeMs << std::endl;
+    std::cout << "LZW: Average decoded time in ms: " << avgDecodedTimeMs << std::endl;
+    std::cout << "LZW: Average compression ratio: " << avgCompressionRatio << std::endl;
+    std::cout << "LZW: Average peak memory during encoding: " << avgPeakMemoryDuringEncoding << std::endl;
+    std::cout << "LZW: Average peak memory during decoding: " << avgPeakMemoryDuringDecoding << std::endl;
+    std::cout << "LZW: Average encoded throughput: " << avgEncodedThroughput << std::endl;
+    std::cout << "LZW: Average throughput decoded: " << avgThroughputDecoded << std::endl;
 }
 
 void LZW_Stats::calculateAvgStats(int divisor){
@@ -159,17 +159,51 @@ void LZW_Stats::getFileStats(std::vector<char> &binaryData, const char* lzwEncod
         lzwDecodedOutFile.close();
 
         // open the lzw encoded file and determine the file size
-        // avglzwStats.setAvgSizeBytes(avglzwStats.getAvgSizeBytes() + getFileSize(lzwEncodedFileName));
-        // avglzwStats.setAvgEncodedTimeMs(avglzwStats.getAvgEncodedTimeMs() + durationEncodelzw.count());
-        // avglzwStats.setAvgDecodedTimeMs(avglzwStats.getAvgDecodedTimeMs() + durationDecodelzw.count());
-        // avglzwStats.setAvgCompressionRatio(avglzwStats.getAvgCompressionRatio() + static_cast<double>(getFileSize(lzwEncodedFileName)) / fileSize);
-
         avgSizeBytes += getFileSize(lzwEncodedFileName);
         avgEncodedTimeMs += durationEncodelzw.count();
         avgDecodedTimeMs += durationDecodelzw.count();
         avgCompressionRatio += static_cast<double>(getFileSize(lzwEncodedFileName)) / fileSize;
 
 }
+
+ void LZW_Stats::getStatsFromEncodingDecodingFunctions(const char* filename, int numIterations) {
+    std::cout << "Compressing " << filename << " using LZW " << std::endl;
+    const char* lzwEncodedFilename = "lzw_encoded.bin";
+    const char* lzwDecodedFilename = "lzw_decoded.bin";
+
+     LZW_Stats avgLZWStats;
+
+        for (int i = 0; i < numIterations; ++i) {
+        // Read the binary file
+        std::ifstream inFile(filename, std::ios::binary);
+        if (!inFile) {
+            std::cerr << "Error: Unable to open the file for reading." << std::endl;
+        }
+
+        inFile.seekg(0, std::ios::end);
+        size_t fileSize = inFile.tellg();
+        inFile.seekg(0, std::ios::beg);
+
+        std::vector<char> binaryData(fileSize);
+        inFile.read(binaryData.data(), fileSize);
+        inFile.close();
+
+        // Perform LZW encoding and decoding
+        avgLZWStats.getFileStats(binaryData, lzwEncodedFilename, lzwDecodedFilename, fileSize);
+    }
+
+    // Calculate the average stats for the current file
+    avgLZWStats.calculateAvgStats(numIterations);
+
+    avgSizeBytes += avgLZWStats.getAvgSizeBytes();
+    avgEncodedTimeMs += avgLZWStats.getAvgEncodedTimeMs();
+    avgDecodedTimeMs += avgLZWStats.getAvgDecodedTimeMs();
+    avgCompressionRatio += avgLZWStats.getAvgCompressionRatio();
+    avgPeakMemoryDuringEncoding += avgLZWStats.getAvgPeakMemoryDuringEncoding();
+    avgPeakMemoryDuringDecoding += avgLZWStats.getAvgPeakMemoryDuringDecoding();
+    avgEncodedThroughput += avgLZWStats.getAvgEncodedThroughput();
+    avgThroughputDecoded += avgLZWStats.getAvgThroughputDecoded();
+ }
 
 // Setters
 void LZW_Stats::setAvgSizeBytes(double value) { avgSizeBytes = value; }

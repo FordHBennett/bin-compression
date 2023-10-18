@@ -70,7 +70,7 @@ std::vector<char> LZP_Stats::lzpDecode(const std::vector<int>& input) {
     lzpDecoded.insert(lzpDecoded.end(), current.begin(), current.end());
 
     for (size_t i = 1; i < input.size(); ++i) {
-        int code = input[i];
+        size_t code = input[i];
         std::string entry;
 
         if (dictionary.count(code)) {
@@ -93,14 +93,14 @@ std::vector<char> LZP_Stats::lzpDecode(const std::vector<int>& input) {
 
 // Functions
 void LZP_Stats::printStats() {
-    std::cout << "Average size in bytes: " << avgSizeBytes << std::endl;
-    std::cout << "Average encoded time in ms: " << avgEncodedTimeMs << std::endl;
-    std::cout << "Average decoded time in ms: " << avgDecodedTimeMs << std::endl;
-    std::cout << "Average compression ratio: " << avgCompressionRatio << std::endl;
-    std::cout << "Average peak memory during encoding: " << avgPeakMemoryDuringEncoding << std::endl;
-    std::cout << "Average peak memory during decoding: " << avgPeakMemoryDuringDecoding << std::endl;
-    std::cout << "Average encoded throughput: " << avgEncodedThroughput << std::endl;
-    std::cout << "Average throughput decoded: " << avgThroughputDecoded << std::endl;
+    std::cout << "LZP: Average size in bytes: " << avgSizeBytes << std::endl;
+    std::cout << "LZP: Average encoded time in ms: " << avgEncodedTimeMs << std::endl;
+    std::cout << "LZP: Average decoded time in ms: " << avgDecodedTimeMs << std::endl;
+    std::cout << "LZP: Average compression ratio: " << avgCompressionRatio << std::endl;
+    std::cout << "LZP: Average peak memory during encoding: " << avgPeakMemoryDuringEncoding << std::endl;
+    std::cout << "LZP: Average peak memory during decoding: " << avgPeakMemoryDuringDecoding << std::endl;
+    std::cout << "LZP: Average encoded throughput: " << avgEncodedThroughput << std::endl;
+    std::cout << "LZP: Average throughput decoded: " << avgThroughputDecoded << std::endl;
 }
 
 void LZP_Stats::calculateAvgStats(int divisor){
@@ -165,6 +165,44 @@ void LZP_Stats::getFileStats(std::vector<char> &binaryData, const char* lzpEncod
         avgCompressionRatio += static_cast<double>(getFileSize(lzpEncodedFileName)) / fileSize;
 }
 
+ void LZP_Stats::getStatsFromEncodingDecodingFunctions(const char* filename, int numIterations) {
+    std::cout << "Compressing " << filename << " using LZP" << std::endl;
+    const char* lzpEncodedFilename = "lzp_encoded.bin";
+    const char* lzpDecodedFilename = "lzp_decoded.bin";
+
+     LZP_Stats avglzpStats;
+
+        for (int i = 0; i < numIterations; ++i) {
+        // Read the binary file
+        std::ifstream inFile(filename, std::ios::binary);
+        if (!inFile) {
+            std::cerr << "Error: Unable to open the file for reading." << std::endl;
+        }
+
+        inFile.seekg(0, std::ios::end);
+        size_t fileSize = inFile.tellg();
+        inFile.seekg(0, std::ios::beg);
+
+        std::vector<char> binaryData(fileSize);
+        inFile.read(binaryData.data(), fileSize);
+        inFile.close();
+
+        // Perform lzp encoding and decoding
+        avglzpStats.getFileStats(binaryData, lzpEncodedFilename, lzpDecodedFilename, fileSize);
+    }
+
+    // Calculate the average stats for the current file
+    avglzpStats.calculateAvgStats(numIterations);
+
+    avgSizeBytes += avglzpStats.getAvgSizeBytes();
+    avgEncodedTimeMs += avglzpStats.getAvgEncodedTimeMs();
+    avgDecodedTimeMs += avglzpStats.getAvgDecodedTimeMs();
+    avgCompressionRatio += avglzpStats.getAvgCompressionRatio();
+    avgPeakMemoryDuringEncoding += avglzpStats.getAvgPeakMemoryDuringEncoding();
+    avgPeakMemoryDuringDecoding += avglzpStats.getAvgPeakMemoryDuringDecoding();
+    avgEncodedThroughput += avglzpStats.getAvgEncodedThroughput();
+    avgThroughputDecoded += avglzpStats.getAvgThroughputDecoded();
+ }
 
 // Setters
 void LZP_Stats::setAvgSizeBytes(double value) { avgSizeBytes = value; }

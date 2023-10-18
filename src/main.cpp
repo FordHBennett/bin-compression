@@ -7,9 +7,8 @@
 #include "classes/lzw_class.h"
 #include "classes/lzp_class.h"
 
-#include "functions/encoding_decoding_functions.h"
+// #include "functions/encoding_decoding_functions.h"
 #include "functions/file_functions.h"
-#include "functions/stats_functions.h"
 
 std::mutex mtx;
 
@@ -28,6 +27,15 @@ int main() {
 
     //FIX THE GETPEAKMEMORYUSAGE FUNCTION
 
+    // CREATE A HUFFMAN CLASS
+
+    // CREATE A BINARY INTERPOLATION CLASS
+    // https://github.com/jermp/interpolative_coding
+
+    // CREATE A ARITHMETIC CODING CLASS
+    //  https://github.com/Abdelrahmanm22/DataCompression_Algorithms/blob/main/Arithmetic%20Coding(Binary)/Compression%20and%20DeCompression/main.py
+
+
     int totalFiles = getNumberOfGeobinFilesRecursivelyInDir("PlanetData");
 
     std::filesystem::path planetDataPath("PlanetData");
@@ -39,25 +47,26 @@ int main() {
         }
     }
 
-    const int numThreads = std::thread::hardware_concurrency(); // Use the number of hardware threads available.
-    std::vector<std::thread> threads(numThreads);
+    const int numThreads = std::thread::hardware_concurrency();
+    std::vector<std::thread> threads;
     int filesPerThread = geobinFiles.size() / numThreads;
+    for (int t = 0; t < numThreads; ++t) {
+        int start = t * filesPerThread;
+        int end = (t == numThreads - 1) ? geobinFiles.size() : start + filesPerThread;
 
-    // Start threads.
-    for (int i = 0; i < numThreads; ++i) {
-        int start = i * filesPerThread;
-        int end = (i == numThreads - 1) ? geobinFiles.size() : start + filesPerThread;
-
-        threads[i] = std::thread(processFiles, std::vector<std::filesystem::path>(geobinFiles.begin() + start, geobinFiles.begin() + end),
-                                 numIterations, std::ref(avgTotalRLRStats), std::ref(avgTotalLZWStats), std::ref(avgTotalLZPStats));
+        threads.emplace_back([=, &avgTotalRLRStats, &avgTotalLZWStats, &avgTotalLZPStats]() {
+            for (int i = start; i < end; ++i) {
+                processFiles(geobinFiles, numIterations, avgTotalRLRStats);
+                processFiles(geobinFiles, numIterations, avgTotalLZWStats);
+                processFiles(geobinFiles, numIterations, avgTotalLZPStats);
+            }
+        });
     }
 
-
-    // Join threads.
+    // Wait for all threads to finish.
     for (auto& t : threads) {
         t.join();
     }
-
     // Calculate the average stats for all files
     avgTotalRLRStats.calculateAvgStats(totalFiles);
     avgTotalLZWStats.calculateAvgStats(totalFiles);

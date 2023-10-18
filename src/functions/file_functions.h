@@ -10,8 +10,6 @@
 #include "../classes/lzw_class.h"
 #include "../classes/lzp_class.h"
 
-#include "../functions/stats_functions.h"
-
 // Forward declarations
 class RLR_Stats;
 class LZW_Stats;
@@ -46,8 +44,7 @@ int getNumberOfGeobinFilesRecursivelyInDir(const char* dir_name);
  * @param files List of files to process.
  * @param numIterations Number of iterations to run the processing.
  * @param avgTotalRLRStats Average RLR stats.
- * @param avgTotalLZWStats Average LZW stats.
- * @param avgTotalLZPStats Average LZP stats.
  */
-void processFiles(const std::vector<std::filesystem::path>& files, const int numIterations,
-                    RLR_Stats& avgTotalRLRStats, LZW_Stats& avgTotalLZWStats, LZP_Stats& avgTotalLZPStats);
+void processFiles(const std::vector<std::filesystem::path>& files, const int numIterations,RLR_Stats& avgTotalRLRStats);
+void processFiles(const std::vector<std::filesystem::path>& files, const int numIterations,LZW_Stats& avgTotalLZWStats);
+void processFiles(const std::vector<std::filesystem::path>& files, const int numIterations,LZP_Stats& avgTotalLZPStats);

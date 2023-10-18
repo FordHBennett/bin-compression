@@ -40,6 +40,7 @@ public:
     void printStats();
     void calculateAvgStats(int divisors);
     void getFileStats(std::vector<char> &binaryData, const char* runLengthFilename, const char* runLengthDecodedFilename, size_t fileSize);
+    void getStatsFromEncodingDecodingFunctions(const char* filename, int numIterations);
 
     // Setters
     void setAvgSizeBytes(double value);

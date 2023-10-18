@@ -81,12 +81,26 @@ int getNumberOfGeobinFilesRecursivelyInDir(const char* dir_name) {
 }
 
 
-void processFiles(const std::vector<std::filesystem::path>& files, const int numIterations,
-                    RLR_Stats& avgTotalRLRStats, LZW_Stats& avgTotalLZWStats, LZP_Stats& avgTotalLZPStats) {
+void processFiles(const std::vector<std::filesystem::path>& files, const int numIterations, RLR_Stats& avgTotalRLRStats) {
 
     for (const auto& file : files) {
         std::cout << file << std::endl;
-        getStatsFromEncodingDecodingFunctions(file.string().c_str(), numIterations,
-                                                std::ref(avgTotalRLRStats), std::ref(avgTotalLZWStats), std::ref(avgTotalLZPStats));
+        avgTotalRLRStats.getStatsFromEncodingDecodingFunctions(file.c_str(), numIterations);
+    }
+}
+
+void processFiles(const std::vector<std::filesystem::path>& files, const int numIterations, LZW_Stats& avgTotalLZWStats) {
+
+    for (const auto& file : files) {
+        std::cout << file << std::endl;
+        avgTotalLZWStats.getStatsFromEncodingDecodingFunctions(file.c_str(), numIterations);
+    }
+}
+
+void processFiles(const std::vector<std::filesystem::path>& files, const int numIterations, LZP_Stats& avgTotalLZPStats) {
+
+    for (const auto& file : files) {
+        std::cout << file << std::endl;
+        avgTotalLZPStats.getStatsFromEncodingDecodingFunctions(file.c_str(), numIterations);
     }
 }
