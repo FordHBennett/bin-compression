@@ -7,7 +7,6 @@
 #include "classes/lzw_class.h"
 #include "classes/lzp_class.h"
 
-// #include "functions/encoding_decoding_functions.h"
 #include "functions/file_functions.h"
 
 std::mutex mtx;
@@ -26,8 +25,6 @@ int main() {
     // by reading .geometa files in the directory
 
     //FIX THE GETPEAKMEMORYUSAGE FUNCTION
-
-    // CREATE A HUFFMAN CLASS
 
     // CREATE A BINARY INTERPOLATION CLASS
     // https://github.com/jermp/interpolative_coding
