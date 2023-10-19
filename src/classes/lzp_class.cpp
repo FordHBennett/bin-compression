@@ -115,7 +115,7 @@ void LZP_Stats::calculateAvgStats(int divisor){
 }
 
 void LZP_Stats::getFileStats(std::vector<char> &binaryData, const char* lzpEncodedFileName, const char* lzpDecodedFileName, size_t fileSize){
-            auto startEncodeLzp = std::chrono::high_resolution_clock::now();
+        auto startEncodeLzp = std::chrono::high_resolution_clock::now();
         std::vector<int> lzpEncoded = lzpEncode(binaryData);
         auto stopEncodeLzp = std::chrono::high_resolution_clock::now();
         auto durationEncodeLzp = std::chrono::duration_cast<std::chrono::milliseconds>(stopEncodeLzp - startEncodeLzp);

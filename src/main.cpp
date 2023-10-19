@@ -6,6 +6,8 @@
 #include "classes/rlr_class.h"
 #include "classes/lzw_class.h"
 #include "classes/lzp_class.h"
+#include "classes/huffman_class.h"
+#include "classes/binary_interpolation_class.h"
 
 #include "functions/file_functions.h"
 
@@ -17,6 +19,8 @@ int main() {
     RLR_Stats avgTotalRLRStats;
     LZW_Stats avgTotalLZWStats;
     LZP_Stats avgTotalLZPStats;
+    Huffman_Stats avgTotalHuffmanStats;
+    Binary_Interpolation_Stats avgTotalBinaryInterpolationStats;
 
     std::vector<std::filesystem::path> geobinFiles;
 
@@ -51,11 +55,13 @@ int main() {
         int start = t * filesPerThread;
         int end = (t == numThreads - 1) ? geobinFiles.size() : start + filesPerThread;
 
-        threads.emplace_back([=, &avgTotalRLRStats, &avgTotalLZWStats, &avgTotalLZPStats]() {
+        threads.emplace_back([=, &avgTotalRLRStats, &avgTotalLZWStats, &avgTotalLZPStats, &avgTotalHuffmanStats, &avgTotalBinaryInterpolationStats]() {
             for (int i = start; i < end; ++i) {
-                processFiles(geobinFiles, numIterations, avgTotalRLRStats);
-                processFiles(geobinFiles, numIterations, avgTotalLZWStats);
-                processFiles(geobinFiles, numIterations, avgTotalLZPStats);
+                processFiles(geobinFiles, numIterations, std::ref(avgTotalRLRStats));
+                processFiles(geobinFiles, numIterations, std::ref(avgTotalLZWStats));
+                processFiles(geobinFiles, numIterations, std::ref(avgTotalLZPStats));
+                processFiles(geobinFiles, numIterations, std::ref(avgTotalHuffmanStats));
+                processFiles(geobinFiles, numIterations, std::ref(avgTotalBinaryInterpolationStats));
             }
         });
     }

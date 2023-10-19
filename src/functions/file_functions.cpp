@@ -104,3 +104,19 @@ void processFiles(const std::vector<std::filesystem::path>& files, const int num
         avgTotalLZPStats.getStatsFromEncodingDecodingFunctions(file.c_str(), numIterations);
     }
 }
+
+void processFiles(const std::vector<std::filesystem::path>& files, const int numIterations, Huffman_Stats& avgTotalHuffmanStats) {
+
+    for (const auto& file : files) {
+        std::cout << file << std::endl;
+        avgTotalHuffmanStats.getStatsFromEncodingDecodingFunctions(file.c_str(), numIterations);
+    }
+}
+
+void processFiles(const std::vector<std::filesystem::path>& files, const int numIterations, Binary_Interpolation_Stats& avgTotalBinaryInterpolationStats) {
+
+    for (const auto& file : files) {
+        std::cout << file << std::endl;
+        avgTotalBinaryInterpolationStats.getStatsFromEncodingDecodingFunctions(file.c_str(), numIterations);
+    }
+}
