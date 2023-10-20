@@ -84,7 +84,7 @@ int getNumberOfGeobinFilesRecursivelyInDir(const char* dir_name) {
 void processFiles(const std::vector<std::filesystem::path>& files, const int numIterations, RLR_Stats& avgTotalRLRStats) {
 
     for (const auto& file : files) {
-        std::cout << file << std::endl;
+        //std::cout << file << std::endl;
         avgTotalRLRStats.getStatsFromEncodingDecodingFunctions(file.c_str(), numIterations);
     }
 }
@@ -92,7 +92,7 @@ void processFiles(const std::vector<std::filesystem::path>& files, const int num
 void processFiles(const std::vector<std::filesystem::path>& files, const int numIterations, LZW_Stats& avgTotalLZWStats) {
 
     for (const auto& file : files) {
-        std::cout << file << std::endl;
+        //std::cout << file << std::endl;
         avgTotalLZWStats.getStatsFromEncodingDecodingFunctions(file.c_str(), numIterations);
     }
 }
@@ -100,7 +100,7 @@ void processFiles(const std::vector<std::filesystem::path>& files, const int num
 void processFiles(const std::vector<std::filesystem::path>& files, const int numIterations, LZP_Stats& avgTotalLZPStats) {
 
     for (const auto& file : files) {
-        std::cout << file << std::endl;
+        //std::cout << file << std::endl;
         avgTotalLZPStats.getStatsFromEncodingDecodingFunctions(file.c_str(), numIterations);
     }
 }
@@ -108,15 +108,15 @@ void processFiles(const std::vector<std::filesystem::path>& files, const int num
 void processFiles(const std::vector<std::filesystem::path>& files, const int numIterations, Huffman_Stats& avgTotalHuffmanStats) {
 
     for (const auto& file : files) {
-        std::cout << file << std::endl;
+        //std::cout << file << std::endl;
         avgTotalHuffmanStats.getStatsFromEncodingDecodingFunctions(file.c_str(), numIterations);
     }
 }
 
-void processFiles(const std::vector<std::filesystem::path>& files, const int numIterations, Binary_Interpolation_Stats& avgTotalBinaryInterpolationStats) {
+void processFiles(const std::vector<std::filesystem::path>& files, const int numIterations, LZO1_Stats& avgTotalBinaryInterpolationStats) {
 
     for (const auto& file : files) {
-        std::cout << file << std::endl;
+        //std::cout << file << std::endl;
         avgTotalBinaryInterpolationStats.getStatsFromEncodingDecodingFunctions(file.c_str(), numIterations);
     }
 }

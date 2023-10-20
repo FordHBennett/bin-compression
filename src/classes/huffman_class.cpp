@@ -143,8 +143,8 @@ void Huffman_Stats::getFileStats(std::vector<char> &binaryData, const char* huff
         }
 
         for (size_t i = 0; i < huffmanEncoded.size(); ++i) {
-            int code = huffmanEncoded[i];
-            huffmanOutFile.write(reinterpret_cast<const char*>(&code), sizeof(int));
+            char code = huffmanEncoded[i];
+            huffmanOutFile.write(reinterpret_cast<const char*>(&code), sizeof(char));
         }
 
         for (size_t i = 0; i < huffmanDecoded.size(); ++i) {

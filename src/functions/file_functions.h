@@ -10,14 +10,14 @@
 #include "../classes/lzw_class.h"
 #include "../classes/lzp_class.h"
 #include "../classes/huffman_class.h"
-#include "../classes/binary_interpolation_class.h"
+#include "../classes/lzo1_class.h"
 
 // Forward declarations
 class RLR_Stats;
 class LZW_Stats;
 class LZP_Stats;
 class Huffman_Stats;
-class Binary_Interpolation_Stats;
+class LZO1_Stats;
 
 
 
@@ -53,4 +53,4 @@ void processFiles(const std::vector<std::filesystem::path>& files, const int num
 void processFiles(const std::vector<std::filesystem::path>& files, const int numIterations,LZW_Stats& avgTotalLZWStats);
 void processFiles(const std::vector<std::filesystem::path>& files, const int numIterations,LZP_Stats& avgTotalLZPStats);
 void processFiles(const std::vector<std::filesystem::path>& files, const int numIterations,Huffman_Stats& avgTotalHuffmanStats);
-void processFiles(const std::vector<std::filesystem::path>& files, const int numIterations,Binary_Interpolation_Stats& avgTotalBinaryInterpolationStats);
+void processFiles(const std::vector<std::filesystem::path>& files, const int numIterations,LZO1_Stats& avgTotalBinaryInterpolationStats);

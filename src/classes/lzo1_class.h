@@ -1,21 +1,27 @@
 #pragma once
-
+// FIX THIS
 #include <cstddef>
 #include <iostream>
 #include <vector>
 #include <cstdint>
+#include <stack>
+#include <bitset>
+#include <algorithm>
+#include <unordered_map>
+
 #include "../functions/file_functions.h"
 
-class Binary_Interpolation_Stats {
+class LZO1_Stats {
     public:
         // Constructors
-        Binary_Interpolation_Stats();
-        Binary_Interpolation_Stats(double avgSizeBytes, double avgEncodedTimeMs, double avgDecodedTimeMs,
+        LZO1_Stats();
+        LZO1_Stats(double avgSizeBytes, double avgEncodedTimeMs, double avgDecodedTimeMs,
                 double avgCompressionRatio, size_t avgPeakMemoryDuringEncoding,
                 size_t avgPeakMemoryDuringDecoding, double avgEncodedThroughput, double avgThroughputDecoded);
 
         std::vector<char> encode(const std::vector<char>& input);
-        std::vector<char> decode(const std::vector<char>& input, int length);
+        std::vector<char> decode(const std::vector<char>& input);
+
 
         // Functions
         void printStats();
@@ -43,7 +49,7 @@ class Binary_Interpolation_Stats {
         double getAvgEncodedThroughput() const;
         double getAvgThroughputDecoded() const;
 
-        
+
 
     private:
         // Stats attributes
@@ -56,6 +62,7 @@ class Binary_Interpolation_Stats {
         double avgEncodedThroughput;
         double avgThroughputDecoded;
 
+        // Helper functions
 
 
 };
