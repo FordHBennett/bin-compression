@@ -85,14 +85,14 @@ void Control_Stats::getFileStats(std::vector<char> &binaryData, const char* enco
     avgSizeBytes += fileSize;
     avgEncodedTimeMs += durationEncode.count() * 1000000;
     avgDecodedTimeMs += durationDecode.count() * 1000000;
-    avgCompressionRatio += static_cast<double>(getFileSize(encodedFilename))/fileSize;
+    avgCompressionRatio += static_cast<double>(fileSize)/fileSize;
     avgEncodedThroughput += static_cast<double>(fileSize) / durationEncode.count() * 1000000000; // bytes per second
     avgThroughputDecoded += static_cast<double>(fileSize) / durationDecode.count() * 1000000000; // bytes per second
 }
 
 void Control_Stats::getStatsFromEncodingDecodingFunctions(const char* filename, int numIterations, std::filesystem::path& currentDir){
     std::string encodedFilename =  std::string(filename).erase(std::string(filename).size()-7,6) + ".control_encoded_bin";
-    std::string dencodedFilename = std::string(filename).erase(std::string(filename).size()-7,6)  + ".run_length_decoded_bin";
+    std::string decodedFilename = std::string(filename).erase(std::string(filename).size()-7,6)  + ".conrol_decoded_bin";
 
     Control_Stats localStats;
 
@@ -111,7 +111,7 @@ void Control_Stats::getStatsFromEncodingDecodingFunctions(const char* filename, 
         inFile.read(binaryData.data(), fileSize);
         inFile.close();
 
-        localStats.getFileStats(binaryData, encodedFilename.c_str(), dencodedFilename.c_str(), fileSize, currentDir);
+        localStats.getFileStats(binaryData, encodedFilename.c_str(), decodedFilename.c_str(), fileSize, currentDir);
     }
 
     // Calculate the average stats for the current file
