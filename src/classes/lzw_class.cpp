@@ -16,51 +16,51 @@ LZW_Stats::LZW_Stats(double avgSizeBytes, double avgEncodedTimeMs, double avgDec
 // Average:O(n) for the dictionary plus the output.
 // Worst:O(n) for the dictionary plus the output.
 std::vector<int> LZW_Stats::lzwEncode(const std::vector<char>& input) {
+    const int MAX_DICT_SIZE = 4096;  // Example limit
     std::unordered_map<std::string, int> dictionary;
     std::vector<int> lzwEncoded;
-    lzwEncoded.reserve(input.size());  // Reduce potential reallocations
+    lzwEncoded.reserve(input.size());
 
-    // Initialize the dictionary with single-character entries
     for (int i = 0; i < 256; ++i) {
         dictionary[std::string(1, static_cast<char>(i))] = i;
     }
 
-    std::string current = "";
+    std::deque<char> currentDeque;
     for (char c : input) {
-        current += c;
+        currentDeque.push_back(c);
+        std::string current(currentDeque.begin(), currentDeque.end());
+
         if (dictionary.find(current) == dictionary.end()) {
-            current.pop_back();  // Remove last character
-            lzwEncoded.push_back(dictionary[current]);
-            dictionary[current + c] = dictionary.size();
-            current = c;
+            currentDeque.pop_back();
+            current = std::string(currentDeque.begin(), currentDeque.end());
+            lzwEncoded.emplace_back(dictionary[current]);
+
+            if (dictionary.size() < MAX_DICT_SIZE) {
+                dictionary[current + c] = dictionary.size();
+            }
+            currentDeque.clear();
+            currentDeque.push_back(c);
         }
     }
 
-    if (!current.empty()) {
-        lzwEncoded.push_back(dictionary[current]);
+    if (!currentDeque.empty()) {
+        std::string current(currentDeque.begin(), currentDeque.end());
+        lzwEncoded.emplace_back(dictionary[current]);
     }
 
     return lzwEncoded;
 }
-
-// Function to perform LZW decoding
-// Time Complexity:
-// Best, Average, Worst:O(n)Processing each code in the input requires constant
-// time since the dictionary is built as the decoding progresses.
-// Space Complexity:
-// Best, Average, Worst:O(n) The dictionary's size grows with the input, plus the output size.
-
 
 std::vector<char> LZW_Stats::lzwDecode(const std::vector<int>& input) {
     if (input.empty()) {
         return {};
     }
 
+    const int MAX_DICT_SIZE = 4096;  // Same limit as encoder
     std::unordered_map<int, std::string> dictionary;
     std::vector<char> lzwDecoded;
-    lzwDecoded.reserve(input.size());  // Reduce potential reallocations
+    lzwDecoded.reserve(input.size());
 
-    // Initialize the dictionary with single-character entries
     for (int i = 0; i < 256; ++i) {
         dictionary[i] = std::string(1, static_cast<char>(i));
     }
@@ -82,14 +82,15 @@ std::vector<char> LZW_Stats::lzwDecode(const std::vector<int>& input) {
 
         lzwDecoded.insert(lzwDecoded.end(), entry.begin(), entry.end());
 
-        // Add a new entry to the dictionary
-        dictionary[dictionary.size()] = current + entry[0];
-
+        if (dictionary.size() < MAX_DICT_SIZE) {
+            dictionary[dictionary.size()] = current + entry[0];
+        }
         current = entry;
     }
 
     return lzwDecoded;
 }
+
 
 // Functions
 void LZW_Stats::printStats() {
@@ -114,62 +115,64 @@ void LZW_Stats::calculateAvgStats(int divisor){
     avgThroughputDecoded /= divisor;
 }
 
-void LZW_Stats::getFileStats(std::vector<char> &binaryData, const char* lzwEncodedFileName, const char* lzwDecodedFileName, size_t fileSize){
-        auto startEncodelzw = std::chrono::high_resolution_clock::now();
-        std::vector<int> lzwEncoded = lzwEncode(binaryData);
-        auto stopEncodelzw = std::chrono::high_resolution_clock::now();
-        auto durationEncodelzw = std::chrono::duration_cast<std::chrono::milliseconds>(stopEncodelzw - startEncodelzw);
+void LZW_Stats::getFileStats(std::vector<char> &binaryData, const char* lzwEncodedFileName, const char* lzwDecodedFileName, size_t fileSize, std::filesystem::path& currentDir){
 
-        // Perform lzw decoding
-        auto startDecodelzw = std::chrono::high_resolution_clock::now();
-        std::vector<char> lzwDecoded = lzwDecode(lzwEncoded);
-        auto stopDecodelzw = std::chrono::high_resolution_clock::now();
-        auto durationDecodelzw = std::chrono::duration_cast<std::chrono::milliseconds>(stopDecodelzw - startDecodelzw);
+    // Perform lzw encoding
+    auto startEncodelzw = std::chrono::high_resolution_clock::now();
+    std::vector<int> lzwEncoded = lzwEncode(binaryData);
+    auto stopEncodelzw = std::chrono::high_resolution_clock::now();
+    auto durationEncodelzw = std::chrono::duration_cast<std::chrono::nanoseconds>(stopEncodelzw - startEncodelzw);
 
-        // Calculate the peak memory usage
-        // avglzwStats.setAvgPeakMemoryDuringDecoding(avglzwStats.getAvgPeakMemoryDuringDecoding() + getPeakMemoryUsage());
-        // avglzwStats.setAvgPeakMemoryDuringEncoding(avglzwStats.getAvgPeakMemoryDuringEncoding() + getPeakMemoryUsage());
+    // Perform lzw decoding
+    auto startDecodelzw = std::chrono::high_resolution_clock::now();
+    std::vector<char> lzwDecoded = lzwDecode(lzwEncoded);
+    auto stopDecodelzw = std::chrono::high_resolution_clock::now();
+    auto durationDecodelzw = std::chrono::duration_cast<std::chrono::nanoseconds>(stopDecodelzw - startDecodelzw);
 
-        // // Calculate the throughput for encoding and decoding
-        avgEncodedThroughput += static_cast<double>(fileSize) / durationEncodelzw.count() * 1000; // bytes per second
-        avgThroughputDecoded += static_cast<double>(fileSize) / durationDecodelzw.count() * 1000; // bytes per second
+    // Calculate the peak memory usage
+    // avglzwStats.setAvgPeakMemoryDuringDecoding(avglzwStats.getAvgPeakMemoryDuringDecoding() + getPeakMemoryUsage());
+    // avglzwStats.setAvgPeakMemoryDuringEncoding(avglzwStats.getAvgPeakMemoryDuringEncoding() + getPeakMemoryUsage());
 
-        // Verify that no data is lost by comparing decoded data with the original data
-        bool lzwDataMatches = binaryData == lzwDecoded;
-        std::cout << "lzw Data Matches: " << (lzwDataMatches ? "Yes" : "No") << std::endl;
+    // // Calculate the throughput for encoding and decoding
+    avgEncodedThroughput += static_cast<double>(fileSize) / durationEncodelzw.count() * 1000000000; // bytes per second
+    avgThroughputDecoded += static_cast<double>(fileSize) / durationDecodelzw.count() * 1000000000; // bytes per second
 
-        // Create a binary file from lzw encoded data for further verification
-        std::ofstream lzwOutFile(lzwEncodedFileName, std::ios::binary);
-        std::ofstream lzwDecodedOutFile(lzwDecodedFileName, std::ios::binary);
-        if (!lzwOutFile || !lzwDecodedOutFile) {
-            std::cerr << "Error: Unable to create the lzw encoded or decoded file." << std::endl;
-        }
+    // Verify that no data is lost by comparing decoded data with the original data
+    bool lzwDataMatches = binaryData == lzwDecoded;
+    assert(lzwDataMatches);
+    //std::cout << "lzw Data Matches: " << (lzwDataMatches ? "Yes" : "No") << std::endl;
 
-        for (size_t i = 0; i < lzwEncoded.size(); ++i) {
-            int code = lzwEncoded[i];
-            lzwOutFile.write(reinterpret_cast<const char*>(&code), sizeof(int));
-        }
+    // Create a binary file from lzw encoded data for further verification
+    std::ofstream lzwOutFile(lzwEncodedFileName, std::ios::binary);
+    std::ofstream lzwDecodedOutFile(lzwDecodedFileName, std::ios::binary);
+    if (!lzwOutFile || !lzwDecodedOutFile) {
+        std::cerr << "Error: Unable to create the lzw encoded or decoded file." << std::endl;
+    }
 
-        for (size_t i = 0; i < lzwDecoded.size(); ++i) {
-            char byte = lzwDecoded[i];
-            lzwDecodedOutFile.write(reinterpret_cast<const char*>(&byte), sizeof(char));
-        }
+    for (size_t i = 0; i < lzwEncoded.size(); ++i) {
+        int code = lzwEncoded[i];
+        lzwOutFile.write(reinterpret_cast<const char*>(&code), sizeof(int));
+    }
 
-        lzwOutFile.close();
-        lzwDecodedOutFile.close();
+    for (size_t i = 0; i < lzwDecoded.size(); ++i) {
+        char byte = lzwDecoded[i];
+        lzwDecodedOutFile.write(reinterpret_cast<const char*>(&byte), sizeof(char));
+    }
 
-        // open the lzw encoded file and determine the file size
-        avgSizeBytes += getFileSize(lzwEncodedFileName);
-        avgEncodedTimeMs += durationEncodelzw.count();
-        avgDecodedTimeMs += durationDecodelzw.count();
-        avgCompressionRatio += static_cast<double>(getFileSize(lzwEncodedFileName)) / fileSize;
+    lzwOutFile.close();
+    lzwDecodedOutFile.close();
+
+    // open the lzw encoded file and determine the file size
+    avgSizeBytes += getFileSize(lzwEncodedFileName);
+    avgEncodedTimeMs += durationEncodelzw.count() * 1000000;
+    avgDecodedTimeMs += durationDecodelzw.count() * 1000000;
+    avgCompressionRatio += static_cast<double>(getFileSize(lzwEncodedFileName))/fileSize;
 
 }
 
- void LZW_Stats::getStatsFromEncodingDecodingFunctions(const char* filename, int numIterations) {
-    std::cout << "Compressing " << filename << " using LZW " << std::endl;
-    const char* lzwEncodedFilename = "lzw_encoded.bin";
-    const char* lzwDecodedFilename = "lzw_decoded.bin";
+ void LZW_Stats::getStatsFromEncodingDecodingFunctions(const char* filename, int numIterations, std::filesystem::path& currentDir) {
+    std::string lzwEncodedFilename = std::string(filename).erase(std::string(filename).size()-7,6)  + "lzw_encoded_bin";
+    std::string lzwDecodedFilename = std::string(filename).erase(std::string(filename).size()-7,6)  + ".lzw_decoded_bin";
 
      LZW_Stats avgLZWStats;
 
@@ -178,6 +181,7 @@ void LZW_Stats::getFileStats(std::vector<char> &binaryData, const char* lzwEncod
         std::ifstream inFile(filename, std::ios::binary);
         if (!inFile) {
             std::cerr << "Error: Unable to open the file for reading." << std::endl;
+            std::cout << filename << std::endl;
         }
 
         inFile.seekg(0, std::ios::end);
@@ -189,7 +193,7 @@ void LZW_Stats::getFileStats(std::vector<char> &binaryData, const char* lzwEncod
         inFile.close();
 
         // Perform LZW encoding and decoding
-        avgLZWStats.getFileStats(binaryData, lzwEncodedFilename, lzwDecodedFilename, fileSize);
+        avgLZWStats.getFileStats(binaryData, lzwEncodedFilename.c_str(), lzwDecodedFilename.c_str(), fileSize, currentDir);
     }
 
     // Calculate the average stats for the current file

@@ -19,32 +19,41 @@ LZP_Stats::LZP_Stats(double avgSizeBytes, double avgEncodedTimeMs, double avgDec
 // Best, Average, Worst: O(n)
 
 std::vector<int> LZP_Stats::lzpEncode(const std::vector<char>& input) {
+    const int MAX_DICT_SIZE = 4096;  // Example limit
     std::unordered_map<std::string, int> dictionary;
     std::vector<int> lzpEncoded;
-    lzpEncoded.reserve(input.size());  // Pre-allocate memory
+    lzpEncoded.reserve(input.size());
 
-    // Initialize the dictionary with single-character entries
     for (int i = 0; i < 256; ++i) {
         dictionary[std::string(1, static_cast<char>(i))] = i;
     }
 
-    std::string current = "";
+    std::deque<char> currentDeque;
     for (char c : input) {
-        current += c;
+        currentDeque.push_back(c);
+        std::string current(currentDeque.begin(), currentDeque.end());
+
         if (dictionary.find(current) == dictionary.end()) {
-            current.pop_back();  // Remove the last character
-            lzpEncoded.push_back(dictionary[current]);
-            dictionary[current + c] = dictionary.size();
-            current = c;
+            currentDeque.pop_back();
+            current = std::string(currentDeque.begin(), currentDeque.end());
+            lzpEncoded.emplace_back(dictionary[current]);
+
+            if (dictionary.size() < MAX_DICT_SIZE) {
+                dictionary[current + c] = dictionary.size();
+            }
+            currentDeque.clear();
+            currentDeque.push_back(c);
         }
     }
 
-    if (!current.empty()) {
-        lzpEncoded.push_back(dictionary[current]);
+    if (!currentDeque.empty()) {
+        std::string current(currentDeque.begin(), currentDeque.end());
+        lzpEncoded.emplace_back(dictionary[current]);
     }
 
     return lzpEncoded;
 }
+
 
 // Lempel-Ziv Parallel (LZP) decoding
 // Time Complexity:
@@ -57,11 +66,11 @@ std::vector<char> LZP_Stats::lzpDecode(const std::vector<int>& input) {
         return {};
     }
 
+    const int MAX_DICT_SIZE = 4096;  // Same limit as encoder
     std::unordered_map<int, std::string> dictionary;
     std::vector<char> lzpDecoded;
-    lzpDecoded.reserve(input.size());  // Pre-allocate memory
+    lzpDecoded.reserve(input.size());
 
-    // Initialize the dictionary with single-character entries
     for (int i = 0; i < 256; ++i) {
         dictionary[i] = std::string(1, static_cast<char>(i));
     }
@@ -83,12 +92,15 @@ std::vector<char> LZP_Stats::lzpDecode(const std::vector<int>& input) {
 
         lzpDecoded.insert(lzpDecoded.end(), entry.begin(), entry.end());
 
-        dictionary[dictionary.size()] = current + entry[0];
+        if (dictionary.size() < MAX_DICT_SIZE) {
+            dictionary[dictionary.size()] = current + entry[0];
+        }
         current = entry;
     }
 
     return lzpDecoded;
 }
+
 
 
 // Functions
@@ -114,61 +126,65 @@ void LZP_Stats::calculateAvgStats(int divisor){
     avgThroughputDecoded /= divisor;
 }
 
-void LZP_Stats::getFileStats(std::vector<char> &binaryData, const char* lzpEncodedFileName, const char* lzpDecodedFileName, size_t fileSize){
-        auto startEncodeLzp = std::chrono::high_resolution_clock::now();
-        std::vector<int> lzpEncoded = lzpEncode(binaryData);
-        auto stopEncodeLzp = std::chrono::high_resolution_clock::now();
-        auto durationEncodeLzp = std::chrono::duration_cast<std::chrono::milliseconds>(stopEncodeLzp - startEncodeLzp);
+void LZP_Stats::getFileStats(std::vector<char> &binaryData, const char* lzpEncodedFileName, const char* lzpDecodedFileName, size_t fileSize, std::filesystem::path& currentDir){
 
-        // Perform LZP decoding
-        auto startDecodeLzp = std::chrono::high_resolution_clock::now();
-        std::vector<char> lzpDecoded = lzpDecode(lzpEncoded);
-        auto stopDecodeLzp = std::chrono::high_resolution_clock::now();
-        auto durationDecodeLzp = std::chrono::duration_cast<std::chrono::milliseconds>(stopDecodeLzp - startDecodeLzp);
+    // Perform LZP encoding
+    auto startEncodeLzp = std::chrono::high_resolution_clock::now();
+    std::vector<int> lzpEncoded = lzpEncode(binaryData);
+    auto stopEncodeLzp = std::chrono::high_resolution_clock::now();
+    auto durationEncodeLzp = std::chrono::duration_cast<std::chrono::nanoseconds>(stopEncodeLzp - startEncodeLzp);
 
-        // Calculate the peak memory usage
-        // avgLZPStats.setAvgPeakMemoryDuringDecoding(avgLZPStats.getAvgPeakMemoryDuringDecoding() + getPeakMemoryUsage());
-        // avgLZPStats.setAvgPeakMemoryDuringEncoding(avgLZPStats.getAvgPeakMemoryDuringEncoding() + getPeakMemoryUsage());
+    // Perform LZP decoding
+    auto startDecodeLzp = std::chrono::high_resolution_clock::now();
+    std::vector<char> lzpDecoded = lzpDecode(lzpEncoded);
+    auto stopDecodeLzp = std::chrono::high_resolution_clock::now();
+    auto durationDecodeLzp = std::chrono::duration_cast<std::chrono::nanoseconds>(stopDecodeLzp - startDecodeLzp);
 
-        // Calculate the throughput for encoding and decoding
-        avgEncodedThroughput += binaryData.size() / static_cast<double>(durationEncodeLzp.count()) * 1000; // bytes/sec
-        avgThroughputDecoded += lzpDecoded.size() / static_cast<double>(durationDecodeLzp.count()) * 1000; // bytes/sec
+    // Calculate the peak memory usage
+    // avgLZPStats.setAvgPeakMemoryDuringDecoding(avgLZPStats.getAvgPeakMemoryDuringDecoding() + getPeakMemoryUsage());
+    // avgLZPStats.setAvgPeakMemoryDuringEncoding(avgLZPStats.getAvgPeakMemoryDuringEncoding() + getPeakMemoryUsage());
 
-        // Verify that no data is lost by comparing decoded data with the original data
-        bool lzpDataMatches = binaryData == lzpDecoded;
-        std::cout << "LZP Data Matches: " << (lzpDataMatches ? "Yes" : "No") << std::endl;
+    // Calculate the throughput for encoding and decoding
 
-        // Create a binary file from LZP encoded data for further verification
-        std::ofstream lzpOutFile(lzpEncodedFileName, std::ios::binary);
-        std::ofstream lzpDecodedOutFile(lzpDecodedFileName, std::ios::binary);
-        if (!lzpOutFile || !lzpDecodedOutFile) {
-            std::cerr << "Error: Unable to create the LZP encoded or decoded file." << std::endl;
-        }
 
-        for (size_t i = 0; i < lzpEncoded.size(); ++i) {
-            int code = lzpEncoded[i];
-            lzpOutFile.write(reinterpret_cast<const char*>(&code), sizeof(int));
-        }
+    // Verify that no data is lost by comparing decoded data with the original data
+    bool dataMatches = binaryData == lzpDecoded;
+    assert(dataMatches);
+    //std::cout << "LZP Data Matches: " << (dataMatches ? "Yes" : "No") << std::endl;
 
-        for (size_t i = 0; i < lzpDecoded.size(); ++i) {
-            char byte = lzpDecoded[i];
-            lzpDecodedOutFile.write(reinterpret_cast<const char*>(&byte), sizeof(char));
-        }
+    // Create a binary file from LZP encoded data for further verification
+    std::ofstream lzpOutFile(lzpEncodedFileName, std::ios::binary);
+    std::ofstream lzpDecodedOutFile(lzpDecodedFileName, std::ios::binary);
+    if (!lzpOutFile || !lzpDecodedOutFile) {
+        std::cerr << "Error: Unable to create the LZP encoded or decoded file." << std::endl;
+    }
 
-        lzpOutFile.close();
-        lzpDecodedOutFile.close();
+    for (size_t i = 0; i < lzpEncoded.size(); ++i) {
+        int code = lzpEncoded[i];
+        lzpOutFile.write(reinterpret_cast<const char*>(&code), sizeof(int));
+    }
 
-        // open the LZP encoded file and determine the file size
-        avgSizeBytes += getFileSize(lzpEncodedFileName);
-        avgEncodedTimeMs += durationEncodeLzp.count();
-        avgDecodedTimeMs += durationDecodeLzp.count();
-        avgCompressionRatio += static_cast<double>(getFileSize(lzpEncodedFileName)) / fileSize;
+    for (size_t i = 0; i < lzpDecoded.size(); ++i) {
+        char byte = lzpDecoded[i];
+        lzpDecodedOutFile.write(reinterpret_cast<const char*>(&byte), sizeof(char));
+    }
+
+    lzpOutFile.close();
+    lzpDecodedOutFile.close();
+
+    // open the LZP encoded file and determine the file size
+    avgSizeBytes += getFileSize(lzpEncodedFileName);
+    avgEncodedTimeMs += durationEncodeLzp.count() * 1000000;
+    avgDecodedTimeMs += durationDecodeLzp.count() * 1000000;
+    avgCompressionRatio += static_cast<double>(getFileSize(lzpEncodedFileName))/fileSize;
+    avgEncodedThroughput += binaryData.size() / static_cast<double>(durationEncodeLzp.count()) * 1000000000; // bytes/sec
+    avgThroughputDecoded += lzpDecoded.size() / static_cast<double>(durationDecodeLzp.count()) * 1000000000; // bytes/sec
 }
 
- void LZP_Stats::getStatsFromEncodingDecodingFunctions(const char* filename, int numIterations) {
-    std::cout << "Compressing " << filename << " using LZP" << std::endl;
-    const char* lzpEncodedFilename = "lzp_encoded.bin";
-    const char* lzpDecodedFilename = "lzp_decoded.bin";
+ void LZP_Stats::getStatsFromEncodingDecodingFunctions(const char* filename, int numIterations, std::filesystem::path& currentDir) {
+    //std::cout << "Compressing " << filename << " using LZP" << std::endl;
+    std::string lzpEncodedFilename = std::string(filename) + ".lzp.bin";
+    std::string lzpDecodedFilename = std::string(filename) + ".lzp_decoded.bin";
 
      LZP_Stats avglzpStats;
 
@@ -188,7 +204,7 @@ void LZP_Stats::getFileStats(std::vector<char> &binaryData, const char* lzpEncod
         inFile.close();
 
         // Perform lzp encoding and decoding
-        avglzpStats.getFileStats(binaryData, lzpEncodedFilename, lzpDecodedFilename, fileSize);
+        avglzpStats.getFileStats(binaryData, lzpEncodedFilename.c_str(), lzpDecodedFilename.c_str(), fileSize, currentDir);
     }
 
     // Calculate the average stats for the current file

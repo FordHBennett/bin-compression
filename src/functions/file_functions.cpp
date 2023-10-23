@@ -85,7 +85,9 @@ void processFiles(const std::vector<std::filesystem::path>& files, const int num
 
     for (const auto& file : files) {
         //std::cout << file << std::endl;
-        avgTotalRLRStats.getStatsFromEncodingDecodingFunctions(file.c_str(), numIterations);
+        std::filesystem::path currentDir = file.parent_path();
+        //std::cout << currentDir << std::endl;
+        avgTotalRLRStats.getStatsFromEncodingDecodingFunctions(file.c_str(), numIterations, currentDir);
     }
 }
 
@@ -93,7 +95,8 @@ void processFiles(const std::vector<std::filesystem::path>& files, const int num
 
     for (const auto& file : files) {
         //std::cout << file << std::endl;
-        avgTotalLZWStats.getStatsFromEncodingDecodingFunctions(file.c_str(), numIterations);
+        std::filesystem::path currentDir = file.parent_path();
+        avgTotalLZWStats.getStatsFromEncodingDecodingFunctions(file.c_str(), numIterations, currentDir);
     }
 }
 
@@ -101,7 +104,8 @@ void processFiles(const std::vector<std::filesystem::path>& files, const int num
 
     for (const auto& file : files) {
         //std::cout << file << std::endl;
-        avgTotalLZPStats.getStatsFromEncodingDecodingFunctions(file.c_str(), numIterations);
+        std::filesystem::path currentDir = file.parent_path();
+        avgTotalLZPStats.getStatsFromEncodingDecodingFunctions(file.c_str(), numIterations, currentDir);
     }
 }
 
@@ -109,14 +113,16 @@ void processFiles(const std::vector<std::filesystem::path>& files, const int num
 
     for (const auto& file : files) {
         //std::cout << file << std::endl;
-        avgTotalHuffmanStats.getStatsFromEncodingDecodingFunctions(file.c_str(), numIterations);
+        std::filesystem::path currentDir = file.parent_path();
+        avgTotalHuffmanStats.getStatsFromEncodingDecodingFunctions(file.c_str(), numIterations, currentDir);
     }
 }
 
-void processFiles(const std::vector<std::filesystem::path>& files, const int numIterations, LZO1_Stats& avgTotalBinaryInterpolationStats) {
+void processFiles(const std::vector<std::filesystem::path>& files, const int numIterations, Control_Stats& avgTotalControlStats) {
 
     for (const auto& file : files) {
         //std::cout << file << std::endl;
-        avgTotalBinaryInterpolationStats.getStatsFromEncodingDecodingFunctions(file.c_str(), numIterations);
+        std::filesystem::path currentDir = file.parent_path();
+        avgTotalControlStats.getStatsFromEncodingDecodingFunctions(file.c_str(), numIterations, currentDir);
     }
 }

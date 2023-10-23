@@ -2,6 +2,7 @@
 
 #include <cstddef>
 #include <iostream>
+#include <cassert> // Add this line to include the assert function
 #include "../functions/file_functions.h"
 
 class LZW_Stats {
@@ -37,8 +38,8 @@ public:
     // Functions
     void printStats();
     void calculateAvgStats(int divisors);
-    void getFileStats(std::vector<char> &binaryData, const char* runLengthFilename, const char* runLengthDecodedFilename, size_t fileSize);
-    void getStatsFromEncodingDecodingFunctions(const char* filename, int numIterations);
+    void getFileStats(std::vector<char> &binaryData, const char* runLengthFilename, const char* runLengthDecodedFilename, size_t fileSize, std::filesystem::path& currentDir);
+    void getStatsFromEncodingDecodingFunctions(const char* filename, int numIterations, std::filesystem::path& currentDir);
     // Setters
     void setAvgSizeBytes(double value);
     void setAvgEncodedTimeMs(double value);
