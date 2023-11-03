@@ -10,9 +10,9 @@ class LZP_Stats {
 public:
     // Constructors
     LZP_Stats();
-    LZP_Stats(double avgSizeBytes, double avgEncodedTimeMs, double avgDecodedTimeMs,
-            double avgCompressionRatio, size_t avgPeakMemoryDuringEncoding,
-            size_t avgPeakMemoryDuringDecoding, double avgEncodedThroughput, double avgThroughputDecoded);
+    LZP_Stats(double avgSizeBytes, double average_time_encoded_in_s , double average_time_decoded_in_s ,
+            double average_compression_ratio, size_t avgPeakMemoryDuringEncoding,
+            size_t avgPeakMemoryDuringDecoding, double average_encoded_throughput, double average_decoded_throughput);
 
     /**
      * The `lzpEncode` function takes a vector of characters as input and returns a vector of integers
@@ -39,38 +39,38 @@ public:
     std::vector<char> lzpDecode(const std::vector<int>& input);
 
     // Functions
-    void printStats();
-    void calculateAvgStats(int divisors);
+    void Print_Stats();
+    void Calculate_Cumulative_Average_Stats_For_Directory(int divisors);
     void getFileStats(std::vector<char> &binaryData, const char* runLengthFilename, const char* runLengthDecodedFilename, size_t fileSize, std::filesystem::path& currentDir);
     void getStatsFromEncodingDecodingFunctions(const char* filename, int numIterations, std::filesystem::path& currentDir);
 
     // Setters
     void setAvgSizeBytes(double value);
-    void setAvgEncodedTimeMs(double value);
-    void setAvgDecodedTimeMs(double value);
-    void setAvgCompressionRatio(double value);
+    void setaverage_time_encoded_in_s (double value);
+    void setaverage_time_decoded_in_s (double value);
+    void setaverage_compression_ratio(double value);
     void setAvgPeakMemoryDuringEncoding(size_t value);
     void setAvgPeakMemoryDuringDecoding(size_t value);
-    void setAvgEncodedThroughput(double value);
-    void setAvgThroughputDecoded(double value);
+    void setaverage_encoded_throughput(double value);
+    void setaverage_decoded_throughput(double value);
 
     // Getters
     double getAvgSizeBytes() const;
-    double getAvgEncodedTimeMs() const;
-    double getAvgDecodedTimeMs() const;
-    double getAvgCompressionRatio() const;
+    double getaverage_time_encoded_in_s () const;
+    double getaverage_time_decoded_in_s () const;
+    double getaverage_compression_ratio() const;
     size_t getAvgPeakMemoryDuringEncoding() const;
     size_t getAvgPeakMemoryDuringDecoding() const;
-    double getAvgEncodedThroughput() const;
-    double getAvgThroughputDecoded() const;
+    double getaverage_encoded_throughput() const;
+    double getaverage_decoded_throughput() const;
 
 private:
     double avgSizeBytes;
-    double avgEncodedTimeMs;
-    double avgDecodedTimeMs;
-    double avgCompressionRatio;
+    double average_time_encoded_in_s ;
+    double average_time_decoded_in_s ;
+    double average_compression_ratio;
     size_t avgPeakMemoryDuringEncoding;
     size_t avgPeakMemoryDuringDecoding;
-    double avgEncodedThroughput;
-    double avgThroughputDecoded;
+    double average_encoded_throughput;
+    double average_decoded_throughput;
 };

@@ -1,0 +1,74 @@
+DO NOT PREMATURLLY OPTIMIZE
+TEST EVERYTHING THROUGHLY
+THEN OPTIMIZE SMALL BITS AT A TIME
+AND TEST
+JUST SOLVE THE PROBLEM
+
+Base_Stats:
+    private:
+        average_file_size;
+        average_time_encoded_in_s ;
+        average_time_decoded_in_s ;
+        average_compression_ratio;
+        average_encoded_throughput;
+        average_decoded_throughput;
+        int8_t data_type;
+
+
+        void Calculate_Cumulative_Average_Stats_For_Directory(int divisors, int files);
+        void (std::vector<char> &binaryData, const char* encodedFilename,
+                        const char* decodedFilename, size_t fileSize,
+                        std::filesystem::path& currentDir, RLR& rlr_obj);
+
+
+        void Compute_Time_Encoded();
+            when computing the encoded time added the calculated time to average_time_encoded_in_s
+            Do the same for the reset of the compute functions
+        void Compute_Time_Decoded();
+        void Compute_File_Size();
+        void Compute_Encoded_Throughput();
+        void Compute_Decoded_Throughput();
+        void Set_Data_Type_Size_And_Side_Resolutions(geometa_file_name);
+
+
+        create a look up table full of data_type and their corresponding size
+
+    public:
+        void Print_Stats(const char* compressionType);
+
+    RLR_Class:
+        encode(vector<char> input);
+            vector<char> encoded;
+            int8_t run_length = 0;
+            for(int byte_index = 0; byte_index<input.size();byte_index+=this->data_type_size){
+
+            }
+
+            If I am looking to encode n byte chuncks is my run length represented by n bytes or 1 byte.
+            I would think I would encode n byte chuncks is my run length represented by 1 byte
+            If it is optimal I could pack 2 4bit runlengths in one byte
+
+        decode(vector<char> input);
+            read the file for 1 byte of value x then write the subsequent n bytes x times
+            vector
+            vector<char> decoded;
+            for(int byte_index = 0; byte_index<input.size();byte_index+=this->data_type_size){
+                for(int i = 0; i< cast<int8_t>(input.at(byte_index)); i++){
+                    for(int j = 1; j < this->data_type_size; j++){
+                        decoded.emplace_back(input.at(byte_index+j));
+                    }
+                }
+            }
+        writeEncodedFile();
+        WriteDecodedFile();
+        const char* compressionType = "RLR";
+
+    LZW_Class:
+        encode();
+        decode();
+        writeEncodedFile();
+        WriteDecodedFile();
+        const char* compressionType = "LZW";
+
+
+Add to the file_functions file getgeometa_file_name();

@@ -20,41 +20,41 @@ public:
 
 
     // Helper functions
-    void printStats();
-    void calculateAvgStats(int divisor);
+    void Print_Stats();
+    void Calculate_Cumulative_Average_Stats_For_Directory(int divisor);
     void getFileStats(const char* filename, const char* huffmanEncodedFileName, const char* huffmanDecodedFileName, size_t fileSize, std::filesystem::path& currentDir);
     void getStatsFromEncodingDecodingFunctions(const char* filename, int numIterations, std::filesystem::path& currentDir);
 
     // Setters
     void setAvgSizeBytes(double value);
-    void setAvgEncodedTimeMs(double value);
-    void setAvgDecodedTimeMs(double value);
-    void setAvgCompressionRatio(double value);
+    void setaverage_time_encoded_in_s (double value);
+    void setaverage_time_decoded_in_s (double value);
+    void setaverage_compression_ratio(double value);
     void setAvgPeakMemoryDuringEncoding(size_t value);
     void setAvgPeakMemoryDuringDecoding(size_t value);
-    void setAvgEncodedThroughput(double value);
-    void setAvgThroughputDecoded(double value);
+    void setaverage_encoded_throughput(double value);
+    void setaverage_decoded_throughput(double value);
 
     // Getters
     double getAvgSizeBytes() const;
-    double getAvgEncodedTimeMs() const;
-    double getAvgDecodedTimeMs() const;
-    double getAvgCompressionRatio() const;
+    double getaverage_time_encoded_in_s () const;
+    double getaverage_time_decoded_in_s () const;
+    double getaverage_compression_ratio() const;
     size_t getAvgPeakMemoryDuringEncoding() const;
     size_t getAvgPeakMemoryDuringDecoding() const;
-    double getAvgEncodedThroughput() const;
-    double getAvgThroughputDecoded() const;
+    double getaverage_encoded_throughput() const;
+    double getaverage_decoded_throughput() const;
 
 private:
     // Helper functions
 
     // Stats attributes
     double avgSizeBytes;
-    double avgEncodedTimeMs;
-    double avgDecodedTimeMs;
-    double avgCompressionRatio;
+    double average_time_encoded_in_s ;
+    double average_time_decoded_in_s ;
+    double average_compression_ratio;
     size_t avgPeakMemoryDuringEncoding;
     size_t avgPeakMemoryDuringDecoding;
-    double avgEncodedThroughput;
-    double avgThroughputDecoded;
+    double average_encoded_throughput;
+    double average_decoded_throughput;
 };
