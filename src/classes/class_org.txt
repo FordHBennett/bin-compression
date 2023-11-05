@@ -7,8 +7,8 @@ JUST SOLVE THE PROBLEM
 Base_Stats:
     private:
         average_file_size;
-        average_time_encoded_in_s ;
-        average_time_decoded_in_s ;
+        average_time_encoded_in_ns ;
+        average_time_encoded_in_ns ;
         average_compression_ratio;
         average_encoded_throughput;
         average_decoded_throughput;
@@ -22,7 +22,7 @@ Base_Stats:
 
 
         void Compute_Time_Encoded();
-            when computing the encoded time added the calculated time to average_time_encoded_in_s
+            when computing the encoded time added the calculated time to average_time_encoded_in_ns
             Do the same for the reset of the compute functions
         void Compute_Time_Decoded();
         void Compute_File_Size();

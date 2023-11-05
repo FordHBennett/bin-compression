@@ -2,26 +2,26 @@
 
 // Constructors
 Huffman_Stats::Huffman_Stats() :
-    avgSizeBytes(0.0), average_time_encoded_in_s (0.0), average_time_decoded_in_s (0.0),
+    avgSizeBytes(0.0), average_time_encoded_in_ns (0.0), average_time_encoded_in_ns (0.0),
     average_compression_ratio(0.0), avgPeakMemoryDuringEncoding(0), avgPeakMemoryDuringDecoding(0),
     average_encoded_throughput(0.0), average_decoded_throughput(0.0) {}
 
 // Functions
 void Huffman_Stats::Print_Stats() {
-    std::cout << "Huffman: Average size in bytes: " << avgSizeBytes << "\n";
-    std::cout << "Huffman: Average encoded time in ms: " << average_time_encoded_in_s  << "\n";
-    std::cout << "Huffman: Average decoded time in ms: " << average_time_decoded_in_s  << "\n";
-    std::cout << "Huffman: Average compression ratio: " << average_compression_ratio << "\n";
-    std::cout << "Huffman: Average peak memory during encoding: " << avgPeakMemoryDuringEncoding << "\n";
-    std::cout << "Huffman: Average peak memory during decoding: " << avgPeakMemoryDuringDecoding << "\n";
-    std::cout << "Huffman: Average encoded throughput: " << average_encoded_throughput << "\n";
-    std::cout << "Huffman: Average throughput decoded: " << average_decoded_throughput << "\n";
+    std::cout << "Huffman: Average size in bytes: " << avgSizeBytes << '\n';
+    std::cout << "Huffman: Average encoded time in ms: " << average_time_encoded_in_ns  << '\n';
+    std::cout << "Huffman: Average decoded time in ms: " << average_time_encoded_in_ns  << '\n';
+    std::cout << "Huffman: Average compression ratio: " << average_compression_ratio << '\n';
+    std::cout << "Huffman: Average peak memory during encoding: " << avgPeakMemoryDuringEncoding << '\n';
+    std::cout << "Huffman: Average peak memory during decoding: " << avgPeakMemoryDuringDecoding << '\n';
+    std::cout << "Huffman: Average encoded throughput: " << average_encoded_throughput << '\n';
+    std::cout << "Huffman: Average throughput decoded: " << average_decoded_throughput << '\n';
 }
 
 void Huffman_Stats::Calculate_Cumulative_Average_Stats_For_Directory(int divisor){
     avgSizeBytes /= divisor;
-    average_time_encoded_in_s  /= divisor;
-    average_time_decoded_in_s  /= divisor;
+    average_time_encoded_in_ns  /= divisor;
+    average_time_encoded_in_ns  /= divisor;
     average_compression_ratio /= divisor;
     avgPeakMemoryDuringEncoding /= divisor;
     avgPeakMemoryDuringDecoding /= divisor;
@@ -55,20 +55,20 @@ void Huffman_Stats::getFileStats(const char* filename, const char* huffmanEncode
 
     // Verify that no data is lost by comparing decoded data with the original data
     // bool huffmanDataMatches = binaryData == huffmanDecoded;
-    // std::cout << "Huffman Data Matches: " << (huffmanDataMatches ? "Yes" : "No") << "\n";
+    // std::cout << "Huffman Data Matches: " << (huffmanDataMatches ? "Yes" : "No") << '\n';
 
     // Create a binary file from huffman encoded data for further verification
     // open the huffman encoded file and determine the file size
     // avgSizeBytes += getFileSize(huffmanEncodedFileName, currentDir);
-    // average_time_encoded_in_s  += durationEncodehuffman.count()*1000000;
-    // average_time_decoded_in_s  += durationDecodehuffman.count()*1000000;
+    // average_time_encoded_in_ns  += durationEncodehuffman.count()*1000000;
+    // average_time_encoded_in_ns  += durationDecodehuffman.count()*1000000;
     // average_compression_ratio += (static_cast<double>(getFileSize(huffmanEncodedFileName, currentDir)) / fileSize);
     // average_encoded_throughput += binaryData.size() / static_cast<double>(durationEncodehuffman.count()) * 1000000000; // bytes/sec
     // average_decoded_throughput += huffmanDecoded.size() / static_cast<double>(durationDecodehuffman.count()) * 1000000000; // bytes/sec
 }
 
  void Huffman_Stats::getStatsFromEncodingDecodingFunctions(const char* filename, int numIterations, std::filesystem::path& currentDir) {
-    //std::cout << "Compressing " << filename << " using huffman" << "\n";
+    //std::cout << "Compressing " << filename << " using huffman" << '\n';
     const char* huffmanEncodedFilename = "huffman_encoded.bin";
     const char* huffmanDecodedFilename = "huffman_decoded.bin";
 
@@ -78,7 +78,7 @@ void Huffman_Stats::getFileStats(const char* filename, const char* huffmanEncode
         // Read the binary file
         std::ifstream inFile(filename, std::ios::binary);
         if (!inFile) {
-            std::cerr << "Error: Unable to open the file for reading." << "\n";
+            std::cerr << "Error: Unable to open the file for reading." << '\n';
         }
 
         inFile.seekg(0, std::ios::end);
@@ -97,8 +97,8 @@ void Huffman_Stats::getFileStats(const char* filename, const char* huffmanEncode
     avghuffmanStats.Calculate_Cumulative_Average_Stats_For_Directory(numIterations);
 
     avgSizeBytes += avghuffmanStats.getAvgSizeBytes();
-    average_time_encoded_in_s  += avghuffmanStats.getaverage_time_encoded_in_s ();
-    average_time_decoded_in_s  += avghuffmanStats.getaverage_time_decoded_in_s ();
+    average_time_encoded_in_ns  += avghuffmanStats.getaverage_time_encoded_in_ns ();
+    average_time_encoded_in_ns  += avghuffmanStats.getaverage_time_encoded_in_ns ();
     average_compression_ratio += avghuffmanStats.getaverage_compression_ratio();
     avgPeakMemoryDuringEncoding += avghuffmanStats.getAvgPeakMemoryDuringEncoding();
     avgPeakMemoryDuringDecoding += avghuffmanStats.getAvgPeakMemoryDuringDecoding();
@@ -108,8 +108,8 @@ void Huffman_Stats::getFileStats(const char* filename, const char* huffmanEncode
 
 // Setters
 void Huffman_Stats::setAvgSizeBytes(double value) { avgSizeBytes = value; }
-void Huffman_Stats::setaverage_time_encoded_in_s (double value) { average_time_encoded_in_s  = value; }
-void Huffman_Stats::setaverage_time_decoded_in_s (double value) { average_time_decoded_in_s  = value; }
+void Huffman_Stats::setaverage_time_encoded_in_ns (double value) { average_time_encoded_in_ns  = value; }
+void Huffman_Stats::setaverage_time_encoded_in_ns (double value) { average_time_encoded_in_ns  = value; }
 void Huffman_Stats::setaverage_compression_ratio(double value) { average_compression_ratio = value; }
 void Huffman_Stats::setAvgPeakMemoryDuringEncoding(size_t value) { avgPeakMemoryDuringEncoding = value; }
 void Huffman_Stats::setAvgPeakMemoryDuringDecoding(size_t value) { avgPeakMemoryDuringDecoding = value; }
@@ -118,8 +118,8 @@ void Huffman_Stats::setaverage_decoded_throughput(double value) { average_decode
 
 // Getters
 double Huffman_Stats::getAvgSizeBytes() const { return avgSizeBytes; }
-double Huffman_Stats::getaverage_time_encoded_in_s () const { return average_time_encoded_in_s ; }
-double Huffman_Stats::getaverage_time_decoded_in_s () const { return average_time_decoded_in_s ; }
+double Huffman_Stats::getaverage_time_encoded_in_ns () const { return average_time_encoded_in_ns ; }
+double Huffman_Stats::getaverage_time_encoded_in_ns () const { return average_time_encoded_in_ns ; }
 double Huffman_Stats::getaverage_compression_ratio() const { return average_compression_ratio; }
 size_t Huffman_Stats::getAvgPeakMemoryDuringEncoding() const { return avgPeakMemoryDuringEncoding; }
 size_t Huffman_Stats::getAvgPeakMemoryDuringDecoding() const { return avgPeakMemoryDuringDecoding; }

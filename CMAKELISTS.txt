@@ -23,16 +23,16 @@ set(SOURCES
 )
 
 set(HEADERS
-    src/classes/common_stats.h
-    src/classes/rlr_class.h
-    # src/classes/lzw_class.h
-    # src/classes/lzp_class.h
-    # src/classes/huffman_stats.h
-    # src/classes/huffman.h
-    # src/classes/node.h
-    # src/classes/control_class.h
-    # src/functions/encoding_decoding_functions.h
-    src/functions/file_functions.h
+    src/classes/common_stats.hpp
+    src/classes/rlr_class.hpp
+    # src/classes/lzw_class.hpp
+    # src/classes/lzp_class.hpp
+    # src/classes/huffman_stats.hpp
+    # src/classes/huffman.hpp
+    # src/classes/node.hpp
+    # src/classes/control_class.hpp
+    # src/functions/encoding_decoding_functions.hpp
+    src/functions/file_functions.hpp
 )
 
 
@@ -60,7 +60,7 @@ target_link_libraries(geobin_compression PRIVATE nlohmann_json::nlohmann_json)
 # target_link_libraries(geobin_compression PRIVATE Boost::boost)
 
 # Debug build options
-set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O0 -g3 -Wall-fsanitize=undefined -fsanitize=address -fno-omit-frame-pointer -rdynamic -D_GLIBCXX_DEBUG -D_GLIBCXX_DEBUG_PEDANTIC -gdwarf-5 -fstack-protector")
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O0 -g3 -Wall -fsanitize=undefined -fsanitize=address -fno-omit-frame-pointer -rdynamic -D_GLIBCXX_DEBUG -D_GLIBCXX_DEBUG_PEDANTIC -gdwarf-5 -fstack-protector")
 
 
 # Release build options

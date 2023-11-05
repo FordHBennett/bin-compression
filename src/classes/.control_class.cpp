@@ -3,8 +3,8 @@
 // Constructors
 Control_Stats::Control_Stats() {
     avgSizeBytes = 0;
-    average_time_encoded_in_s  = 0;
-    average_time_decoded_in_s  = 0;
+    average_time_encoded_in_ns  = 0;
+    average_time_encoded_in_ns  = 0;
     average_compression_ratio = 0;
     avgPeakMemoryDuringEncoding = 0;
     avgPeakMemoryDuringDecoding = 0;
@@ -12,12 +12,12 @@ Control_Stats::Control_Stats() {
     average_decoded_throughput = 0;
 }
 
-Control_Stats::Control_Stats(double avgSizeBytes, double average_time_encoded_in_s , double average_time_decoded_in_s ,
+Control_Stats::Control_Stats(double avgSizeBytes, double average_time_encoded_in_ns , double average_time_encoded_in_ns ,
         double average_compression_ratio, size_t avgPeakMemoryDuringEncoding,
         size_t avgPeakMemoryDuringDecoding, double average_encoded_throughput, double average_decoded_throughput) {
     this->avgSizeBytes = avgSizeBytes;
-    this->average_time_encoded_in_s  = average_time_encoded_in_s ;
-    this->average_time_decoded_in_s  = average_time_decoded_in_s ;
+    this->average_time_encoded_in_ns  = average_time_encoded_in_ns ;
+    this->average_time_encoded_in_ns  = average_time_encoded_in_ns ;
     this->average_compression_ratio = average_compression_ratio;
     this->avgPeakMemoryDuringEncoding = avgPeakMemoryDuringEncoding;
     this->avgPeakMemoryDuringDecoding = avgPeakMemoryDuringDecoding;
@@ -48,20 +48,20 @@ std::vector<char> Control_Stats::decode(const std::vector<char>& input) {
 
 //functions
 void Control_Stats::Print_Stats() {
-    std::cout << "Control: Average size (bytes): " << avgSizeBytes << "\n";
-    std::cout << "Control: Average encoded time (ms): " << average_time_encoded_in_s  << "\n";
-    std::cout << "Control: Average decoded time (ms): " << average_time_decoded_in_s  << "\n";
-    std::cout << "Control: Average compression ratio: " << average_compression_ratio << "\n";
-    std::cout << "Control: Average peak memory during encoding (bytes): " << avgPeakMemoryDuringEncoding << "\n";
-    std::cout << "Control: Average peak memory during decoding (bytes): " << avgPeakMemoryDuringDecoding << "\n";
-    std::cout << "Control: Average encoded throughput (MB/s): " << average_encoded_throughput << "\n";
-    std::cout << "Control: Average decoded throughput (MB/s): " << average_decoded_throughput << "\n";
+    std::cout << "Control: Average size (bytes): " << avgSizeBytes << '\n';
+    std::cout << "Control: Average encoded time (ms): " << average_time_encoded_in_ns  << '\n';
+    std::cout << "Control: Average decoded time (ms): " << average_time_encoded_in_ns  << '\n';
+    std::cout << "Control: Average compression ratio: " << average_compression_ratio << '\n';
+    std::cout << "Control: Average peak memory during encoding (bytes): " << avgPeakMemoryDuringEncoding << '\n';
+    std::cout << "Control: Average peak memory during decoding (bytes): " << avgPeakMemoryDuringDecoding << '\n';
+    std::cout << "Control: Average encoded throughput (MB/s): " << average_encoded_throughput << '\n';
+    std::cout << "Control: Average decoded throughput (MB/s): " << average_decoded_throughput << '\n';
 }
 
 void Control_Stats::Calculate_Cumulative_Average_Stats_For_Directory(int divisors) {
     avgSizeBytes /= divisors;
-    average_time_encoded_in_s  /= divisors;
-    average_time_decoded_in_s  /= divisors;
+    average_time_encoded_in_ns  /= divisors;
+    average_time_encoded_in_ns  /= divisors;
     average_compression_ratio /= divisors;
     avgPeakMemoryDuringEncoding /= divisors;
     avgPeakMemoryDuringDecoding /= divisors;
@@ -83,8 +83,8 @@ void Control_Stats::getFileStats(std::vector<char> &binaryData, const char* enco
 
     // Calculate the average size in bytes
     avgSizeBytes += fileSize;
-    average_time_encoded_in_s  += durationEncode.count() * 1000000;
-    average_time_decoded_in_s  += durationDecode.count() * 1000000;
+    average_time_encoded_in_ns  += durationEncode.count() * 1000000;
+    average_time_encoded_in_ns  += durationDecode.count() * 1000000;
     average_compression_ratio += static_cast<double>(fileSize)/fileSize;
     average_encoded_throughput += static_cast<double>(fileSize) / durationEncode.count() * 1000000000; // bytes per second
     average_decoded_throughput += static_cast<double>(fileSize) / durationDecode.count() * 1000000000; // bytes per second
@@ -99,7 +99,7 @@ void Control_Stats::getStatsFromEncodingDecodingFunctions(const char* filename, 
     for (int i = 0; i < numIterations; ++i) {
         std::ifstream inFile(filename, std::ios::binary);
         if (!inFile) {
-            std::cout << "Error" << "\n";
+            std::cout << "Error" << '\n';
             return;  // Error handling
         }
 
@@ -118,8 +118,8 @@ void Control_Stats::getStatsFromEncodingDecodingFunctions(const char* filename, 
     localStats.Calculate_Cumulative_Average_Stats_For_Directory(numIterations);
 
     avgSizeBytes = localStats.avgSizeBytes;
-    average_time_encoded_in_s  = localStats.average_time_encoded_in_s ;
-    average_time_decoded_in_s  = localStats.average_time_decoded_in_s ;
+    average_time_encoded_in_ns  = localStats.average_time_encoded_in_ns ;
+    average_time_encoded_in_ns  = localStats.average_time_encoded_in_ns ;
     average_compression_ratio = localStats.average_compression_ratio;
     avgPeakMemoryDuringEncoding = localStats.avgPeakMemoryDuringEncoding;
     avgPeakMemoryDuringDecoding = localStats.avgPeakMemoryDuringDecoding;
@@ -132,12 +132,12 @@ void Control_Stats::setAvgSizeBytes(double value) {
     avgSizeBytes = value;
 }
 
-void Control_Stats::setaverage_time_encoded_in_s (double value) {
-    average_time_encoded_in_s  = value;
+void Control_Stats::setaverage_time_encoded_in_ns (double value) {
+    average_time_encoded_in_ns  = value;
 }
 
-void Control_Stats::setaverage_time_decoded_in_s (double value) {
-    average_time_decoded_in_s  = value;
+void Control_Stats::setaverage_time_encoded_in_ns (double value) {
+    average_time_encoded_in_ns  = value;
 }
 
 void Control_Stats::setaverage_compression_ratio(double value) {
@@ -165,12 +165,12 @@ double Control_Stats::getAvgSizeBytes() const {
     return avgSizeBytes;
 }
 
-double Control_Stats::getaverage_time_encoded_in_s () const {
-    return average_time_encoded_in_s ;
+double Control_Stats::getaverage_time_encoded_in_ns () const {
+    return average_time_encoded_in_ns ;
 }
 
-double Control_Stats::getaverage_time_decoded_in_s () const {
-    return average_time_decoded_in_s ;
+double Control_Stats::getaverage_time_encoded_in_ns () const {
+    return average_time_encoded_in_ns ;
 }
 
 double Control_Stats::getaverage_compression_ratio() const {

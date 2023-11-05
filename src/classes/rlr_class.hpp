@@ -1,7 +1,7 @@
 #pragma once
 
-#include "common_stats.h"
-#include "../functions/file_functions.h"
+#include "common_stats.hpp"
+#include "../functions/file_functions.hpp"
 
 
 
@@ -20,9 +20,9 @@ class RLR : public CommonStats {
         const void writeDecodedFile(const std::vector<char>& decodedData, const char* filename);
 
         //getters
-        const char* getCompressionType() const {return compressionType;}
-        const std::vector<char> getEncodedData() const {return encodedData;}
-        const std::vector<char> getDecodedData() const {return decodedData;}
+        const char* getCompressionType() const;
+        const std::vector<char> getEncodedData() const;
+        const std::vector<char> getDecodedData() const;
 
 
 

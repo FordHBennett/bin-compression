@@ -6,14 +6,14 @@
 // #include <thread>
 
 
-#include "classes/common_stats.h"
-#include "classes/rlr_class.h"
+#include "classes/common_stats.hpp"
+#include "classes/rlr_class.hpp"
 // #include "classes/lzw_class.h"
 // #include "classes/lzp_class.h"
 // #include "classes/control_class.h"
 
 
-#include "functions/file_functions.h"
+#include "functions/file_functions.hpp"
 
 // pass a ref of an instance of common stats class to the processFiles function
 // create an instance of the compression class in the processFiles function
@@ -45,17 +45,17 @@ int main() {
                     }
                 } catch (const std::filesystem::filesystem_error& e) {
                     // Handle file-specific errors.
-                    std::cerr << "Error accessing file: " << entry.path() << "\n"
-                            << e.what() << "\n";
+                    std::cerr << "Error accessing file: " << entry.path() << '\n'
+                            << e.what() << '\n';
                 }
             }
         } catch (const std::filesystem::filesystem_error& e) {
             // Handle errors during the directory iteration.
-            std::cerr << "Error iterating through directory: " << grand_canyon_path << "\n"
-                    << e.what() << "\n";
+            std::cerr << "Error iterating through directory: " << grand_canyon_path << '\n'
+                    << e.what() << '\n';
         }
     } else {
-        std::cerr << "The path does not exist or is not a directory: " << grand_canyon_path << "\n";
+        std::cerr << "The path does not exist or is not a directory: " << grand_canyon_path << '\n';
     }
 
     std::cout << "You have successfully loaded " << geobin_files_vec.size() << " files.\n";

@@ -1,4 +1,4 @@
-#include "rlr_class.h"
+#include "rlr_class.hpp"
 #include <fstream>
 #include <iostream>
 #include <vector>
@@ -32,7 +32,7 @@ void RLR::encode(const std::vector<char>& input) {
 const void RLR::writeEncodedFile(const std::vector<char>& encodedData, const char* filename) {
     std::ofstream encodedOutFile(filename, std::ios::binary);
     if (!encodedOutFile) {
-        std::cout << "Error: Unable to create the run-length encoded file." << "\n";
+        std::cout << "Error: Unable to create the run-length encoded file." << '\n';
     }
 
     // Writing encoded data to file
@@ -44,7 +44,7 @@ const void RLR::writeEncodedFile(const std::vector<char>& encodedData, const cha
 const void RLR::writeDecodedFile(const std::vector<char>& decodedData, const char* filename) {
     std::ofstream decodedOutFile(filename, std::ios::binary);
     if (!decodedOutFile) {
-        std::cout << "Error: Unable to create the run-length decoded file." << "\n";
+        std::cout << "Error: Unable to create the run-length decoded file." << '\n';
     }
 
     // Writing decoded data to file
@@ -148,7 +148,7 @@ const void RLR::writeDecodedFile(const std::vector<char>& decodedData, const cha
 //     // Step 2: Read the .geometa file which is a json file
 //     std::ifstream inFile(geometaFile);
 //     if (!inFile.is_open()) {
-//         std::cout << "Failed to open the .geometa file." << "\n";
+//         std::cout << "Failed to open the .geometa file." << '\n';
 //     }
 
 //     std::string line;
@@ -162,7 +162,7 @@ const void RLR::writeDecodedFile(const std::vector<char>& decodedData, const cha
 //                 size_t valueEnd = line.find('"', valueStart + 1);
 //                 if (valueEnd != std::string::npos) {
 //                     datatype = line.substr(valueStart + 1, valueEnd - valueStart - 1);
-//                     //std::cout << datatype << "\n";
+//                     //std::cout << datatype << '\n';
 //                     break; // Optional: stop after finding the first match
 //                 }
 //             }
@@ -197,7 +197,7 @@ const void RLR::writeDecodedFile(const std::vector<char>& decodedData, const cha
 //     // Verify that no data is lost by comparing decoded data with the original data
 //     bool dataMatches = binaryData == decoded;
 //     assert(dataMatches);
-//     //std::cout << "RLR Data Matches: " << (dataMatches ? "Yes" : "No") << "\n";
+//     //std::cout << "RLR Data Matches: " << (dataMatches ? "Yes" : "No") << '\n';
 
 //     // Write the encoded and decoded data to files
 //     writeEncodedFile(encoded, encodedFilename);
@@ -206,8 +206,8 @@ const void RLR::writeDecodedFile(const std::vector<char>& decodedData, const cha
 
 //     // open the run-length encoded file and determine the file size
 //     avgSizeBytes += getFileSize(encodedFilename);
-//     average_time_encoded_in_s  += durationEncode.count() * 1000000;
-//     average_time_decoded_in_s  += durationDecode.count() * 1000000;
+//     average_time_encoded_in_ns  += durationEncode.count() * 1000000;
+//     average_time_encoded_in_ns  += durationDecode.count() * 1000000;
 //     average_compression_ratio += static_cast<double>(getFileSize(encodedFilename))/fileSize;
 //     average_encoded_throughput += static_cast<double>(fileSize) / durationEncode.count() * 1000000000; // bytes per second
 //     average_decoded_throughput += static_cast<double>(fileSize) / durationDecode.count() * 1000000000; // bytes per second
@@ -226,3 +226,10 @@ const void RLR::writeDecodedFile(const std::vector<char>& decodedData, const cha
 
 
 // }
+
+//getters
+const char* RLR::getCompressionType() const {return compressionType;}
+
+const std::vector<char> RLR::getEncodedData() const {return encodedData;}
+
+const std::vector<char> RLR::getDecodedData() const {return decodedData;}

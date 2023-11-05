@@ -2,12 +2,12 @@
 
 //Constructors
 LZP_Stats::LZP_Stats() :
-    avgSizeBytes(0.0), average_time_encoded_in_s (0.0), average_time_decoded_in_s (0.0),
+    avgSizeBytes(0.0), average_time_encoded_in_ns (0.0), average_time_encoded_in_ns (0.0),
     average_compression_ratio(0.0), avgPeakMemoryDuringEncoding(0), avgPeakMemoryDuringDecoding(0),
     average_encoded_throughput(0.0), average_decoded_throughput(0.0) {}
 
-LZP_Stats::LZP_Stats(double avgSizeBytes, double average_time_encoded_in_s , double average_time_decoded_in_s , double average_compression_ratio, size_t avgPeakMemoryDuringEncoding, size_t avgPeakMemoryDuringDecoding, double average_encoded_throughput, double average_decoded_throughput) :
-    avgSizeBytes(avgSizeBytes), average_time_encoded_in_s (average_time_encoded_in_s ), average_time_decoded_in_s (average_time_decoded_in_s ),
+LZP_Stats::LZP_Stats(double avgSizeBytes, double average_time_encoded_in_ns , double average_time_encoded_in_ns , double average_compression_ratio, size_t avgPeakMemoryDuringEncoding, size_t avgPeakMemoryDuringDecoding, double average_encoded_throughput, double average_decoded_throughput) :
+    avgSizeBytes(avgSizeBytes), average_time_encoded_in_ns (average_time_encoded_in_ns ), average_time_encoded_in_ns (average_time_encoded_in_ns ),
     average_compression_ratio(average_compression_ratio), avgPeakMemoryDuringEncoding(avgPeakMemoryDuringEncoding), avgPeakMemoryDuringDecoding(avgPeakMemoryDuringDecoding),
     average_encoded_throughput(average_encoded_throughput), average_decoded_throughput(average_decoded_throughput) {}
 
@@ -106,20 +106,20 @@ std::vector<char> LZP_Stats::lzpDecode(const std::vector<int>& input) {
 
 // Functions
 void LZP_Stats::Print_Stats() {
-    std::cout << "LZP: Average size in bytes: " << avgSizeBytes << "\n";
-    std::cout << "LZP: Average encoded time in ms: " << average_time_encoded_in_s  << "\n";
-    std::cout << "LZP: Average decoded time in ms: " << average_time_decoded_in_s  << "\n";
-    std::cout << "LZP: Average compression ratio: " << average_compression_ratio << "\n";
-    std::cout << "LZP: Average peak memory during encoding: " << avgPeakMemoryDuringEncoding << "\n";
-    std::cout << "LZP: Average peak memory during decoding: " << avgPeakMemoryDuringDecoding << "\n";
-    std::cout << "LZP: Average encoded throughput: " << average_encoded_throughput << "\n";
-    std::cout << "LZP: Average throughput decoded: " << average_decoded_throughput << "\n";
+    std::cout << "LZP: Average size in bytes: " << avgSizeBytes << '\n';
+    std::cout << "LZP: Average encoded time in ms: " << average_time_encoded_in_ns  << '\n';
+    std::cout << "LZP: Average decoded time in ms: " << average_time_encoded_in_ns  << '\n';
+    std::cout << "LZP: Average compression ratio: " << average_compression_ratio << '\n';
+    std::cout << "LZP: Average peak memory during encoding: " << avgPeakMemoryDuringEncoding << '\n';
+    std::cout << "LZP: Average peak memory during decoding: " << avgPeakMemoryDuringDecoding << '\n';
+    std::cout << "LZP: Average encoded throughput: " << average_encoded_throughput << '\n';
+    std::cout << "LZP: Average throughput decoded: " << average_decoded_throughput << '\n';
 }
 
 void LZP_Stats::Calculate_Cumulative_Average_Stats_For_Directory(int divisor){
     avgSizeBytes /= divisor;
-    average_time_encoded_in_s  /= divisor;
-    average_time_decoded_in_s  /= divisor;
+    average_time_encoded_in_ns  /= divisor;
+    average_time_encoded_in_ns  /= divisor;
     average_compression_ratio /= divisor;
     avgPeakMemoryDuringEncoding /= divisor;
     avgPeakMemoryDuringDecoding /= divisor;
@@ -151,13 +151,13 @@ void LZP_Stats::getFileStats(std::vector<char> &binaryData, const char* lzpEncod
     // Verify that no data is lost by comparing decoded data with the original data
     bool dataMatches = binaryData == lzpDecoded;
     assert(dataMatches);
-    //std::cout << "LZP Data Matches: " << (dataMatches ? "Yes" : "No") << "\n";
+    //std::cout << "LZP Data Matches: " << (dataMatches ? "Yes" : "No") << '\n';
 
     // Create a binary file from LZP encoded data for further verification
     std::ofstream lzpOutFile(lzpEncodedFileName, std::ios::binary);
     std::ofstream lzpDecodedOutFile(lzpDecodedFileName, std::ios::binary);
     if (!lzpOutFile || !lzpDecodedOutFile) {
-        std::cerr << "Error: Unable to create the LZP encoded or decoded file." << "\n";
+        std::cerr << "Error: Unable to create the LZP encoded or decoded file." << '\n';
     }
 
     for (size_t i = 0; i < lzpEncoded.size(); ++i) {
@@ -175,15 +175,15 @@ void LZP_Stats::getFileStats(std::vector<char> &binaryData, const char* lzpEncod
 
     // open the LZP encoded file and determine the file size
     avgSizeBytes += getFileSize(lzpEncodedFileName);
-    average_time_encoded_in_s  += durationEncodeLzp.count() * 1000000;
-    average_time_decoded_in_s  += durationDecodeLzp.count() * 1000000;
+    average_time_encoded_in_ns  += durationEncodeLzp.count() * 1000000;
+    average_time_encoded_in_ns  += durationDecodeLzp.count() * 1000000;
     average_compression_ratio += static_cast<double>(getFileSize(lzpEncodedFileName))/fileSize;
     average_encoded_throughput += binaryData.size() / static_cast<double>(durationEncodeLzp.count()) * 1000000000; // bytes/sec
     average_decoded_throughput += lzpDecoded.size() / static_cast<double>(durationDecodeLzp.count()) * 1000000000; // bytes/sec
 }
 
  void LZP_Stats::getStatsFromEncodingDecodingFunctions(const char* filename, int numIterations, std::filesystem::path& currentDir) {
-    //std::cout << "Compressing " << filename << " using LZP" << "\n";
+    //std::cout << "Compressing " << filename << " using LZP" << '\n';
     std::string lzpEncodedFilename = std::string(filename) + ".lzp.bin";
     std::string lzpDecodedFilename = std::string(filename) + ".lzp_decoded.bin";
 
@@ -193,7 +193,7 @@ void LZP_Stats::getFileStats(std::vector<char> &binaryData, const char* lzpEncod
         // Read the binary file
         std::ifstream inFile(filename, std::ios::binary);
         if (!inFile) {
-            std::cerr << "Error: Unable to open the file for reading." << "\n";
+            std::cerr << "Error: Unable to open the file for reading." << '\n';
         }
 
         inFile.seekg(0, std::ios::end);
@@ -212,8 +212,8 @@ void LZP_Stats::getFileStats(std::vector<char> &binaryData, const char* lzpEncod
     avglzpStats.Calculate_Cumulative_Average_Stats_For_Directory(numIterations);
 
     avgSizeBytes += avglzpStats.getAvgSizeBytes();
-    average_time_encoded_in_s  += avglzpStats.getaverage_time_encoded_in_s ();
-    average_time_decoded_in_s  += avglzpStats.getaverage_time_decoded_in_s ();
+    average_time_encoded_in_ns  += avglzpStats.getaverage_time_encoded_in_ns ();
+    average_time_encoded_in_ns  += avglzpStats.getaverage_time_encoded_in_ns ();
     average_compression_ratio += avglzpStats.getaverage_compression_ratio();
     avgPeakMemoryDuringEncoding += avglzpStats.getAvgPeakMemoryDuringEncoding();
     avgPeakMemoryDuringDecoding += avglzpStats.getAvgPeakMemoryDuringDecoding();
@@ -223,8 +223,8 @@ void LZP_Stats::getFileStats(std::vector<char> &binaryData, const char* lzpEncod
 
 // Setters
 void LZP_Stats::setAvgSizeBytes(double value) { avgSizeBytes = value; }
-void LZP_Stats::setaverage_time_encoded_in_s (double value) { average_time_encoded_in_s  = value; }
-void LZP_Stats::setaverage_time_decoded_in_s (double value) { average_time_decoded_in_s  = value; }
+void LZP_Stats::setaverage_time_encoded_in_ns (double value) { average_time_encoded_in_ns  = value; }
+void LZP_Stats::setaverage_time_encoded_in_ns (double value) { average_time_encoded_in_ns  = value; }
 void LZP_Stats::setaverage_compression_ratio(double value) { average_compression_ratio = value; }
 void LZP_Stats::setAvgPeakMemoryDuringEncoding(size_t value) { avgPeakMemoryDuringEncoding = value; }
 void LZP_Stats::setAvgPeakMemoryDuringDecoding(size_t value) { avgPeakMemoryDuringDecoding = value; }
@@ -233,8 +233,8 @@ void LZP_Stats::setaverage_decoded_throughput(double value) { average_decoded_th
 
 // Getters
 double LZP_Stats::getAvgSizeBytes() const { return avgSizeBytes; }
-double LZP_Stats::getaverage_time_encoded_in_s () const { return average_time_encoded_in_s ; }
-double LZP_Stats::getaverage_time_decoded_in_s () const { return average_time_decoded_in_s ; }
+double LZP_Stats::getaverage_time_encoded_in_ns () const { return average_time_encoded_in_ns ; }
+double LZP_Stats::getaverage_time_encoded_in_ns () const { return average_time_encoded_in_ns ; }
 double LZP_Stats::getaverage_compression_ratio() const { return average_compression_ratio; }
 size_t LZP_Stats::getAvgPeakMemoryDuringEncoding() const { return avgPeakMemoryDuringEncoding; }
 size_t LZP_Stats::getAvgPeakMemoryDuringDecoding() const { return avgPeakMemoryDuringDecoding; }

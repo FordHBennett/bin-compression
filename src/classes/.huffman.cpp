@@ -36,7 +36,7 @@ void Huffman::encode(std::string filename) {
     if (frequencies) delete frequencies;
 
     if (!file) {
-        std::cout << "Could not open file: " << filename << "\n";
+        std::cout << "Could not open file: " << filename << '\n';
         return;
     }
     else {
@@ -232,7 +232,7 @@ void Huffman::showTree() {
     // Loop through all the characters
     for (e_it = encodingMap->begin(); e_it != encodingMap->end(); e_it++) {
         std::cout << e_it->first << ": (" << e_it->second.second << ")  "
-        		  << e_it->second.first << "\n";
+        		  << e_it->second.first << '\n';
     }
 }
 
@@ -368,7 +368,7 @@ bool Huffman::readTableFile(std::string fstr) {
         }
         catch (char* err) {
             file.close();
-            std::cout << err << "\n";
+            std::cout << err << '\n';
             return false;
         }
 	}
