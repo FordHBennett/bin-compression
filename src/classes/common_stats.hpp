@@ -56,9 +56,9 @@ class CommonStats {
         void Compute_Decoded_Throughput();
         void Set_Data_Type_Size_And_Side_Resolutions(const std::filesystem::path& geometa_path);
         const void Print_Stats(const char* compressionType) const;
-        const bool Is_Decoded_Data_Equal_To_Original_Data(const std::vector<char>& originalData, const std::vector<char>& decodedData) const;
+        const bool Is_Decoded_Data_Equal_To_Original_Data(const std::vector<char>& original_vec, const std::vector<char>& decoded_vec) const;
 
         //getters
-        int Get_Side_Resolution(const char* side, const uint8_t& c_number) const;
-        int Get_Data_Type_Size() const;
+        const int64_t Get_Side_Resolution(const uint8_t& lod_number) const;
+        const int Get_Data_Type_Size() const;
 };

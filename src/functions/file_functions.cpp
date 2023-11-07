@@ -1,24 +1,12 @@
 #include "file_functions.hpp"
 #include "../classes/rlr_class.hpp"
+#include "debug_functions.hpp"
 #include <nlohmann/json.hpp>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
 
 
-#define ERROR_MSG(msg) \
-    std::cerr << msg << " OCCURED IN: " << '\n'; \
-    std::cerr << "      File: " << __FILE__ << '\n'; \
-    std::cerr << "      Function: " << __PRETTY_FUNCTION__ << '\n'; \
-    std::cerr << "      Line: " << __LINE__ << '\n'; \
-
-#define ERROR_MSG_AND_EXIT(msg) \
-    std::cerr << msg << " OCCURED IN: " << '\n'; \
-    std::cerr << "      File: " << __FILE__ << '\n'; \
-    std::cerr << "      Function: " << __PRETTY_FUNCTION__ << '\n'; \
-    std::cerr << "      Line: " << __LINE__ << '\n'; \
-    std::flush(std::cerr); \
-    std::exit(EXIT_FAILURE);
 
 
 using json = nlohmann::json;
@@ -54,19 +42,13 @@ void Generate_Random_Binary_File(const char* filename, long long fileSize, doubl
 }
 
 
-const int Get_File_Size_Bytes(const std::filesystem::path& file_path)
+const uint64_t Get_File_Size_Bytes(const std::filesystem::path& file_path)
 {
     try {
-        std::ifstream in_file(file_path, std::ios::binary);
-
-        in_file.seekg(0, std::ios::end);
-        const uint64_t file_size = in_file.tellg();
-        in_file.close();
-
-        return file_size;
+        return std::filesystem::file_size(file_path);
     } catch(const std::filesystem::filesystem_error& e) {
-        std::cerr << "Error accessing file size for " << file_path << ": " << e.what() << '\n';
-        ERROR_MSG_AND_EXIT("ERROR");
+        // std::cerr << "Error accessing file size for " << file_path << ": " << e.what() << '\n';
+        ERROR_MSG_AND_EXIT(std::string{"ERROR: Error accessing file size for"} + file_path.string() + ": " + std::string{e.what()});
     }
 
 }
@@ -77,15 +59,17 @@ const int Get_Number_Of_Geobin_Files_Recursively(const std::filesystem::path& di
         int count = 0;
 
         for(const auto& entry : std::filesystem::recursive_directory_iterator(dir_path)) {
-            if (std::filesystem::is_regular_file(entry.status()) && entry.path().extension() == ".geobin") {
-                count++;
+            if (entry.is_regular_file() && entry.path().extension() == ".geobin") {
+                ++count;
             }
         }
 
         return count;
+
     } catch(const std::exception& e) {
-        std::cerr << "ERROR: " << e.what() << '\n';
-        ERROR_MSG_AND_EXIT("ERROR");
+        // std::cerr << "ERROR: " << e.what() << '\n';
+        // PRINT_DEBUG(std::string{"ERROR: " + std::string{e.what()}});
+        ERROR_MSG_AND_EXIT(std::string{"ERROR: " + std::string{e.what()}});
     }
 }
 
@@ -93,7 +77,7 @@ const int Get_Number_Of_Geometa_Files(const std::filesystem::path& dir_path){
     try {
         int count = 0;
 
-        for(const auto& entry : std::filesystem::directory_iterator(dir_path)) {
+        for(const auto& entry : std::filesystem::recursive_directory_iterator(dir_path)) {
             if (std::filesystem::is_regular_file(entry.status()) && entry.path().extension() == ".geometa") {
                 count++;
             }
@@ -102,39 +86,25 @@ const int Get_Number_Of_Geometa_Files(const std::filesystem::path& dir_path){
         return count;
     }
     catch(const std::exception& e) {
-        std::cerr << "ERROR: " << e.what() << '\n';
-        ERROR_MSG_AND_EXIT("ERROR");
+        // std::cerr << "ERROR: " << e.what() << '\n';
+        // PRINT_DEBUG(std::string{"ERROR: " + std::string{e.what()}});
+        ERROR_MSG_AND_EXIT(std::string{"ERROR: "} + std::string{e.what()});
     }
 }
 
 const std::filesystem::path  Get_Geometa_File_Path(const std::filesystem::path& dir_path) {
 
-    // if(!std::filesystem::exists(dir_path)) {
-    //     std::cerr << "ERROR: Directory does not exist: " << dir_path.c_str() << '\n';
-    //     ERROR_MSG("ERROR");
-    //     throw std::runtime_error("Directory does not exist");
-    // }
-    // else if(!std::filesystem::is_directory(dir_path)) {
-    //     std::cerr << "ERROR: " << dir_path.c_str() << " is not a directory." << '\n';
-    //     ERROR_MSG("ERROR");
-    //     throw std::runtime_error("Not a directory");
-    // }
-    // else if(std::filesystem::is_empty(dir_path)) {
-    //     std::cerr << "ERROR: " << dir_path.c_str() << " is empty." << '\n';
-    //     ERROR_MSG("ERROR");
-    //     throw std::runtime_error("Directory is empty");
-    // }
-
     try{
-        for(const auto& entry : std::filesystem::directory_iterator(dir_path)) {
+        for(const auto& entry : std::filesystem::recursive_directory_iterator(dir_path)) {
             if(std::filesystem::is_regular_file(entry.status()) && entry.path().extension() == ".geometa") {
-                std::cerr << "You have found a the geometa file: " << entry.path().c_str() << '\n';
+                // std::cerr << "You have found a the geometa file: " << entry.path().c_str() << '\n';
+                PRINT_DEBUG(std::string{"You have found a the geometa file: " + entry.path().string()});
                 return entry.path();
             }
         }
     } catch(const std::exception& e) {
-        std::cerr << "Error accessing geometa file for " << dir_path << ": " << e.what() << '\n';
-        ERROR_MSG_AND_EXIT("ERROR");
+        // PRINT_DEBUG(std::string{"Error accessing geometa file for " + dir_path.string() + ": " + std::string{e.what()}});
+        ERROR_MSG_AND_EXIT(std::string{"Error accessing geometa file for " + dir_path.string() + ": " + std::string{e.what()}});
     }
 
 }
@@ -232,8 +202,8 @@ const std::filesystem::path  Get_Geometa_File_Path(const std::filesystem::path& 
 //     //std::cout << "RLR Data Matches: " << (dataMatches ? "Yes" : "No") << '\n';
 
 //     // Write the encoded and decoded data to files
-//     rlr_obj.writeEncodedFile(encoded, encodedFilename);
-//     rlr_obj.writeDecodedFile(decoded, decodedFilename);
+//     rlr_obj.Write_Compressed_File(encoded, encodedFilename);
+//     rlr_obj.Write_Decompressed_File(decoded, decodedFilename);
 // }
 
 void Run_RLR_Compression_Decompression_On_Files(const std::vector<std::filesystem::path>& files_vec, const int& numIterations, RLR& rlr_obj) {
@@ -241,104 +211,99 @@ void Run_RLR_Compression_Decompression_On_Files(const std::vector<std::filesyste
     assert(std::filesystem::equivalent(files_vec[0].parent_path(), files_vec[1].parent_path()));
 
     rlr_obj.Set_Data_Type_Size_And_Side_Resolutions(Get_Geometa_File_Path(files_vec[0].parent_path()));
+    // std::filesystem::path compressed_decompressed_files_dir = files_vec[0].parent_path() / std::string{"compressed_decompressed_files"};
+    // if(!std::filesystem::exists(compressed_decompressed_files_dir)) {
+    //     std::filesystem::create_directory(compressed_decompressed_files_dir);
+    // }
 
     for(const auto& file : files_vec) {
         // std::cerr << "File to be compressed: " << file << '\n';
-        // const std::filesystem::path parent_file_path = file.parent_path();
-        // std::string stem = file.stem().string();
-        // const std::filesystem::path encoded_file_path = parent_file_path/stem += ".rlr_encoded_bin";
-        // const std::filesystem::path decoded_file_path = parent_file_path/stem += ".rlr_decoded_bin";
-
-        // std::cerr << "Encoded File Path: " << encoded_file_path.c_str() << '\n';
-        // std::cerr << "Decoded File Path: " << decoded_file_path.c_str() << '\n';
-
-        // //this only works for single digit c numbers
-        // //I hate this
-        // // rewrite this code without using std::string
-        // auto extract_number_after = [&stem](const std::string& delimiter) {
-        //     int pos = stem.find(delimiter);
-        //     if (pos != std::string::npos) {
-        //         return stem.substr(pos + delimiter.length(), 1);
-        //     }
-        //     return std::string{};
-        // };
-
-        // std::string side_str = extract_number_after("_s");
-        // std::string c_number_str = extract_number_after("_c");
-
-        // const char* side = side_str.c_str();
-        // uint8_t c_number = static_cast<uint8_t>(std::stoi(c_number_str));
-
-        // std::cerr << "Side: " << side << '\n';
-        // std::cerr << "C Number: " << static_cast<int>(c_number) << '\n';
-
-
-        // const int side_resolution = rlr_obj.Get_Side_Resolution(side, c_number);
-        // std::cerr << "Side Resolution: " << side_resolution << '\n';
-
-        // const int bytes_per_row = side_resolution * rlr_obj.Get_Data_Type_Size();
-        // const uint8_t num_rows = Get_File_Size_Bytes(file) / bytes_per_row;
-
-        std::cerr << "File to be compressed: " << file << '\n';
-        const std::filesystem::path parent_file_path = file.parent_path();
+        PRINT_DEBUG(std::string{"File to be compressed: " + file.string()});
         const std::filesystem::path stem_path = file.stem();
 
+        const std::filesystem::path encoded_file_path = file.parent_path() / (stem_path.string() + ".rlr_encoded_bin");
+        const std::filesystem::path decoded_file_path = file.parent_path() / (stem_path.string() + ".rlr_decoded_bin");
 
-        const std::filesystem::path encoded_file_path = parent_file_path / (stem_path.string() + ".rlr_encoded_bin");
-        const std::filesystem::path decoded_file_path = parent_file_path / (stem_path.string() + ".rlr_decoded_bin");
-
-        // Function to extract a single character after a given delimiter
+        //lod could be over 9
+        //scan until you find non-numeric
         auto extract_character_after = [](const std::filesystem::path& path, const char* delimiter) -> const char {
-            std::string filename = path.filename().string();
-            size_t pos = filename.rfind(delimiter);
+            const std::string filename = path.filename().string();
+            size_t pos = path.filename().string().rfind(delimiter);
             if (pos != std::string::npos && pos + 1 < filename.length()) {
-                return filename[pos + 2]; // Assuming the format is always _sX_cY, we get the character after the delimiter
+                return filename[pos + std::string{delimiter}.length()];
             }
-            std::cerr << "ERROR: Unable to extract character after delimiter: " << delimiter << '\n';
-            ERROR_MSG_AND_EXIT("ERROR:");
+            // std::cerr << "ERROR: Unable to extract character after delimiter: " << delimiter << '\n';
+            ERROR_MSG_AND_EXIT(std::string{ "ERROR: Unable to extract character after delimiter: " + std::string{delimiter}});
         };
 
         // There must be some way to store side and c_number as uint8_t without having to convert them to char arrays
-        const char side_char_arr[2] = {extract_character_after(stem_path, "_s"), '\0'};
-        const char c_number_char_arr[2] = {extract_character_after(stem_path, "_c"), '\0'};
+        // const char side_char_arr[2] = {extract_character_after(stem_path, "_s"), '\0'};
+        // const char c_number_char_arr[2] = {extract_character_after(stem_path, "_c"), '\0'};
+        const uint8_t lod_number = static_cast<uint8_t>(extract_character_after(stem_path, "_lod") - '0');
+#ifdef DEBUG_MODE
+        const uint8_t side = static_cast<uint8_t>(extract_character_after(stem_path, "_s") - '0');
+        const uint8_t c_number = static_cast<uint8_t>(extract_character_after(stem_path, "_c") - '0');
+        PRINT_DEBUG(std::string{"Side: "} + std::to_string(side));
+        PRINT_DEBUG(std::string{"C Number: "} + std::to_string(c_number));
+        PRINT_DEBUG(std::string{"LOD Number: "} + std::to_string(lod_number));
+#endif
 
-        if(!isdigit(c_number_char_arr[0])) {
-            std::cerr << "ERROR: c_number is not a digit." << '\n';
-            std::cerr << "ERROR: c_number: " << c_number_char_arr[0] << '\n';
-            ERROR_MSG_AND_EXIT("ERROR");
-        }
+        // const uint side_resolution = rlr_obj.Get_Side_Resolution(side, c_number);
+        const int64_t side_resolution = rlr_obj.Get_Side_Resolution(lod_number);
 
-        if(!isdigit(side_char_arr[0])) {
-            std::cerr << "ERROR: Side is not a digit." << '\n';
-            std::cerr << "ERROR: Side: " << side_char_arr[0] << '\n';
-            ERROR_MSG_AND_EXIT("ERROR");
-        }
+#ifdef DEBUG_MODE
+        PRINT_DEBUG(std::string{"Side Resolution: " + std::to_string(side_resolution)});
+#endif
 
-        const char* side = side_char_arr;
-        uint8_t c_number = static_cast<uint8_t>(c_number_char_arr[0] - '0');
+        const int64_t bytes_per_row = side_resolution * rlr_obj.Get_Data_Type_Size();
+        const int num_rows = static_cast<int64_t>(Get_File_Size_Bytes(file) / bytes_per_row);
 
-        std::cerr << "Side: " << side << '\n';
-        std::cerr << "C Number: " << static_cast<int>(c_number) << '\n';
-
-        const int side_resolution = rlr_obj.Get_Side_Resolution(side, c_number);
-        std::cerr << "Side Resolution: " << side_resolution << '\n';
-
-        const int bytes_per_row = side_resolution * rlr_obj.Get_Data_Type_Size();
-        const uint8_t num_rows = static_cast<uint8_t>(Get_File_Size_Bytes(file) / bytes_per_row);
-
+#ifdef DEBUG_MODE
         if(Get_File_Size_Bytes(file) % bytes_per_row != 0) {
-            std::cerr << "ERROR: File size is not a multiple of the number of bytes per row." << '\n';
-            std::cerr << "ERROR: File size: " << Get_File_Size_Bytes(file) << '\n';
-            std::cerr << "ERROR: Bytes per row: " << std::to_string(bytes_per_row) << '\n';
-            std::cerr << "ERROR: This probably means that rlr_obj.data_type_size is wrong for the file that is being commpressed" << '\n';
-            std::cerr << "ERROR: You are trying to compress " << file.c_str() << '\n';
-            std::cerr << "ERROR: Side Number is: " << side << '\n';
-            std::cerr << "ERROR: C Number is: " << std::to_string(c_number) << '\n';
-            std::cerr << "ERROR: Side Resolution is: " << std::to_string(side_resolution) << '\n';
-            ERROR_MSG("ERROR:");
+            PRINT_DEBUG(std::string{"ERROR: File size is not a multiple of the number of bytes per row."});
+            PRINT_DEBUG(std::string{"ERROR: File size: " + std::to_string(Get_File_Size_Bytes(file))});
+            PRINT_DEBUG(std::string{"ERROR: Bytes per row: " + std::to_string(bytes_per_row)});
+            PRINT_DEBUG(std::string{"ERROR: This probably means that rlr_obj.data_type_size is wrong for the file that is being commpressed"});
+            PRINT_DEBUG(std::string{"ERROR: You are trying to compress " + file.string()});
+            PRINT_DEBUG(std::string{"ERROR: Side Number is: " + std::string{extract_character_after(stem_path, "_s")}});
+            PRINT_DEBUG(std::string{"ERROR: C Number is: " + std::string{extract_character_after(stem_path, "_c")}});
+            PRINT_DEBUG(std::string{"ERROR: Side Resolution is: " + std::to_string(side_resolution)});
+            PRINT_DEBUG(std::string{"ERROR: Bytes per row is: " + std::to_string(bytes_per_row)});
+            PRINT_DEBUG(std::string{"ERROR: Bytes per row is: " + std::to_string(bytes_per_row)});
+            ERROR_MSG(std::string{"ERROR:"});
+        }
+#endif
+
+        for(int i = 0; i<num_rows; i++){
+            rlr_obj.Read_File(file, bytes_per_row, i);
+            // rlr_obj.Encode_With_One_Byte_Run_Length();
+            // rlr_obj.Decode_With_One_Byte_Run_Length();
+            rlr_obj.Encode_With_One_Nibble_Run_Length();
+            rlr_obj.Decode_With_One_Nibble_Run_Length();
+            rlr_obj.Write_Compressed_File(encoded_file_path);
+            rlr_obj.Write_Decompressed_File(decoded_file_path);
+            if(!rlr_obj.Is_Decoded_Data_Equal_To_Original_Data(rlr_obj.Get_Decoded_Data_Vec(), rlr_obj.Get_Binary_Data_Vec())){
+                // std::cerr << "ERROR: Decoded data is not equal to original data." << '\n';
+                ERROR_MSG_AND_EXIT(std::string{"ERROR: Decoded data is not equal to original data."});
+            }
         }
 
-        // // std::array<std::array<char, bytes_per_row>>, num_rows> partitioned_binary_data;
+        // rlr_obj.Read_File(file);
+
+        // for(int i = 0; i < numIterations; i++) {
+        //     // rlr_obj.Encode_With_One_Byte_Run_Length();
+        //     // rlr_obj.Decode_With_One_Byte_Run_Length();
+        //     // rlr_obj.Encode_With_Two_Byte_Run_Length();
+        //     // rlr_obj.Decode_With_Two_Byte_Run_Length();
+        //     // rlr_obj.Encode_With_One_Nibble_Run_Length();
+        //     // rlr_obj.Decode_With_One_Nibble_Run_Length();
+        //     rlr_obj.Write_Compressed_File(encoded_file_path);
+        //     rlr_obj.Write_Decompressed_File(decoded_file_path);
+        //     if(!rlr_obj.Is_Decoded_Data_Equal_To_Original_Data(rlr_obj.Get_Decoded_Data_Vec(), rlr_obj.Get_Binary_Data_Vec())){
+        //         std::cerr << "ERROR: Decoded data is not equal to original data." << '\n';
+        //         ERROR_MSG_AND_EXIT(std::string{"ERROR:}");
+        //     }
+        // }
 
         // for(size_t i = 0; i < numIterations; i++){
         //     // std::ifstream inFile(file, std::ios::binary);
@@ -357,8 +322,8 @@ void Run_RLR_Compression_Decompression_On_Files(const std::vector<std::filesyste
         //     // rlr_obj.Compute_Time_Encoded([&rlr_obj](std::vector<char> data){ rlr_obj.encode(data); }, binaryData);
         //     // rlr_obj.Compute_Time_Decoded([&rlr_obj](std::vector<char> data){ rlr_obj.decode(data); }, binaryData);
 
-        //     // rlr_obj.writeEncodedFile(rlr_obj.getEncodedData(), encodedFilename.c_str());
-        //     // rlr_obj.writeDecodedFile(rlr_obj.getDecodedData(), dencodedFilename.c_str());
+        //     // rlr_obj.Write_Compressed_File(rlr_obj.Get_Encoded_Data_Vec(), encodedFilename.c_str());
+        //     // rlr_obj.Write_Decompressed_File(rlr_obj.Get_Decoded_Data_Vec(), dencodedFilename.c_str());
 
         //     // rlr_obj.Compute_Compression_Ratio(file.c_str(), encodedFilename.c_str());
         //     // rlr_obj.Compute_File_Size(file.c_str());

@@ -4,21 +4,10 @@
 #include <chrono>
 #include <fstream>
 #include <filesystem>
+#include <sstream> 
+#include <iomanip>
 #include "../functions/file_functions.hpp"
-
-#define ERROR_MSG(msg) \
-    std::cerr << msg << " OCCURED IN: " << '\n'; \
-    std::cerr << "      File: " << __FILE__ << '\n'; \
-    std::cerr << "      Function: " << __PRETTY_FUNCTION__ << '\n'; \
-    std::cerr << "      Line: " << __LINE__ << '\n'; \
-
-#define ERROR_MSG_AND_EXIT(msg) \
-    std::cerr << msg << " OCCURED IN: " << '\n'; \
-    std::cerr << "      File: " << __FILE__ << '\n'; \
-    std::cerr << "      Function: " << __PRETTY_FUNCTION__ << '\n'; \
-    std::cerr << "      Line: " << __LINE__ << '\n'; \
-    std::exit(EXIT_FAILURE);
-
+#include "../functions/debug_functions.hpp"
 
 using json = nlohmann::json;
 
@@ -126,8 +115,8 @@ void CommonStats::Compute_Decoded_Throughput() {
     average_decoded_throughput = average_file_size / average_time_encoded_in_ns ;
 }
 
-const bool CommonStats::Is_Decoded_Data_Equal_To_Original_Data(const std::vector<char>& originalData, const std::vector<char>& decodedData) const {
-    return originalData == decodedData;
+const bool CommonStats::Is_Decoded_Data_Equal_To_Original_Data(const std::vector<char>& original_vec, const std::vector<char>& decoded_vec) const {
+    return original_vec == decoded_vec;
 }
 
 const void CommonStats::Print_Stats(const char* compressionType) const {
@@ -223,58 +212,77 @@ void CommonStats::Set_Data_Type_Size_And_Side_Resolutions(const std::filesystem:
 
     // geometa_file.close();
 
-    std::ifstream geometa_file(geometa_path, std::ios::in);
+    // std::ifstream geometa_file(geometa_path, std::ios::in);
+    // if (!geometa_file) {
+    //     ERROR_MSG_AND_EXIT("Could not open file: " + geometa_path.string());
+    // }
+    auto parse_json = [](const std::filesystem::path& path) -> const json {
+        try {
+            std::ifstream file(path);
+            return json::parse(file, nullptr); // Use non-throwing parse and check for errors afterwards
+        } catch( const std::exception& e ) {
+            // std::cerr << "ERROR: JSON parsing error: " << e.what() << '\n';
+            PRINT_DEBUG(std::string{"ERROR: JSON parsing error: "} + std::string{e.what()});
+            // std::cerr << "ERROR: You are in directory: " << std::filesystem::current_path().c_str() << '\n';
+            PRINT_DEBUG(std::string{"ERROR: You are in directory: "} + std::filesystem::current_path().string());
+            ERROR_MSG_AND_EXIT("ERROR");
+        }
+    };
 
-    if (!geometa_file) {
-        ERROR_MSG_AND_EXIT("Could not open file: " + geometa_path.string());
-    }
+    const json geometa_json = parse_json(geometa_path);
 
-    const json geometa_json = json::parse(geometa_file);
-    std::cout << "Check read data: " << std::setw(4) << geometa_json << std::endl;
+#ifdef DEBUG_MODE
+    // std::cout << "Check read data: " << std::setw(4) << geometa_json << std::endl;
+    std::ostringstream oss;
+    oss << "Check read data: " << std::setw(4) << geometa_json;
+    PRINT_DEBUG(std::string{"Check read data: "} + oss.str());
+#endif
 
     // Use 'at' for access to throw json::out_of_range if the key does not exist
     try {
         data_type_byte_size = geometa_json.at("storage_bytes_size").get<int8_t>();
     } catch (const json::exception& e) {
-        ERROR_MSG_AND_EXIT("'storage_bytes_size' key not found or invalid in JSON file.");
+        ERROR_MSG_AND_EXIT(std::string{"'storage_bytes_size' key not found or invalid in JSON file."});
     }
 
     if (data_type_byte_size <= 0) {
-        ERROR_MSG_AND_EXIT("Invalid 'storage_bytes_size' in " + geometa_path.string());
+        ERROR_MSG_AND_EXIT(std::string{"Invalid 'storage_bytes_size' in " + geometa_path.string()});
     }
 
     for (int i = 0; i < static_cast<int>(Side::NUMBER_SIDES); ++i) {
         const std::string side_key = "Side" + std::to_string(i);
         if (!geometa_json.contains(side_key)) {
-            ERROR_MSG_AND_EXIT("Key '" + side_key + "' not found in JSON file.");
+            ERROR_MSG_AND_EXIT(std::string{"Key '" + side_key + "' not found in JSON file."});
         }
 
         const json& side_json = geometa_json[side_key];
 
         if (!side_json.contains("qT_subsets_resolution")) {
-            std::cerr << "NOTE: 'qT_subsets_resolution' key not found in '" << side_key << "'." << '\n';
-            std::cerr << "NOTE: Make sure that " << side_key << " does not have 'qT_subsets_resolution' " << '\n';
+            // std::cerr << "NOTE: 'qT_subsets_resolution' key not found in '" << side_key << "'." << '\n';
+            // std::cerr << "NOTE: Make sure that " << side_key << " does not have 'qT_subsets_resolution' " << '\n';
+            PRINT_DEBUG(std::string{"NOTE: 'qT_subsets_resolution' key not found in '" + side_key + "'."});
+            PRINT_DEBUG(std::string{"NOTE: Make sure that " + side_key + " does not have 'qT_subsets_resolution' "});
             continue; // Or handle the error as needed
         }
 
         const json resolutions_json = side_json["qT_subsets_resolution"];
         if (resolutions_json.size() > side_resolutions[i].size()) {
-            ERROR_MSG_AND_EXIT("Resolution array size mismatch for side: " + std::to_string(i));
+            ERROR_MSG_AND_EXIT(std::string{"Resolution array size mismatch for side: " + std::to_string(i)});
         }
 
         for (size_t j = 0; j < resolutions_json.size(); ++j) {
             side_resolutions[i][j] = resolutions_json[j].get<uint16_t>();
-            std::cerr << "Side: " << i << " Resolution: " << side_resolutions[i][j] << " at c: " << j << '\n';
+            // std::cerr << "Side: " << i << " Resolution: " << side_resolutions[i][j] << " at c: " << j << '\n';
+            PRINT_DEBUG(std::string{"Side: " + std::to_string(i) + " Resolution: " + std::to_string(side_resolutions[i][j]) + " at c: " + std::to_string(j)});
         }
     }
-
-    geometa_file.close();
 }
 
 //getters
-int CommonStats::Get_Side_Resolution(const char* side, const uint8_t& c_number) const {
-    return side_resolutions[std::stoi(side)][c_number];
+const int64_t CommonStats::Get_Side_Resolution(const uint8_t& lod_number) const {
+    return (1 + std::pow(2,6+lod_number));
+    // return (0x1 +(2 << (6 + lod_number)));
 }
-int CommonStats::Get_Data_Type_Size() const {
+const int CommonStats::Get_Data_Type_Size() const {
     return data_type_byte_size;
 }

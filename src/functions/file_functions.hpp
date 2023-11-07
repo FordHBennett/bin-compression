@@ -27,7 +27,7 @@ void Generate_Random_Binary_File(const char* filename, long long fileSize, doubl
  * @param filename Name of the file.
  * @return Size of the file. Returns 1 in case of errors.
  */
-const int Get_File_Size_Bytes(const std::filesystem::path& file_path);
+const uint64_t Get_File_Size_Bytes(const std::filesystem::path& file_path);
 
 /**
  * Get the number of .geobin files in a directory, recursively.

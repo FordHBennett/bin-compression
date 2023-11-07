@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.12)
-project(geobin_compression)
+project(geobin_compression_proj LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 20)
 
 # Output directories for release and debug builds
@@ -12,6 +12,7 @@ set(SOURCES
     src/main.cpp
     src/classes/common_stats.cpp
     src/classes/rlr_class.cpp
+    # src/classes/lz4_class.cpp
     # src/classes/lzw_class.cpp
     # src/classes/lzp_class.cpp
     # src/classes/huffman_stats.cpp
@@ -20,11 +21,13 @@ set(SOURCES
     # src/classes/control_class.cpp
     # src/functions/encoding_decoding_functions.cpp
     src/functions/file_functions.cpp
+    src/functions/debug_functions.cpp
 )
 
 set(HEADERS
     src/classes/common_stats.hpp
     src/classes/rlr_class.hpp
+    # src/classes/lz4_class.hpp
     # src/classes/lzw_class.hpp
     # src/classes/lzp_class.hpp
     # src/classes/huffman_stats.hpp
@@ -33,45 +36,57 @@ set(HEADERS
     # src/classes/control_class.hpp
     # src/functions/encoding_decoding_functions.hpp
     src/functions/file_functions.hpp
+    src/functions/debug_functions.hpp
 )
 
 
 # Add the executable target first
-add_executable(geobin_compression ${SOURCES} ${HEADERS})
+add_executable(geobin_compression ${SOURCES}) #${HEADERS})
 
 # Include directories
-target_include_directories(geobin_compression PRIVATE src/classes)
-target_include_directories(geobin_compression PRIVATE src/functions)
+target_include_directories(geobin_compression PUBLIC src/classes)
+target_include_directories(geobin_compression PUBLIC src/functions)
 
 # If you are using OpenCV, you need to find and link it
 # find_package(OpenCV REQUIRED)
 # target_link_libraries(geobin_compression PRIVATE ${OpenCV_LIBS})
 
 # Find the nlohmann_json package
-find_package(nlohmann_json 3.2.0 REQUIRED)
+find_package(nlohmann_json CONFIG REQUIRED)
 
 # Find the Boost package
 # find_package(Boost 1.71.0 REQUIRED)
 
 # Link the executable to the nlohmann_json library
-target_link_libraries(geobin_compression PRIVATE nlohmann_json::nlohmann_json)
+target_link_libraries(geobin_compression PUBLIC nlohmann_json::nlohmann_json)
+
+# # Find the lz4 package
+# find_package(lz4 CONFIG REQUIRED)
+
+# # Link the executable to all of the lz4 libraries
+# target_link_libraries(geobin_compression PUBLIC lz4::lz4)
+
 
 # Link the executable to the Boost libraries
 # target_link_libraries(geobin_compression PRIVATE Boost::boost)
 
 # Debug build options
-set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O0 -g3 -Wall -fsanitize=undefined -fsanitize=address -fno-omit-frame-pointer -rdynamic -D_GLIBCXX_DEBUG -D_GLIBCXX_DEBUG_PEDANTIC -gdwarf-5 -fstack-protector")
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O0 -g3 -Wall -fsanitize=undefined -fsanitize=address -fno-omit-frame-pointer -D_GLIBCXX_DEBUG -D_GLIBCXX_DEBUG_PEDANTIC -gdwarf-5 -fstack-protector")
 
 
 # Release build options
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3")
 
 # Custom Release with Debug Info build options
-set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} -O2 -g -gdwarf-5 -fno-omit-frame-pointer -rdynamic -fdump-tree-cfg-graph -c")
+set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} -O2 -g -gdwarf-5 -fno-omit-frame-pointer -fdump-tree-cfg-graph -c")
 
 # Specify the build type based on CMake build flags
 if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Release CACHE STRING "Choose the type of build (Debug or Release or RelWithDebInfo)" FORCE)
+endif()
+
+if(CMAKE_BUILD_TYPE MATCHES Debug)
+    add_definitions(-DDEBUG_MODE)
 endif()
 
 # Install the executable to the 'bin' directory

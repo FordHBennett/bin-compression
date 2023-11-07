@@ -59,15 +59,15 @@ Base_Stats:
                     }
                 }
             }
-        writeEncodedFile();
-        WriteDecodedFile();
+        Write_Compressed_File();
+        Write_Decompressed_File();
         const char* compressionType = "RLR";
 
     LZW_Class:
         encode();
         decode();
-        writeEncodedFile();
-        WriteDecodedFile();
+        Write_Compressed_File();
+        Write_Decompressed_File();
         const char* compressionType = "LZW";
 
 

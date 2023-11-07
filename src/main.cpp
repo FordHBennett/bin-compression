@@ -4,16 +4,20 @@
 // #include <fstream>
 // #include <random>
 // #include <thread>
-
+#include <fstream>
+#include <iostream>
+// #include <lz4file.h>
 
 #include "classes/common_stats.hpp"
 #include "classes/rlr_class.hpp"
+// #include "classes/lz4_class.hpp"
 // #include "classes/lzw_class.h"
 // #include "classes/lzp_class.h"
 // #include "classes/control_class.h"
 
 
 #include "functions/file_functions.hpp"
+#include "functions/debug_functions.hpp"
 
 // pass a ref of an instance of common stats class to the processFiles function
 // create an instance of the compression class in the processFiles function
@@ -32,7 +36,7 @@ int main() {
 
     std::vector<std::filesystem::path> geobin_files_vec;
 
-    std::filesystem::path grand_canyon_path = std::filesystem::current_path()/std::filesystem::path("PlanetData/Earth/local/Grand Canyon");
+    std::filesystem::path grand_canyon_path = std::filesystem::current_path()/std::filesystem::path("PlanetData/Jupiter/Europa");
 
 
     // Get list of all geobin files.
@@ -45,67 +49,79 @@ int main() {
                     }
                 } catch (const std::filesystem::filesystem_error& e) {
                     // Handle file-specific errors.
-                    std::cerr << "Error accessing file: " << entry.path() << '\n'
-                            << e.what() << '\n';
+                    // std::cerr << "Error accessing file: " << entry.path() << '\n'
+                    //         << e.what() << '\n';
+                    ERROR_MSG_AND_EXIT(std::string{"Error accessing file: "} + entry.path().string() + '\n' + std::string{"ERROR CODE: "} + std::string{e.what()} );
                 }
             }
         } catch (const std::filesystem::filesystem_error& e) {
             // Handle errors during the directory iteration.
-            std::cerr << "Error iterating through directory: " << grand_canyon_path << '\n'
-                    << e.what() << '\n';
+            // std::cerr << "Error iterating through directory: " << grand_canyon_path << '\n'
+            //         << e.what() << '\n';
+            ERROR_MSG_AND_EXIT(std::string{"Error iterating through directory: "} + grand_canyon_path.string() + '\n' + std::string{"ERROR CODE: "} + std::string{e.what()} );
         }
     } else {
-        std::cerr << "The path does not exist or is not a directory: " << grand_canyon_path << '\n';
+        // std::cerr << "The path does not exist or is not a directory: " << grand_canyon_path << '\n';
+        ERROR_MSG_AND_EXIT(std::string{"The path does not exist or is not a directory: "} + grand_canyon_path.string());
     }
-
-    std::cout << "You have successfully loaded " << geobin_files_vec.size() << " files.\n";
 
     Run_RLR_Compression_Decompression_On_Files(geobin_files_vec, numIterations, rlr);
 
-    // const int numThreads = std::thread::hardware_concurrency();
-    // // const int numThreads = 1;
-    // std::vector<std::thread> threads;
-    // int filesPerThread = geobin_files_vec.size() / numThreads;
-    // // Shared counter to keep track of the number of files processed
-    // std::atomic<int> filesProcessed(0);
-    // for (int t = 0; t < numThreads; ++t) {
-    //     int start = t * filesPerThread;
-    //     int end = (t == numThreads - 1) ? geobin_files_vec.size() : start + filesPerThread;
-    //     // partition geobin_files_vec into numThreads parts
-    //     std::vector<std::filesystem::path> geobin_files_vecPartition(geobin_files_vec.begin() + start, geobin_files_vec.begin() + end);
+    // LZ4 lz4;
+    // char inpFilename[256] = { 0 };
+    // char lz4Filename[256] = { 0 };
+    // char decFilename[256] = { 0 };
+    // char input_file_name[] = "PlanetData/Earth/local/Grand Canyon/gc_dem_s3_c3_lod6.geobin";
+    // char lz4_file_name[] = "lz4_encoded.bin";
+    // char decoded_file_name[] = "lz4_decoded.bin";
+    // FILE* input_file_ptr = fopen(input_file_name, "rb");
+    // FILE* lz4_file_ptr = fopen(lz4_file_name, "wb");
+    // FILE* decoded_file_ptr = fopen(decoded_file_name, "wb");
 
-    //     // threads.emplace_back([&filesProcessed, &avgTotalRLRStats, &avgTotalLZWStats, &avgTotalLZPStats, &avgTotalControlStats, &geobin_files_vecPartition, start, end]() {
-    //     threads.emplace_back([&, geobin_files_vecPartition]() {
-
-    //         // processFiles(geobin_files_vecPartition, numIterations, std::ref(avgTotalRLRStats));
-    //         processFiles(geobin_files_vec, numIterations, std::ref(avgTotalLZWStats));
-    //         // processFiles(geobin_files_vec, numIterations, std::ref(avgTotalLZPStats));
-    //         // processFiles(geobin_files_vecPartition, numIterations, std::ref(avgTotalControlStats));
-
-    //         // Increment the shared counter and print the % done
-    //         int processed = filesProcessed.fetch_add(1) + 1;  // Fetch the current value and then add 1
-    //         float percentageDone = (static_cast<float>(processed) / geobin_files_vec.size()) * 100;
-    //         // std::cout << "Processed: " << processed << " out of " << geobin_files_vec.size() << " (" << percentageDone << "% done)\n";
-    //     });
+    // //compress
+    // LZ4F_errorCode_t ret = lz4.Compress_File(input_file_ptr, lz4_file_ptr);
+    // fclose(input_file_ptr);
+    // fclose(lz4_file_ptr);
+    // if (ret) {
+    //     std::cerr << "Error: LZ4 compression failed." << '\n';
+    //     ERROR_MSG_AND_EXIT("LZ4 compression failed.");
     // }
 
+    // //decompress
+    // lz4_file_ptr = fopen(lz4_file_name, "rb");
+    // ret = lz4.Decompress_File(lz4_file_ptr, decoded_file_ptr);
+    // fclose(lz4_file_ptr);
+    // fclose(decoded_file_ptr);
 
-    // // Wait for all threads to finish.
-    // for (auto& t : threads) {
-    //     t.join();
+    // if (ret) {
+    //     std::cerr << "Error: LZ4 decompression failed." << '\n';
+    //     ERROR_MSG_AND_EXIT("LZ4 decompression failed.");
     // }
 
-    // // Calculate the average stats for all files
-    // // avgTotalRLRStats.Calculate_Cumulative_Average_Stats_For_Directory(totalFiles);
-    // avgTotalLZWStats.Calculate_Cumulative_Average_Stats_For_Directory(totalFiles);
-    // // avgTotalLZPStats.Calculate_Cumulative_Average_Stats_For_Directory(totalFiles);
-    // // avgTotalControlStats.Calculate_Cumulative_Average_Stats_For_Directory(totalFiles);
+    // //verify populating the decoded data vector and original data vector
+    // std::ifstream input_stream(input_file_name, std::ios::binary);
+    // std::ifstream decoded_stream(decoded_file_name, std::ios::binary);
+    // std::vector<char> original_data;
+    // std::vector<char> decoded_data;
+    // char c;
+    // while(input_stream.get(c)){
+    //     original_data.emplace_back(c);
+    // }
+    // while(decoded_stream.get(c)){
+    //     decoded_data.emplace_back(c);
+    // }
+    // lz4.Is_Decoded_Data_Equal_To_Original_Data(original_data, decoded_data);
 
-    // // Print the average stats for all files
-    // // avgTotalRLRStats.Print_Stats();
-    // avgTotalLZWStats.Print_Stats();
-    // // avgTotalLZPStats.Print_Stats();
-    // // avgTotalControlStats.Print_Stats();
+    // const size_t max_bytes = 1e9;
+    // const size_t ring_buffer_bytes = 1e6;
+    // std::ifstream input_stream("PlanetData/Earth/local/Grand Canyon/gc_dem_s3_c3_lod6.geobin", std::ios::binary);
+    // lz4.encode(input_stream, max_bytes, ring_buffer_bytes);
+    // lz4.Write_Compressed_File(lz4.Get_Encoded_Data(), "test.lz4");
+    // lz4.decode(max_bytes, ring_buffer_bytes);
+    // lz4.Write_Decompressed_File(lz4.Get_Decoded_Data(), "test2.geobin");
+
+
+
 
     return 0;
 }

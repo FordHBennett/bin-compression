@@ -2,6 +2,8 @@
 
 #include "common_stats.hpp"
 #include "../functions/file_functions.hpp"
+#include <vector>
+#include <filesystem>
 
 
 
@@ -13,16 +15,25 @@ class RLR : public CommonStats {
         RLR& operator=(const RLR& other);
         ~RLR();
 
-        void encode(const std::vector<char>& input);
-        void decode(const std::vector<char>& input);
+        void Read_File(const std::filesystem::path& file_path, const int& number_of_bytes_to_read, const int& row);
 
-        const void writeEncodedFile(const std::vector<char>& encodedData, const char* filename);
-        const void writeDecodedFile(const std::vector<char>& decodedData, const char* filename);
+        void Encode_With_One_Byte_Run_Length();
+        void Decode_With_One_Byte_Run_Length();
+
+        void Encode_With_Two_Byte_Run_Length();
+        void Decode_With_Two_Byte_Run_Length();
+
+        void Encode_With_One_Nibble_Run_Length();
+        void Decode_With_One_Nibble_Run_Length();
+
+        void Write_Compressed_File(const std::filesystem::path& file_path) const;
+        void Write_Decompressed_File(const std::filesystem::path& file_path) const;
 
         //getters
-        const char* getCompressionType() const;
-        const std::vector<char> getEncodedData() const;
-        const std::vector<char> getDecodedData() const;
+        const char* Get_Compression_Type() const;
+        const std::vector<char> Get_Encoded_Data_Vec() const;
+        const std::vector<char> Get_Decoded_Data_Vec() const;
+        const std::vector<char> Get_Binary_Data_Vec() const;
 
 
 
@@ -32,9 +43,10 @@ class RLR : public CommonStats {
 
 
     private:
-        const char* compressionType = "RLR";
-        std::vector<char> encodedData;
-        std::vector<char> decodedData;
+        const char* compression_type = "RLR";
+        std::vector<char> binary_data_vec;
+        std::vector<char> encoded_data_vec;
+        std::vector<char> decoded_data_vec;
 
 
 };
