@@ -15,9 +15,23 @@
 // #include "classes/lzp_class.h"
 // #include "classes/control_class.h"
 
-
 #include "functions/file_functions.hpp"
-#include "functions/debug_functions.hpp"
+
+#define ERROR_MSG(msg) \
+    std::cerr << msg << " OCCURED IN: " << '\n'; \
+    std::cerr << "      File: " << __FILE__ << '\n'; \
+    std::cerr << "      Function: " << __PRETTY_FUNCTION__ << '\n'; \
+    std::cerr << "      Line: " << __LINE__ << '\n'; \
+
+#define ERROR_MSG_AND_EXIT(msg) \
+    std::cerr << msg << " OCCURED IN: " << '\n'; \
+    std::cerr << "      File: " << __FILE__ << '\n'; \
+    std::cerr << "      Function: " << __PRETTY_FUNCTION__ << '\n'; \
+    std::cerr << "      Line: " << __LINE__ << std::endl; \
+    std::exit(EXIT_FAILURE);
+
+#define PRINT_DEBUG(msg) \
+    std::cerr << msg << '\n'; \
 
 // pass a ref of an instance of common stats class to the processFiles function
 // create an instance of the compression class in the processFiles function
@@ -27,7 +41,7 @@
 
 //create a common stats class that has all the stats and then pass it to the processFiles function
 int main() {
-    const int numIterations = 1;
+    const int number_of_iteration = 1;
 
     RLR rlr;
     // LZW_Stats avgTotalLZWStats;
@@ -65,63 +79,13 @@ int main() {
         ERROR_MSG_AND_EXIT(std::string{"The path does not exist or is not a directory: "} + grand_canyon_path.string());
     }
 
-    Run_RLR_Compression_Decompression_On_Files(geobin_files_vec, numIterations, rlr);
+    Run_RLR_Compression_Decompression_On_Files(geobin_files_vec, number_of_iteration, rlr);
 
-    // LZ4 lz4;
-    // char inpFilename[256] = { 0 };
-    // char lz4Filename[256] = { 0 };
-    // char decFilename[256] = { 0 };
-    // char input_file_name[] = "PlanetData/Earth/local/Grand Canyon/gc_dem_s3_c3_lod6.geobin";
-    // char lz4_file_name[] = "lz4_encoded.bin";
-    // char decoded_file_name[] = "lz4_decoded.bin";
-    // FILE* input_file_ptr = fopen(input_file_name, "rb");
-    // FILE* lz4_file_ptr = fopen(lz4_file_name, "wb");
-    // FILE* decoded_file_ptr = fopen(decoded_file_name, "wb");
+    rlr.Compute_Encoded_Throughput();
+    rlr.Compute_Decoded_Throughput();
+    rlr.Calculate_Cumulative_Average_Stats_For_Directory(number_of_iteration, geobin_files_vec.size());
 
-    // //compress
-    // LZ4F_errorCode_t ret = lz4.Compress_File(input_file_ptr, lz4_file_ptr);
-    // fclose(input_file_ptr);
-    // fclose(lz4_file_ptr);
-    // if (ret) {
-    //     std::cerr << "Error: LZ4 compression failed." << '\n';
-    //     ERROR_MSG_AND_EXIT("LZ4 compression failed.");
-    // }
-
-    // //decompress
-    // lz4_file_ptr = fopen(lz4_file_name, "rb");
-    // ret = lz4.Decompress_File(lz4_file_ptr, decoded_file_ptr);
-    // fclose(lz4_file_ptr);
-    // fclose(decoded_file_ptr);
-
-    // if (ret) {
-    //     std::cerr << "Error: LZ4 decompression failed." << '\n';
-    //     ERROR_MSG_AND_EXIT("LZ4 decompression failed.");
-    // }
-
-    // //verify populating the decoded data vector and original data vector
-    // std::ifstream input_stream(input_file_name, std::ios::binary);
-    // std::ifstream decoded_stream(decoded_file_name, std::ios::binary);
-    // std::vector<char> original_data;
-    // std::vector<char> decoded_data;
-    // char c;
-    // while(input_stream.get(c)){
-    //     original_data.emplace_back(c);
-    // }
-    // while(decoded_stream.get(c)){
-    //     decoded_data.emplace_back(c);
-    // }
-    // lz4.Is_Decoded_Data_Equal_To_Original_Data(original_data, decoded_data);
-
-    // const size_t max_bytes = 1e9;
-    // const size_t ring_buffer_bytes = 1e6;
-    // std::ifstream input_stream("PlanetData/Earth/local/Grand Canyon/gc_dem_s3_c3_lod6.geobin", std::ios::binary);
-    // lz4.encode(input_stream, max_bytes, ring_buffer_bytes);
-    // lz4.Write_Compressed_File(lz4.Get_Encoded_Data(), "test.lz4");
-    // lz4.decode(max_bytes, ring_buffer_bytes);
-    // lz4.Write_Decompressed_File(lz4.Get_Decoded_Data(), "test2.geobin");
-
-
-
+    rlr.Print_Stats(rlr.Get_Compression_Type());
 
     return 0;
 }

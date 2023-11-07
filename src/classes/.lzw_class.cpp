@@ -2,12 +2,12 @@
 
 //Constructors
 LZW_Stats::LZW_Stats() :
-    avgSizeBytes(0.0), average_time_encoded_in_ns (0.0), average_time_encoded_in_ns (0.0),
+    avgSizeBytes(0.0), average_time_encoded_in_microseconds (0.0), average_time_encoded_in_microseconds (0.0),
     average_compression_ratio(0.0), avgPeakMemoryDuringEncoding(0), avgPeakMemoryDuringDecoding(0),
     average_encoded_throughput(0.0), average_decoded_throughput(0.0) {}
 
-LZW_Stats::LZW_Stats(double avgSizeBytes, double average_time_encoded_in_ns , double average_time_encoded_in_ns , double average_compression_ratio, size_t avgPeakMemoryDuringEncoding, size_t avgPeakMemoryDuringDecoding, double average_encoded_throughput, double average_decoded_throughput) :
-    avgSizeBytes(avgSizeBytes), average_time_encoded_in_ns (average_time_encoded_in_ns ), average_time_encoded_in_ns (average_time_encoded_in_ns ),
+LZW_Stats::LZW_Stats(double avgSizeBytes, double average_time_encoded_in_microseconds , double average_time_encoded_in_microseconds , double average_compression_ratio, size_t avgPeakMemoryDuringEncoding, size_t avgPeakMemoryDuringDecoding, double average_encoded_throughput, double average_decoded_throughput) :
+    avgSizeBytes(avgSizeBytes), average_time_encoded_in_microseconds (average_time_encoded_in_microseconds ), average_time_encoded_in_microseconds (average_time_encoded_in_microseconds ),
     average_compression_ratio(average_compression_ratio), avgPeakMemoryDuringEncoding(avgPeakMemoryDuringEncoding), avgPeakMemoryDuringDecoding(avgPeakMemoryDuringDecoding),
     average_encoded_throughput(average_encoded_throughput), average_decoded_throughput(average_decoded_throughput) {}
 
@@ -100,8 +100,8 @@ std::vector<char> LZW_Stats::lzwDecode(const std::vector<int>& input) {
 // Functions
 void LZW_Stats::Print_Stats() {
     std::cout << "LZW: Average size in bytes: " << avgSizeBytes << '\n';
-    std::cout << "LZW: Average encoded time in ms: " << average_time_encoded_in_ns  << '\n';
-    std::cout << "LZW: Average decoded time in ms: " << average_time_encoded_in_ns  << '\n';
+    std::cout << "LZW: Average encoded time in ms: " << average_time_encoded_in_microseconds  << '\n';
+    std::cout << "LZW: Average decoded time in ms: " << average_time_encoded_in_microseconds  << '\n';
     std::cout << "LZW: Average compression ratio: " << average_compression_ratio << '\n';
     std::cout << "LZW: Average peak memory during encoding: " << avgPeakMemoryDuringEncoding << '\n';
     std::cout << "LZW: Average peak memory during decoding: " << avgPeakMemoryDuringDecoding << '\n';
@@ -111,8 +111,8 @@ void LZW_Stats::Print_Stats() {
 
 void LZW_Stats::Calculate_Cumulative_Average_Stats_For_Directory(int divisor){
     avgSizeBytes /= divisor;
-    average_time_encoded_in_ns  /= divisor;
-    average_time_encoded_in_ns  /= divisor;
+    average_time_encoded_in_microseconds  /= divisor;
+    average_time_encoded_in_microseconds  /= divisor;
     average_compression_ratio /= divisor;
     avgPeakMemoryDuringEncoding /= divisor;
     avgPeakMemoryDuringDecoding /= divisor;
@@ -170,8 +170,8 @@ void LZW_Stats::getFileStats(std::vector<char> &binaryData, const char* lzwEncod
     // open the lzw encoded file and determine the file size
     avgSizeBytes += getFileSize(lzwEncodedFileName);
     //duration cast into a double
-    average_time_encoded_in_ns  += durationEncodelzw.count() / 1e6;
-    average_time_encoded_in_ns  += durationDecodelzw.count() / 1e6;
+    average_time_encoded_in_microseconds  += durationEncodelzw.count() / 1e6;
+    average_time_encoded_in_microseconds  += durationDecodelzw.count() / 1e6;
     average_compression_ratio += static_cast<double>(getFileSize(lzwEncodedFileName))/fileSize;
 
 }
@@ -206,8 +206,8 @@ void LZW_Stats::getFileStats(std::vector<char> &binaryData, const char* lzwEncod
     avgLZWStats.Calculate_Cumulative_Average_Stats_For_Directory(numIterations);
 
     avgSizeBytes += avgLZWStats.getAvgSizeBytes();
-    average_time_encoded_in_ns  += avgLZWStats.getaverage_time_encoded_in_ns ();
-    average_time_encoded_in_ns  += avgLZWStats.getaverage_time_encoded_in_ns ();
+    average_time_encoded_in_microseconds  += avgLZWStats.getaverage_time_encoded_in_microseconds ();
+    average_time_encoded_in_microseconds  += avgLZWStats.getaverage_time_encoded_in_microseconds ();
     average_compression_ratio += avgLZWStats.getaverage_compression_ratio();
     avgPeakMemoryDuringEncoding += avgLZWStats.getAvgPeakMemoryDuringEncoding();
     avgPeakMemoryDuringDecoding += avgLZWStats.getAvgPeakMemoryDuringDecoding();
@@ -217,8 +217,8 @@ void LZW_Stats::getFileStats(std::vector<char> &binaryData, const char* lzwEncod
 
 // Setters
 void LZW_Stats::setAvgSizeBytes(double value) { avgSizeBytes = value; }
-void LZW_Stats::setaverage_time_encoded_in_ns (double value) { average_time_encoded_in_ns  = value; }
-void LZW_Stats::setaverage_time_encoded_in_ns (double value) { average_time_encoded_in_ns  = value; }
+void LZW_Stats::setaverage_time_encoded_in_microseconds (double value) { average_time_encoded_in_microseconds  = value; }
+void LZW_Stats::setaverage_time_encoded_in_microseconds (double value) { average_time_encoded_in_microseconds  = value; }
 void LZW_Stats::setaverage_compression_ratio(double value) { average_compression_ratio = value; }
 void LZW_Stats::setAvgPeakMemoryDuringEncoding(size_t value) { avgPeakMemoryDuringEncoding = value; }
 void LZW_Stats::setAvgPeakMemoryDuringDecoding(size_t value) { avgPeakMemoryDuringDecoding = value; }
@@ -227,8 +227,8 @@ void LZW_Stats::setaverage_decoded_throughput(double value) { average_decoded_th
 
 // Getters
 double LZW_Stats::getAvgSizeBytes() const { return avgSizeBytes; }
-double LZW_Stats::getaverage_time_encoded_in_ns () const { return average_time_encoded_in_ns ; }
-double LZW_Stats::getaverage_time_encoded_in_ns () const { return average_time_encoded_in_ns ; }
+double LZW_Stats::getaverage_time_encoded_in_microseconds () const { return average_time_encoded_in_microseconds ; }
+double LZW_Stats::getaverage_time_encoded_in_microseconds () const { return average_time_encoded_in_microseconds ; }
 double LZW_Stats::getaverage_compression_ratio() const { return average_compression_ratio; }
 size_t LZW_Stats::getAvgPeakMemoryDuringEncoding() const { return avgPeakMemoryDuringEncoding; }
 size_t LZW_Stats::getAvgPeakMemoryDuringDecoding() const { return avgPeakMemoryDuringDecoding; }

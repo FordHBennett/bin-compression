@@ -11,9 +11,6 @@ class RLR : public CommonStats {
     public:
         // Constructors
         RLR();
-        RLR(const RLR& other);
-        RLR& operator=(const RLR& other);
-        ~RLR();
 
         void Read_File(const std::filesystem::path& file_path, const int& number_of_bytes_to_read, const int& row);
 

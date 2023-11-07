@@ -10,7 +10,7 @@ class LZP_Stats {
 public:
     // Constructors
     LZP_Stats();
-    LZP_Stats(double avgSizeBytes, double average_time_encoded_in_ns , double average_time_encoded_in_ns ,
+    LZP_Stats(double avgSizeBytes, double average_time_encoded_in_microseconds , double average_time_encoded_in_microseconds ,
             double average_compression_ratio, size_t avgPeakMemoryDuringEncoding,
             size_t avgPeakMemoryDuringDecoding, double average_encoded_throughput, double average_decoded_throughput);
 
@@ -46,8 +46,8 @@ public:
 
     // Setters
     void setAvgSizeBytes(double value);
-    void setaverage_time_encoded_in_ns (double value);
-    void setaverage_time_encoded_in_ns (double value);
+    void setaverage_time_encoded_in_microseconds (double value);
+    void setaverage_time_encoded_in_microseconds (double value);
     void setaverage_compression_ratio(double value);
     void setAvgPeakMemoryDuringEncoding(size_t value);
     void setAvgPeakMemoryDuringDecoding(size_t value);
@@ -56,8 +56,8 @@ public:
 
     // Getters
     double getAvgSizeBytes() const;
-    double getaverage_time_encoded_in_ns () const;
-    double getaverage_time_encoded_in_ns () const;
+    double getaverage_time_encoded_in_microseconds () const;
+    double getaverage_time_encoded_in_microseconds () const;
     double getaverage_compression_ratio() const;
     size_t getAvgPeakMemoryDuringEncoding() const;
     size_t getAvgPeakMemoryDuringDecoding() const;
@@ -66,8 +66,8 @@ public:
 
 private:
     double avgSizeBytes;
-    double average_time_encoded_in_ns ;
-    double average_time_encoded_in_ns ;
+    double average_time_encoded_in_microseconds ;
+    double average_time_encoded_in_microseconds ;
     double average_compression_ratio;
     size_t avgPeakMemoryDuringEncoding;
     size_t avgPeakMemoryDuringDecoding;
