@@ -50,28 +50,18 @@ int main() {
 
     std::vector<std::filesystem::path> geobin_files_vec;
 
-    std::filesystem::path grand_canyon_path = std::filesystem::current_path()/std::filesystem::path("PlanetData/Jupiter/Europa");
+    std::filesystem::path grand_canyon_path = std::filesystem::current_path()/std::filesystem::path("PlanetData/Earth/Local/Grand Canyon");
 
 
     // Get list of all geobin files.
     if (std::filesystem::exists(grand_canyon_path) && std::filesystem::is_directory(grand_canyon_path)) {
         try {
             for (const auto& entry : std::filesystem::recursive_directory_iterator(grand_canyon_path)) {
-                try {
-                    if (std::filesystem::is_regular_file(entry.status()) && entry.path().extension() == ".geobin") {
-                        geobin_files_vec.push_back(entry.path());
-                    }
-                } catch (const std::filesystem::filesystem_error& e) {
-                    // Handle file-specific errors.
-                    // std::cerr << "Error accessing file: " << entry.path() << '\n'
-                    //         << e.what() << '\n';
-                    ERROR_MSG_AND_EXIT(std::string{"Error accessing file: "} + entry.path().string() + '\n' + std::string{"ERROR CODE: "} + std::string{e.what()} );
+                if (std::filesystem::is_regular_file(entry.status()) && entry.path().extension() == ".geobin") {
+                    geobin_files_vec.push_back(entry.path());
                 }
             }
         } catch (const std::filesystem::filesystem_error& e) {
-            // Handle errors during the directory iteration.
-            // std::cerr << "Error iterating through directory: " << grand_canyon_path << '\n'
-            //         << e.what() << '\n';
             ERROR_MSG_AND_EXIT(std::string{"Error iterating through directory: "} + grand_canyon_path.string() + '\n' + std::string{"ERROR CODE: "} + std::string{e.what()} );
         }
     } else {

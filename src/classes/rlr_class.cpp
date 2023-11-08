@@ -62,7 +62,7 @@ void RLR::Encode_With_One_Byte_Run_Length() {
         current_block.assign(binary_data_vec.begin() + byte_index,
                                         binary_data_vec.begin() + byte_index + data_type_size);
 
-        while (next_index < binary_data_vec.size() && run_length < 255) {
+        while ((next_index < binary_data_vec.size()) && run_length < 255) {
             if (std::equal(current_block.begin(), current_block.end(),
                            binary_data_vec.begin() + next_index)) {
                 run_length++;
@@ -117,7 +117,7 @@ void RLR::Encode_With_Two_Byte_Run_Length() {
         std::vector<char> current_block(binary_data_vec.begin() + byte_index,
                                         binary_data_vec.begin() + byte_index + data_type_size);
 
-        while (next_index < binary_data_vec.size() && run_length < 65535) {
+        while ((next_index < binary_data_vec.size()) && run_length < 65535) {
             if (std::equal(current_block.begin(), current_block.end(),
                            binary_data_vec.begin() + next_index)) {
                 run_length++;
@@ -164,58 +164,48 @@ void RLR::Encode_With_One_Nibble_Run_Length() {
     encoded_data_vec.clear();
 
     const int data_type_size = this->Get_Data_Type_Size();
-    encoded_data_vec.reserve(binary_data_vec.size() / 5);
+    encoded_data_vec.reserve(binary_data_vec.size() / 8);
     int byte_index = 0;
-    std::vector<char> current_block;
-    current_block.reserve(data_type_size);
+    std::vector<char> first_nibble_run_block = {0};
+    first_nibble_run_block.reserve(data_type_size);
+    std::vector<char> second_nibble_run_block = {0};
+    second_nibble_run_block.reserve(data_type_size);
 
     while (byte_index < binary_data_vec.size()) {
         uint8_t first_nibble_run_length = 1;
         uint8_t second_nibble_run_length = 0;
         int next_index = byte_index + data_type_size;
 
-        current_block.assign(binary_data_vec.begin() + byte_index,
-                             binary_data_vec.begin() + byte_index + data_type_size);
+        first_nibble_run_block.assign(binary_data_vec.begin() + byte_index, binary_data_vec.begin() + byte_index + data_type_size);
 
-        while (next_index < binary_data_vec.size() && first_nibble_run_length < 15) {
-            if (std::equal(current_block.begin(), current_block.end(),
-                           binary_data_vec.begin() + next_index)) {
-                first_nibble_run_length++;
-                next_index += data_type_size;
-            } else {
-                break;
-            }
+        while ((next_index < binary_data_vec.size()) && (first_nibble_run_length < 15) &&
+                (std::equal(first_nibble_run_block.begin(), first_nibble_run_block.end(), binary_data_vec.begin() + next_index))) {
+            first_nibble_run_length++;
+            next_index += data_type_size;
         }
 
-        byte_index = next_index; // Update the byte_index to the next_index for the next iteration
+        byte_index = next_index;
 
-        // Check if there is more data to process for the second nibble
         if (byte_index < binary_data_vec.size()) {
-            current_block.assign(binary_data_vec.begin() + byte_index,
-                                 binary_data_vec.begin() + byte_index + data_type_size);
+            second_nibble_run_block.assign(binary_data_vec.begin() + byte_index, binary_data_vec.begin() + byte_index + data_type_size);
 
-            while (next_index < binary_data_vec.size() && second_nibble_run_length < 15) {
-                if (std::equal(current_block.begin(), current_block.end(),
-                               binary_data_vec.begin() + next_index)) {
-                    second_nibble_run_length++;
-                    next_index += data_type_size;
-                } else {
-                    break;
-                }
+            while ((next_index < binary_data_vec.size()) && (second_nibble_run_length < 15) &&
+                        (std::equal(second_nibble_run_block.begin(), second_nibble_run_block.end(), binary_data_vec.begin() + next_index))) {
+                second_nibble_run_length++;
+                next_index += data_type_size;
             }
         }
 
-        byte_index = next_index; // Update the byte_index to the next_index for the next iteration
+        byte_index = next_index;
 
-        // Pack the two run lengths into one byte
-        uint8_t packed_run_lengths = (first_nibble_run_length << 4) | second_nibble_run_length;
-        encoded_data_vec.push_back(static_cast<char>(packed_run_lengths));
-        if (first_nibble_run_length > 0) {
-            encoded_data_vec.insert(encoded_data_vec.end(), current_block.begin(), current_block.end());
+        encoded_data_vec.push_back(static_cast<char>((first_nibble_run_length << 4) | second_nibble_run_length));
+        encoded_data_vec.insert(encoded_data_vec.end(), first_nibble_run_block.begin(), first_nibble_run_block.end());
+
+        if (second_nibble_run_length) {
+        encoded_data_vec.insert(encoded_data_vec.end(), second_nibble_run_block.begin(), second_nibble_run_block.end());
         }
-        if (second_nibble_run_length > 0) {
-            encoded_data_vec.insert(encoded_data_vec.end(), current_block.begin(), current_block.end());
-        }
+
+
     }
 
     encoded_data_vec.shrink_to_fit();
@@ -280,37 +270,28 @@ void RLR::Decode_With_One_Nibble_Run_Length() {
     decoded_data_vec.clear();
 
     const int data_type_size = this->Get_Data_Type_Size();
-    decoded_data_vec.reserve(binary_data_vec.size());
+    size_t byte_index = 0;
 
-    int byte_index = 0;
     while (byte_index < encoded_data_vec.size()) {
-        uint8_t packed_run_lengths = static_cast<uint8_t>(encoded_data_vec[byte_index++]);
-        uint8_t first_nibble_run_length = (packed_run_lengths >> 4);
+
+        uint8_t packed_run_lengths = static_cast<uint8_t>(encoded_data_vec[byte_index]);
+        uint8_t first_nibble_run_length = packed_run_lengths >> 4;
         uint8_t second_nibble_run_length = packed_run_lengths & 0x0F;
 
+        byte_index++;
 
-        int new_size = decoded_data_vec.size() + (first_nibble_run_length + second_nibble_run_length) * data_type_size;
-        decoded_data_vec.resize(new_size);
+        // if (byte_index + data_type_size <= encoded_data_vec.size()) {
+            decoded_data_vec.insert(decoded_data_vec.end(), first_nibble_run_length * data_type_size,encoded_data_vec[byte_index]);
+            byte_index += data_type_size;
+        // }
 
-
-        char* insert_position = decoded_data_vec.data() + decoded_data_vec.size() - (first_nibble_run_length + second_nibble_run_length) * data_type_size;
-
-
-        for (int run = 0; run < first_nibble_run_length; run++) {
-            memcpy(insert_position, &encoded_data_vec[byte_index], data_type_size);
-            insert_position += data_type_size;
-        }
-        byte_index += data_type_size;
-
-        if ((second_nibble_run_length > 0) && (byte_index < encoded_data_vec.size())) {
-            for (int run = 0; run < second_nibble_run_length; run++) {
-                memcpy(insert_position, &encoded_data_vec[byte_index], data_type_size);
-                insert_position += data_type_size;
-            }
+        if ((second_nibble_run_length > 0) && (byte_index + data_type_size <= encoded_data_vec.size())) {
+            decoded_data_vec.insert(decoded_data_vec.end(), second_nibble_run_length * data_type_size, encoded_data_vec[byte_index]);
             byte_index += data_type_size;
         }
     }
 }
+
 
 //SLOWER
 // void RLR::Decode_With_One_Nibble_Run_Length() {

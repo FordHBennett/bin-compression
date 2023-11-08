@@ -98,16 +98,7 @@ void CommonStats::Calculate_Cumulative_Average_Stats_For_Directory(const int& di
 // }
 
 void CommonStats::Compute_Compression_Ratio(const std::filesystem::path& original_file_path, const std::filesystem::path& compressed_file_path) {
-    // PRINT_DEBUG("Original File" + original_file_path.string());
-    // PRINT_DEBUG("Original File Size" + std::to_string(Get_File_Size_Bytes(original_file_path)));
-    // PRINT_DEBUG("Compressed File" + compressed_file_path.string());
-    // PRINT_DEBUG("Compressed File Size" + std::to_string(Get_File_Size_Bytes(compressed_file_path)));
-    // PRINT_DEBUG("Compression Ratio: " + std::to_string(Get_File_Size_Bytes(compressed_file_path)) + '/'  + std::to_string(Get_File_Size_Bytes(original_file_path)));
-    // PRINT_DEBUG("Compression Ratio: " + std::to_string(static_cast<double>(Get_File_Size_Bytes(compressed_file_path)) / static_cast<double>(Get_File_Size_Bytes(original_file_path))));
-    // ERROR_MSG_AND_EXIT("DEBUG");
     average_compression_ratio += static_cast<double>(Get_File_Size_Bytes(compressed_file_path)) / static_cast<double>(Get_File_Size_Bytes(original_file_path));
-    // PRINT_DEBUG("Compression Ratio: " + std::to_string(average_compression_ratio));
-    
 }
 
 void CommonStats::Compute_File_Size(const std::filesystem::path& file_path) {
@@ -181,27 +172,27 @@ void CommonStats::Set_Data_Type_Size_And_Side_Resolutions(const std::filesystem:
 #endif
         const json& side_json = geometa_json[side_key];
 
-#ifdef DEBUG_MODE
         if (!side_json.contains("qT_subsets_resolution")) {
+#ifdef DEBUG_MODE
             PRINT_DEBUG(std::string{"NOTE: 'qT_subsets_resolution' key not found in '" + side_key + "'."});
             PRINT_DEBUG(std::string{"NOTE: Make sure that " + side_key + " does not have 'qT_subsets_resolution' "});
-            continue;
-        }
 #endif
 
-        const json resolutions_json = side_json["qT_subsets_resolution"];
+        } else {
+            const json resolutions_json = side_json["qT_subsets_resolution"];
 
 #ifdef DEBUG_MODE
-        if (resolutions_json.size() > side_resolutions[i].size()) {
-            ERROR_MSG_AND_EXIT(std::string{"Resolution array size mismatch for side: " + std::to_string(i)});
-        }
+            if (resolutions_json.size() > side_resolutions[i].size()) {
+                ERROR_MSG_AND_EXIT(std::string{"Resolution array size mismatch for side: " + std::to_string(i)});
+            }
 #endif
 
-        for (size_t j = 0; j < resolutions_json.size(); ++j) {
-            side_resolutions[i][j] = resolutions_json[j].get<uint16_t>();
+            for (size_t j = 0; j < resolutions_json.size(); ++j) {
+                side_resolutions[i][j] = resolutions_json[j].get<uint16_t>();
 #ifdef DEBUG_MODE
-            PRINT_DEBUG(std::string{"Side: " + std::to_string(i) + " Resolution: " + std::to_string(side_resolutions[i][j]) + " at c: " + std::to_string(j)});
+                PRINT_DEBUG(std::string{"Side: " + std::to_string(i) + " Resolution: " + std::to_string(side_resolutions[i][j]) + " at c: " + std::to_string(j)});
 #endif
+            }
         }
     }
 }
