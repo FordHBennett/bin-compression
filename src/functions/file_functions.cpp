@@ -112,8 +112,6 @@ const std::filesystem::path  Get_Geometa_File_Path(const std::filesystem::path& 
     try{
         for(const auto& entry : std::filesystem::recursive_directory_iterator(dir_path)) {
             if(std::filesystem::is_regular_file(entry.status()) && entry.path().extension() == ".geometa") {
-                // std::cerr << "You have found a the geometa file: " << entry.path().c_str() << '\n';
-                // PRINT_DEBUG(std::string{"You have found a the geometa file: " + entry.path().string()});
                 return entry.path();
             }
         }
@@ -124,102 +122,6 @@ const std::filesystem::path  Get_Geometa_File_Path(const std::filesystem::path& 
 
 }
 
-// void processFiles(const std::vector<std::filesystem::path>& files, const int numIterations, Control_Stats& avgTotalControlStats) {
-
-//     for (const auto& file : files) {
-//         std::cout << "RLR: " <<file << '\n';
-//         std::filesystem::path currentDir = file.parent_path();
-//         //std::cout << currentDir << '\n';
-//         // avgTotalRLRStats.getStatsFromEncodingDecodingFunctions(file.c_str(), numIterations, currentDir);
-
-//         RLR rlr_obj;
-//         rlr_obj.getStatsFromEncodingDecodingFunctions(file.c_str(), numIterations, currentDir, avgTotalControlStats);
-//     }
-// }
-
-// void processFiles(const std::vector<std::filesystem::path>& files, const int numIterations, LZW_Stats& avgTotalLZWStats) {
-
-//     for (const auto& file : files) {
-//         std::cout << "LZW: " << file << '\n';
-//         std::filesystem::path currentDir = file.parent_path();
-//         std::string encodedFilename =  std::string(file.path()).erase(std::string(file).size()-7,6) + ".run_length_encoded_bin";
-//         std::string dencodedFilename = std::string(file).erase(std::string(file).size()-7,6)  + ".run_length_decoded_bin";
-//         for (int i = 0; i < numIterations; ++i) {
-//             std::ifstream inFile(filename, std::ios::binary);
-//             if (!inFile) {
-//                 std::cout << "Error" << '\n';
-//             }
-
-//             inFile.seekg(0, std::ios::end);
-//             size_t fileSize = inFile.tellg();
-//             inFile.seekg(0, std::ios::beg);
-
-//             std::vector<char> binaryData(fileSize);
-//             inFile.read(binaryData.data(), fileSize);
-//             inFile.close();
-
-//             avgTotalLZWStats.computeFileStats(binaryData, encodedFilename.c_str(), dencodedFilename.c_str(), fileSize, currentDir);
-//         }
-
-//     }
-// }
-
-// void processFiles(const std::vector<std::filesystem::path>& files, const int numIterations, LZP_Stats& avgTotalLZPStats) {
-
-//     for (const auto& file : files) {
-//         std::cout << "LZP: " << file << '\n';
-//         std::filesystem::path currentDir = file.parent_path();
-//         avgTotalLZPStats.getStatsFromEncodingDecodingFunctions(file.c_str(), numIterations, currentDir);
-//     }
-// }
-
-// void processFiles(const std::vector<std::filesystem::path>& files, const int numIterations, Huffman_Stats& avgTotalHuffmanStats) {
-
-//     for (const auto& file : files) {
-//         std::cout << file << '\n';
-//         std::filesystem::path currentDir = file.parent_path();
-//         avgTotalHuffmanStats.getStatsFromEncodingDecodingFunctions(file.c_str(), numIterations, currentDir);
-//     }
-// }
-
-
-// void processFiles(const std::vector<std::filesystem::path>& files, const int numIterations, Control_Stats& avgTotalControlStats) {
-
-//     for (const auto& file : files) {
-//         // std::cout << "Control: " << file << '\n';
-//         // std::filesystem::path currentDir = file.parent_path();
-//         // avgTotalControlStats.getStatsFromEncodingDecodingFunctions(file.c_str(), numIterations, currentDir);
-//     }
-// }
-
-// void computeFileStats(std::vector<char> &binaryData, const char* encodedFilename,
-//                         const char* decodedFilename, size_t fileSize,
-//                         std::filesystem::path& currentDir, RLR& rlr_obj, CommonStats &localStats) {
-//     // Perform run-length encoding
-//     auto startEncod = std::chrono::high_resolution_clock::now();
-//     auto encoded = rlr_obj.encode(binaryData, datatype_size);
-//     auto stopEncode = std::chrono::high_resolution_clock::now();
-//     auto durationEncode = std::chrono::duration_cast<std::chrono::nanoseconds>(stopEncode - startEncod);
-
-//     // Perform run-length decoding
-//     auto startDecode = std::chrono::high_resolution_clock::now();
-//     auto decoded = rlr_obj.decode(encoded, datatype_size);
-//     auto stopDecode = std::chrono::high_resolution_clock::now();
-//     auto durationDecode = std::chrono::duration_cast<std::chrono::nanoseconds>(stopDecode - startDecode);
-
-//     // Calculate the peak memory usage
-//     // avgRLRStats.setAvgPeakMemoryDuringDecoding(avgRLRStats.getAvgPeakMemoryDuringDecoding() + getPeakMemoryUsage());
-//     // avgRLRStats.setAvgPeakMemoryDuringEncoding(avgRLRStats.getAvgPeakMemoryDuringEncoding() + getPeakMemoryUsage());
-
-//     // Verify that no data is lost by comparing decoded data with the original data
-//     bool dataMatches = binaryData == decoded;
-//     assert(dataMatches);
-//     //std::cout << "RLR Data Matches: " << (dataMatches ? "Yes" : "No") << '\n';
-
-//     // Write the encoded and decoded data to files
-//     rlr_obj.Write_Compressed_File(encoded, encodedFilename);
-//     rlr_obj.Write_Decompressed_File(decoded, decodedFilename);
-// }
 
 void Run_RLR_Compression_Decompression_On_Files(const std::vector<std::filesystem::path>& files_vec, const int& numIterations, RLR& rlr_obj) {
 #ifdef DEBUG_MODE
@@ -299,10 +201,6 @@ void Run_RLR_Compression_Decompression_On_Files(const std::vector<std::filesyste
         for(int iteration = 0; iteration < numIterations; iteration++){
             for(int row = 0; row<num_rows; row++){
                 rlr_obj.Read_File(file, bytes_per_row, row);
-                // rlr_obj.Encode_With_One_Byte_Run_Length();
-                // rlr_obj.Decode_With_One_Byte_Run_Length();
-                // rlr_obj.Encode_With_One_Nibble_Run_Length();
-                // rlr_obj.Decode_With_One_Nibble_Run_Length();
                 rlr_obj.Compute_Time_Encoded([&rlr_obj](){
                     rlr_obj.Encode_With_One_Nibble_Run_Length();
                 });
@@ -312,12 +210,10 @@ void Run_RLR_Compression_Decompression_On_Files(const std::vector<std::filesyste
                 });
                 rlr_obj.Write_Compressed_File(encoded_file_path);
                 rlr_obj.Write_Decompressed_File(decoded_file_path);
-#ifdef DEBUG_MODE
                 if(!rlr_obj.Is_Decoded_Data_Equal_To_Original_Data(rlr_obj.Get_Decoded_Data_Vec(), rlr_obj.Get_Binary_Data_Vec())){
                     // std::cerr << "ERROR: Decoded data is not equal to original data." << '\n';
                     ERROR_MSG_AND_EXIT(std::string{"ERROR: Decoded data is not equal to original data."});
                 }
-#endif
             }
             rlr_obj.Compute_Compression_Ratio(file, encoded_file_path);
             rlr_obj.Compute_File_Size(encoded_file_path);
