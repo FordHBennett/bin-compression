@@ -40,6 +40,12 @@ const int Get_Number_Of_Geometa_Files(const std::filesystem::path& dir_path);
 
 const std::filesystem::path  Get_Geometa_File_Path(const std::filesystem::path& dir_path);
 
+void Delete_Files_In_Directory(const std::filesystem::path& dir_path);
+
+const std::vector<std::filesystem::path> Get_Geobin_File_Vec(const std::filesystem::path& dir_path);
+
+const std::vector<std::filesystem::path> Get_Geobin_And_Geometa_Directory_Path_Vec(const std::filesystem::path& dir_path);
+
 /**
  * Process the given files and collect statistics on them.
  * @param files List of files to process.

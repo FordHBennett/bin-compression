@@ -29,19 +29,20 @@ void RLR::Read_File(const std::filesystem::path& file_path, const int& number_of
 
 
     std::ifstream input_file(file_path, std::ios::binary);
+#ifdef DEBUG
     if(!input_file) {
         ERROR_MSG_AND_EXIT("Error: Unable to open the file.");
     }
-
+#endif
     binary_data_vec.resize(number_of_bytes_to_read);
     // populate the binary data vector with the data from the file starting at number_of_bytes_to_read * row
     std::streampos start_position = static_cast<std::streampos>(number_of_bytes_to_read) * row;
     input_file.seekg(start_position);
-
+#ifdef DEBUG
     if (input_file.fail()) {
         ERROR_MSG_AND_EXIT("Error: Unable to seek to the specified position in the file.");
     }
-
+#endif
     input_file.close();
 }
 
@@ -198,14 +199,12 @@ void RLR::Encode_With_One_Nibble_Run_Length() {
 
         byte_index = next_index;
 
-        encoded_data_vec.push_back(static_cast<char>((first_nibble_run_length << 4) | second_nibble_run_length));
+        encoded_data_vec.emplace_back(static_cast<char>((first_nibble_run_length << 4) | second_nibble_run_length));
         encoded_data_vec.insert(encoded_data_vec.end(), first_nibble_run_block.begin(), first_nibble_run_block.end());
 
         if (second_nibble_run_length) {
-        encoded_data_vec.insert(encoded_data_vec.end(), second_nibble_run_block.begin(), second_nibble_run_block.end());
+            encoded_data_vec.insert(encoded_data_vec.end(), second_nibble_run_block.begin(), second_nibble_run_block.end());
         }
-
-
     }
 
     encoded_data_vec.shrink_to_fit();
@@ -268,7 +267,7 @@ void RLR::Encode_With_One_Nibble_Run_Length() {
 //FASTER
 void RLR::Decode_With_One_Nibble_Run_Length() {
     decoded_data_vec.clear();
-
+    decoded_data_vec.reserve(binary_data_vec.size());
     const int data_type_size = this->Get_Data_Type_Size();
     size_t byte_index = 0;
 
@@ -280,10 +279,9 @@ void RLR::Decode_With_One_Nibble_Run_Length() {
 
         byte_index++;
 
-        // if (byte_index + data_type_size <= encoded_data_vec.size()) {
-            decoded_data_vec.insert(decoded_data_vec.end(), first_nibble_run_length * data_type_size,encoded_data_vec[byte_index]);
-            byte_index += data_type_size;
-        // }
+        decoded_data_vec.insert(decoded_data_vec.end(), first_nibble_run_length * data_type_size,encoded_data_vec[byte_index]);
+        byte_index += data_type_size;
+
 
         if ((second_nibble_run_length > 0) && (byte_index + data_type_size <= encoded_data_vec.size())) {
             decoded_data_vec.insert(decoded_data_vec.end(), second_nibble_run_length * data_type_size, encoded_data_vec[byte_index]);
