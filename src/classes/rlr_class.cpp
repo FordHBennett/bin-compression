@@ -210,6 +210,55 @@ void RLR::Encode_With_One_Nibble_Run_Length() {
     encoded_data_vec.shrink_to_fit();
 }
 
+void RLR::Encode_With_One_Nibble_Run_Length_Squared(){
+    encoded_squared_data_vec.clear();
+
+    // const int data_type_size = this->Get_Data_Type_Size();
+    encoded_squared_data_vec.reserve(encoded_data_vec.size() / 2);
+    int byte_index = 0;
+    std::vector<char> first_nibble_run_block = {0};
+    first_nibble_run_block.reserve(1);
+    std::vector<char> second_nibble_run_block = {0};
+    second_nibble_run_block.reserve(1);
+
+    while (byte_index < encoded_data_vec.size()) {
+        uint8_t first_nibble_run_length = 1;
+        uint8_t second_nibble_run_length = 0;
+        int next_index = byte_index + 1;
+
+        first_nibble_run_block.assign(encoded_data_vec.begin() + byte_index, encoded_data_vec.begin() + byte_index + 1);
+
+        while ((next_index < encoded_data_vec.size()) && (first_nibble_run_length < 15) &&
+                (std::equal(first_nibble_run_block.begin(), first_nibble_run_block.end(), encoded_data_vec.begin() + next_index))) {
+            first_nibble_run_length++;
+            next_index += 1;
+        }
+
+        byte_index = next_index;
+
+        if (byte_index < encoded_data_vec.size()) {
+            second_nibble_run_block.assign(encoded_data_vec.begin() + byte_index, encoded_data_vec.begin() + byte_index + 1);
+
+            while ((next_index < encoded_data_vec.size()) && (second_nibble_run_length < 15) &&
+                        (std::equal(second_nibble_run_block.begin(), second_nibble_run_block.end(), encoded_data_vec.begin() + next_index))) {
+                second_nibble_run_length++;
+                next_index += 1;
+            }
+        }
+
+        byte_index = next_index;
+
+        encoded_squared_data_vec.emplace_back(static_cast<char>((first_nibble_run_length << 4) | second_nibble_run_length));
+        encoded_squared_data_vec.insert(encoded_squared_data_vec.end(), first_nibble_run_block.begin(), first_nibble_run_block.end());
+
+        if (second_nibble_run_length) {
+            encoded_squared_data_vec.insert(encoded_squared_data_vec.end(), second_nibble_run_block.begin(), second_nibble_run_block.end());
+        }
+    }
+
+    encoded_squared_data_vec.shrink_to_fit();
+}
+
 
 //SLOWER
 // void RLR::Encode_With_One_Nibble_Run_Length() {
@@ -290,6 +339,31 @@ void RLR::Decode_With_One_Nibble_Run_Length() {
     }
 }
 
+void RLR::Decode_With_One_Nibble_Run_Length_Squared() {
+    decoded_squared_data_vec.clear();
+    // decoded_squared_data_vec.reserve(binary_data_vec.size());
+    // const int data_type_size = this->Get_Data_Type_Size();
+    size_t byte_index = 0;
+
+    while (byte_index < encoded_squared_data_vec.size()) {
+
+        uint8_t packed_run_lengths = static_cast<uint8_t>(encoded_squared_data_vec[byte_index]);
+        uint8_t first_nibble_run_length = packed_run_lengths >> 4;
+        uint8_t second_nibble_run_length = packed_run_lengths & 0x0F;
+
+        byte_index++;
+
+        decoded_squared_data_vec.insert(decoded_squared_data_vec.end(), first_nibble_run_length * 1,encoded_squared_data_vec[byte_index]);
+        byte_index += 1;
+
+
+        if ((second_nibble_run_length > 0) && (byte_index + 1 <= encoded_squared_data_vec.size())) {
+            decoded_squared_data_vec.insert(decoded_squared_data_vec.end(), second_nibble_run_length * 1, encoded_squared_data_vec[byte_index]);
+            byte_index += 1;
+        }
+    }
+}
+
 
 //SLOWER
 // void RLR::Decode_With_One_Nibble_Run_Length() {
@@ -352,6 +426,31 @@ void RLR::Write_Decompressed_File(const std::filesystem::path& file_path) const 
         std::ofstream decoded_output_file(file_path, std::ios::binary | std::ios::app);
 
         decoded_output_file.write(decoded_data_vec.data(), decoded_data_vec.size());
+
+        decoded_output_file.close();
+    } catch (const std::exception& e) {
+        ERROR_MSG_AND_EXIT(std::string{"Error: Unable to create the run-length decoded file.\n"} + std::string{"ERROR CODE: "} + std::string{e.what()});
+    }
+}
+
+void RLR::Write_Compressed_File_Squared(const std::filesystem::path& file_path) const {
+    try {
+
+        std::ofstream encoded_output_file(file_path, std::ios::binary | std::ios::app);
+
+        encoded_output_file.write(encoded_squared_data_vec.data(), encoded_squared_data_vec.size());
+
+        encoded_output_file.close();
+    } catch (const std::exception& e) {
+        ERROR_MSG_AND_EXIT(std::string{"Error: Unable to create the run-length encoded file.\n"} + std::string{"ERROR CODE: "} + std::string{e.what()});
+    }
+}
+
+void RLR::Write_Decompressed_File_Squared(const std::filesystem::path& file_path) const {
+    try{
+        std::ofstream decoded_output_file(file_path, std::ios::binary | std::ios::app);
+
+        decoded_output_file.write(decoded_squared_data_vec.data(), decoded_squared_data_vec.size());
 
         decoded_output_file.close();
     } catch (const std::exception& e) {

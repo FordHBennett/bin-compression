@@ -69,16 +69,17 @@ int main() {
     //     ERROR_MSG_AND_EXIT(std::string{"The path does not exist or is not a directory: "} + grand_canyon_path.string());
     // }
 
-    std::vector<std::filesystem::path> geometa_and_geobin_dir_path_vec = Get_Geobin_And_Geometa_Directory_Path_Vec(std::filesystem::current_path()/std::filesystem::path("PlanetData/Earth/Global"));
+    std::vector<std::filesystem::path> geometa_and_geobin_dir_path_vec = Get_Geobin_And_Geometa_Directory_Path_Vec(std::filesystem::current_path()/std::filesystem::path("PlanetData/Mars"));
     for(int i = 0; i < geometa_and_geobin_dir_path_vec.size(); i++){
         std::vector<std::filesystem::path> geobin_files_vec = Get_Geobin_File_Vec(geometa_and_geobin_dir_path_vec[i]);
         Run_RLR_Compression_Decompression_On_Files(geobin_files_vec, number_of_iteration, rlr);
-        rlr.Compute_Encoded_Throughput();
-        rlr.Compute_Decoded_Throughput();
+        // rlr.Compute_Encoded_Throughput();
+        // rlr.Compute_Decoded_Throughput();
         rlr.Calculate_Cumulative_Average_Stats_For_Directory(number_of_iteration, geobin_files_vec.size());
     }
 
-
+    rlr.Compute_Encoded_Throughput();
+    rlr.Compute_Decoded_Throughput();
 
     rlr.Print_Stats(rlr.Get_Compression_Type());
 

@@ -6,7 +6,7 @@ JUST SOLVE THE PROBLEM
 
 Base_Stats:
     private:
-        average_file_size;
+        average_compressed_file_size;
         average_time_encoded_in_microseconds ;
         average_time_encoded_in_microseconds ;
         average_compression_ratio;
@@ -25,7 +25,7 @@ Base_Stats:
             when computing the encoded time added the calculated time to average_time_encoded_in_microseconds
             Do the same for the reset of the compute functions
         void Compute_Time_Decoded();
-        void Compute_File_Size();
+        void Compute_Compressed_File_Size();
         void Compute_Encoded_Throughput();
         void Compute_Decoded_Throughput();
         void Set_Data_Type_Size_And_Side_Resolutions(geometa_file_name);

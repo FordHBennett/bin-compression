@@ -22,9 +22,13 @@ class RLR : public CommonStats {
 
         void Encode_With_One_Nibble_Run_Length();
         void Decode_With_One_Nibble_Run_Length();
+        void Encode_With_One_Nibble_Run_Length_Squared();
+        void Decode_With_One_Nibble_Run_Length_Squared();
 
         void Write_Compressed_File(const std::filesystem::path& file_path) const;
         void Write_Decompressed_File(const std::filesystem::path& file_path) const;
+        void Write_Compressed_File_Squared(const std::filesystem::path& file_path) const;
+        void Write_Decompressed_File_Squared(const std::filesystem::path& file_path) const;
 
         //getters
         const char* Get_Compression_Type() const;
@@ -44,6 +48,8 @@ class RLR : public CommonStats {
         std::vector<char> binary_data_vec;
         std::vector<char> encoded_data_vec;
         std::vector<char> decoded_data_vec;
+        std::vector<char> encoded_squared_data_vec;
+        std::vector<char> decoded_squared_data_vec;
 
 
 };

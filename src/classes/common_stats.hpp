@@ -19,7 +19,8 @@ enum class Side {
 class CommonStats {
     private:
         //member variables
-            double average_file_size = 0.0;
+            double average_original_file_size = 0.0;
+            double average_compressed_file_size = 0.0;
             double average_time_encoded_in_microseconds = 0;
             double average_time_decoded_in_microseconds = 0;
             double average_compression_ratio = 0.0;
@@ -44,8 +45,6 @@ class CommonStats {
 
         //member functions
         void Calculate_Cumulative_Average_Stats_For_Directory(const int& divisor, const int& number_of_files);
-        // void Compute_Time_Encoded(const std::function<void(std::vector<char>)>& encode, const std::vector<char>& data);
-        // void Compute_Time_Decoded(const std::function<void(std::vector<char>)>& decode, const std::vector<char>& data);
         template <typename EncodeFunction>
         void Compute_Time_Encoded(EncodeFunction encode) {
             auto start = std::chrono::high_resolution_clock::now(); // Start timing before calling the function
@@ -65,7 +64,8 @@ class CommonStats {
         }
 
         void Compute_Compression_Ratio(const std::filesystem::path& original_file_path, const std::filesystem::path& compressed_file_path);
-        void Compute_File_Size(const std::filesystem::path& file_path);
+        
+        void Compute_Compressed_File_Size(const std::filesystem::path& file_path);
         void Compute_Encoded_Throughput();
         void Compute_Decoded_Throughput();
         void Set_Data_Type_Size_And_Side_Resolutions(const std::filesystem::path& geometa_path);

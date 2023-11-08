@@ -28,7 +28,7 @@ using json = nlohmann::json;
 
 
 CommonStats::CommonStats() {
-    average_file_size = 0.0;
+    average_compressed_file_size = 0.0;
     average_time_encoded_in_microseconds  = 0.0;
     average_time_decoded_in_microseconds  = 0.0;
     average_compression_ratio = 0.0;
@@ -38,7 +38,7 @@ CommonStats::CommonStats() {
 }
 
 CommonStats::CommonStats(const CommonStats& other) {
-    average_file_size = other.average_file_size;
+    average_compressed_file_size = other.average_compressed_file_size;
     average_time_encoded_in_microseconds  = other.average_time_encoded_in_microseconds ;
     average_time_decoded_in_microseconds  = other.average_time_decoded_in_microseconds ;
     average_compression_ratio = other.average_compression_ratio;
@@ -48,7 +48,7 @@ CommonStats::CommonStats(const CommonStats& other) {
 }
 
 CommonStats& CommonStats::operator=(const CommonStats& other) {
-    average_file_size = other.average_file_size;
+    average_compressed_file_size = other.average_compressed_file_size;
     average_time_encoded_in_microseconds  = other.average_time_encoded_in_microseconds ;
     average_time_decoded_in_microseconds  = other.average_time_decoded_in_microseconds ;
     average_compression_ratio = other.average_compression_ratio;
@@ -61,7 +61,7 @@ CommonStats& CommonStats::operator=(const CommonStats& other) {
 
 //move constructor
 CommonStats::CommonStats(CommonStats&& other) {
-    average_file_size = other.average_file_size;
+    average_compressed_file_size = other.average_compressed_file_size;
     average_time_encoded_in_microseconds  = other.average_time_encoded_in_microseconds ;
     average_time_decoded_in_microseconds  = other.average_time_decoded_in_microseconds ;
     average_compression_ratio = other.average_compression_ratio;
@@ -71,12 +71,12 @@ CommonStats::CommonStats(CommonStats&& other) {
 }
 
 void CommonStats::Calculate_Cumulative_Average_Stats_For_Directory(const int& divisor, const int& number_of_files) {
-    // average_file_size /= (divisor*number_of_files);
-    average_time_encoded_in_microseconds  /= static_cast<double>((divisor*number_of_files));
-    average_time_decoded_in_microseconds  /= static_cast<double>((divisor*number_of_files));
+    average_compressed_file_size /= (divisor*number_of_files);
+    // average_time_encoded_in_microseconds  /= static_cast<double>((divisor*number_of_files));
+    // average_time_decoded_in_microseconds  /= static_cast<double>((divisor*number_of_files));
     average_compression_ratio /= static_cast<double>((divisor*number_of_files));
-    // average_encoded_throughput /= static_cast<double>((divisor*number_of_files));
-    // average_decoded_throughput /= static_cast<double>((divisor*number_of_files));
+    average_encoded_throughput /= static_cast<double>((divisor*number_of_files));
+    average_decoded_throughput /= static_cast<double>((divisor*number_of_files));
 }
 
 // template <typename EncodeFunction>
@@ -98,19 +98,20 @@ void CommonStats::Calculate_Cumulative_Average_Stats_For_Directory(const int& di
 // }
 
 void CommonStats::Compute_Compression_Ratio(const std::filesystem::path& original_file_path, const std::filesystem::path& compressed_file_path) {
+    average_original_file_size += static_cast<double>(Get_File_Size_Bytes(original_file_path));
     average_compression_ratio += static_cast<double>(Get_File_Size_Bytes(compressed_file_path)) / static_cast<double>(Get_File_Size_Bytes(original_file_path));
 }
 
-void CommonStats::Compute_File_Size(const std::filesystem::path& file_path) {
-    average_file_size += static_cast<double>(Get_File_Size_Bytes(file_path));
+void CommonStats::Compute_Compressed_File_Size(const std::filesystem::path& file_path) {
+    average_compressed_file_size += static_cast<double>(Get_File_Size_Bytes(file_path));
 }
 
 void CommonStats::Compute_Encoded_Throughput() {
-    average_encoded_throughput = average_file_size / average_time_encoded_in_microseconds ;
+    average_encoded_throughput = average_original_file_size / average_time_encoded_in_microseconds ;
 }
 
 void CommonStats::Compute_Decoded_Throughput() {
-    average_decoded_throughput = average_file_size / average_time_decoded_in_microseconds ;
+    average_decoded_throughput = average_original_file_size / average_time_decoded_in_microseconds ;
 }
 
 const bool CommonStats::Is_Decoded_Data_Equal_To_Original_Data(const std::vector<char>& original_vec, const std::vector<char>& decoded_vec) const {
@@ -118,13 +119,13 @@ const bool CommonStats::Is_Decoded_Data_Equal_To_Original_Data(const std::vector
 }
 
 const void CommonStats::Print_Stats(const char* compressionType) const {
-    std::cout << "Average File Size: " << average_file_size << " bytes" << '\n';
+    // std::cout << "Average File Size: " << average_compressed_file_size << " bytes" << '\n';
     std::cout << "Average Compression Ratio: " << average_compression_ratio << '\n';
     std::cout << "Average Encoded Time: " << average_time_encoded_in_microseconds  << " microseconds" << '\n';
     std::cout << "Average Decoded Time: " << average_time_decoded_in_microseconds  << " microseconds" << '\n';
     std::cout << "Average Encoded Throughput: " << average_encoded_throughput << " bytes/microseconds" << '\n';
     std::cout << "Average Throughput Decoded: " << average_decoded_throughput << " bytes/microseconds" << '\n';
-    std::cout << "Data Type: " << data_type_byte_size << '\n';
+    // std::cout << "Data size: " << data_type_byte_size << '\n';
     std::cout << "Compression Type: " << compressionType << '\n';
 }
 
@@ -163,8 +164,8 @@ void CommonStats::Set_Data_Type_Size_And_Side_Resolutions(const std::filesystem:
     }
 #endif
 
-    for (int i = 0; i < static_cast<int>(Side::NUMBER_SIDES); ++i) {
-        const std::string side_key = "Side" + std::to_string(i);
+    for (int side = 0; side < static_cast<int>(Side::NUMBER_SIDES); side++) {
+        const std::string side_key = "Side" + std::to_string(side);
 #ifdef DEBUG_MODE
         if (!geometa_json.contains(side_key)) {
             ERROR_MSG_AND_EXIT(std::string{"Key '" + side_key + "' not found in JSON file."});
@@ -182,15 +183,15 @@ void CommonStats::Set_Data_Type_Size_And_Side_Resolutions(const std::filesystem:
             const json resolutions_json = side_json["qT_subsets_resolution"];
 
 #ifdef DEBUG_MODE
-            if (resolutions_json.size() > side_resolutions[i].size()) {
-                ERROR_MSG_AND_EXIT(std::string{"Resolution array size mismatch for side: " + std::to_string(i)});
+            if (resolutions_json.size() > side_resolutions[side].size()) {
+                ERROR_MSG_AND_EXIT(std::string{"Resolution array size mismatch for side: " + std::to_string(side)});
             }
 #endif
 
-            for (size_t j = 0; j < resolutions_json.size(); ++j) {
-                side_resolutions[i][j] = resolutions_json[j].get<uint16_t>();
+            for (size_t qT_subsets_resolution = 0; qT_subsets_resolution < resolutions_json.size(); qT_subsets_resolution++) {
+                side_resolutions[side][qT_subsets_resolution] = resolutions_json[qT_subsets_resolution].get<uint16_t>();
 #ifdef DEBUG_MODE
-                PRINT_DEBUG(std::string{"Side: " + std::to_string(i) + " Resolution: " + std::to_string(side_resolutions[i][j]) + " at c: " + std::to_string(j)});
+                PRINT_DEBUG(std::string{"Side: " + std::to_string(side) + " Resolution: " + std::to_string(side_resolutions[side][qT_subsets_resolution]) + " at c: " + std::to_string(qT_subsets_resolution)});
 #endif
             }
         }
