@@ -62,7 +62,7 @@ const uint64_t Get_File_Size_Bytes(const std::filesystem::path& file_path)
     try {
         return std::filesystem::file_size(file_path);
     } catch(const std::filesystem::filesystem_error& e) {
-        ERROR_MSG_AND_EXIT(std::string{"ERROR: Error accessing file size for"} + file_path.string() + ": " + std::string{e.what()});
+        ERROR_MSG_AND_EXIT(std::string{"ERROR: Error accessing file size for"} + file_path.string() + std::string{" : "} + std::string{e.what()});
     }
 
 }
@@ -73,7 +73,7 @@ const int Get_Number_Of_Geobin_Files_Recursively(const std::filesystem::path& di
         int count = 0;
 
         for(const auto& entry : std::filesystem::recursive_directory_iterator(dir_path)) {
-            if (entry.is_regular_file() && entry.path().extension() == ".geobin") {
+            if (entry.is_regular_file() && (entry.path().extension() == std::filesystem::path{".geobin"})) {
                 ++count;
             }
         }
@@ -90,7 +90,7 @@ const int Get_Number_Of_Geometa_Files(const std::filesystem::path& dir_path){
         int count = 0;
 
         for(const auto& entry : std::filesystem::recursive_directory_iterator(dir_path)) {
-            if (std::filesystem::is_regular_file(entry.status()) && entry.path().extension() == ".geometa") {
+            if (std::filesystem::is_regular_file(entry.status()) && (entry.path().extension() == std::filesystem::path{".geometa"})) {
                 count++;
             }
         }
@@ -108,7 +108,7 @@ const std::filesystem::path  Get_Geometa_File_Path(const std::filesystem::path& 
 
     try{
         for(const auto& entry : std::filesystem::recursive_directory_iterator(dir_path)) {
-            if(std::filesystem::is_regular_file(entry.status()) && entry.path().extension() == ".geometa") {
+            if(std::filesystem::is_regular_file(entry.status()) && (entry.path().extension() == std::filesystem::path{".geometa"})) {
                 return entry.path();
             }
         }
@@ -136,7 +136,7 @@ const std::vector<std::filesystem::path> Get_Geobin_File_Vec(const std::filesyst
         std::vector<std::filesystem::path> geobin_files_vec;
 
         for(const auto& entry : std::filesystem::recursive_directory_iterator(dir_path)) {
-            if(std::filesystem::is_regular_file(entry.status()) && entry.path().extension() == ".geobin") {
+            if(std::filesystem::is_regular_file(entry.status()) && (entry.path().extension() == std::filesystem::path{".geobin"})) {
                 geobin_files_vec.push_back(entry.path());
             }
         }
@@ -181,8 +181,11 @@ void Run_RLR_Compression_Decompression_On_Files(const std::vector<std::filesyste
         PRINT_DEBUG(std::string{"File to be compressed: " + file.string()});
 #endif
         const std::filesystem::path stem_path = file.stem();
-        const std::filesystem::path encoded_file_path = file.parent_path() / "compressed_decompressed_rlr_files" / stem_path / (stem_path.string() + ".rlr_encoded_bin");
-        const std::filesystem::path decoded_file_path = file.parent_path() /  "compressed_decompressed_rlr_files" / stem_path / (stem_path.string() + ".rlr_decoded_bin");
+        const std::filesystem::path encoded_file_path = file.parent_path() / std::filesystem::path{"compressed_decompressed_rlr_files"} /
+                                                        stem_path / std::filesystem::path{(stem_path.string() + ".rlr_encoded_bin")};
+        const std::filesystem::path decoded_file_path = file.parent_path() / std::filesystem::path{"compressed_decompressed_rlr_files"} /
+                                                        stem_path / std::filesystem::path{(stem_path.string() + ".rlr_decoded_bin")};
+
         if(!std::filesystem::exists(encoded_file_path.parent_path())) {
             std::filesystem::create_directories(encoded_file_path.parent_path());
         }
@@ -220,22 +223,21 @@ void Run_RLR_Compression_Decompression_On_Files(const std::vector<std::filesyste
         size_t pos = filename.rfind(delimiter);
         if (pos != std::string::npos) {
             size_t start = pos + delimiter.length();
-            // Find the start of the number by skipping any non-digit characters
-            while (start < filename.length() && !std::isdigit(filename[start])) {
+            while ((start < filename.length()) && !std::isdigit(filename[start])) {
                 ++start;
             }
-            // Find the end of the number
             size_t end = start;
-            while (end < filename.length() && std::isdigit(filename[end])) {
+            while ((end < filename.length()) && std::isdigit(filename[end])) {
                 ++end;
             }
-            // Extract the number substring
+
             if (start < end) {
                 return filename.substr(start, end - start);
             }
         }
-    // Error handling if the number is not found
+#ifdef DEBUG_MODE
     ERROR_MSG_AND_EXIT(std::string{"ERROR: Unable to extract number after delimiter: " + delimiter});
+#endif
 };
 
 
