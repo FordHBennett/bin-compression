@@ -206,20 +206,43 @@ void Run_RLR_Compression_Decompression_On_Files(const std::vector<std::filesyste
 
         //lod could be over 9
         //scan until you find non-numeric
-        auto extract_character_after = [](const std::filesystem::path& path, const char* delimiter) -> const char {
-            const std::string filename = path.filename().string();
-            size_t pos = path.filename().string().rfind(delimiter);
-            if (pos != std::string::npos && pos + 1 < filename.length()) {
-                return filename[pos + std::string{delimiter}.length()];
+        // auto extract_character_after = [](const std::filesystem::path& path, const char* delimiter) -> const char {
+        //     const std::string filename = path.filename().string();
+        //     size_t pos = path.filename().string().rfind(delimiter);
+        //     if (pos != std::string::npos && pos + 1 < filename.length()) {
+        //         return filename[pos + std::string{delimiter}.length()];
+        //     }
+        //     // std::cerr << "ERROR: Unable to extract character after delimiter: " << delimiter << '\n';
+        //     ERROR_MSG_AND_EXIT(std::string{ "ERROR: Unable to extract character after delimiter: " + std::string{delimiter}});
+        // };
+        auto extract_character_after = [](const std::filesystem::path& path, const std::string& delimiter) -> const std::string {
+        const std::string filename = path.filename().string();
+        size_t pos = filename.rfind(delimiter);
+        if (pos != std::string::npos) {
+            size_t start = pos + delimiter.length();
+            // Find the start of the number by skipping any non-digit characters
+            while (start < filename.length() && !std::isdigit(filename[start])) {
+                ++start;
             }
-            // std::cerr << "ERROR: Unable to extract character after delimiter: " << delimiter << '\n';
-            ERROR_MSG_AND_EXIT(std::string{ "ERROR: Unable to extract character after delimiter: " + std::string{delimiter}});
-        };
+            // Find the end of the number
+            size_t end = start;
+            while (end < filename.length() && std::isdigit(filename[end])) {
+                ++end;
+            }
+            // Extract the number substring
+            if (start < end) {
+                return filename.substr(start, end - start);
+            }
+        }
+    // Error handling if the number is not found
+    ERROR_MSG_AND_EXIT(std::string{"ERROR: Unable to extract number after delimiter: " + delimiter});
+};
 
-        const uint8_t lod_number = static_cast<uint8_t>(extract_character_after(stem_path, "_lod") - '0');
+
+        const uint8_t lod_number = static_cast<uint8_t>(std::stoi(extract_character_after(stem_path, std::string{"_lod"})));
 #ifdef DEBUG_MODE
-        const uint8_t side = static_cast<uint8_t>(extract_character_after(stem_path, "_s") - '0');
-        const uint8_t c_number = static_cast<uint8_t>(extract_character_after(stem_path, "_c") - '0');
+        const uint8_t side = static_cast<uint8_t>(std::stoi(extract_character_after(stem_path, std::string{"_s"})));
+        const uint8_t c_number = static_cast<uint8_t>(std::stoi(extract_character_after(stem_path, std::string{"_c"})));
         PRINT_DEBUG(std::string{"Side: "} + std::to_string(side));
         PRINT_DEBUG(std::string{"C Number: "} + std::to_string(c_number));
         PRINT_DEBUG(std::string{"LOD Number: "} + std::to_string(lod_number));
