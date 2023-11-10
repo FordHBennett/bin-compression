@@ -27,6 +27,7 @@ class CommonStats {
             double average_encoded_throughput = 0.0;
             double average_decoded_throughput = 0.0;
             int8_t data_type_byte_size = 0;
+            bool little_endian_flag = false;
 
             std::array<std::array<uint16_t,4>, static_cast<size_t>(Side::NUMBER_SIDES)> side_resolutions;
 
@@ -34,14 +35,18 @@ class CommonStats {
             //create a look up table full of data_type and their corresponding size
 
         public:
-            //default constructor
-            CommonStats();
+        //default constructor
+        CommonStats();
         //copy constructor
         CommonStats(const CommonStats& other);
         //copy assignment operator
         CommonStats& operator=(const CommonStats& other);
         //move constructor
         CommonStats(CommonStats&& other);
+
+        void Reset_Stats();
+        void Write_Stats_To_File(const std::filesystem::path& file_path, const char* compression_type, const std::string& directory_compressed) const;
+        void Is_Little_Endian();
 
         //member functions
         void Calculate_Cumulative_Average_Stats_For_Directory(const int& divisor, const int& number_of_files);
@@ -64,7 +69,6 @@ class CommonStats {
         }
 
         void Compute_Compression_Ratio(const std::filesystem::path& original_file_path, const std::filesystem::path& compressed_file_path);
-        
         void Compute_Compressed_File_Size(const std::filesystem::path& file_path);
         void Compute_Encoded_Throughput();
         void Compute_Decoded_Throughput();

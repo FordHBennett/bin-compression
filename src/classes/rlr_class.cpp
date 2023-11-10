@@ -2,6 +2,7 @@
 #include <fstream>
 #include <iostream>
 #include <vector>
+#include <algorithm>
 
 #define ERROR_MSG(msg) \
     std::cerr << msg << " OCCURED IN: " << '\n'; \
@@ -211,12 +212,12 @@ void RLR::Encode_With_One_Nibble_Run_Length() {
 }
 
 void RLR::Encode_With_One_Nibble_Run_Length_Squared(){
-    encoded_squared_data_vec.clear();
+    // encoded_squared_data_vec.clear();
 
     // const int data_type_size = this->Get_Data_Type_Size();
     encoded_squared_data_vec.reserve(encoded_data_vec.size() / 2);
     int byte_index = 0;
-    std::vector<char> first_nibble_run_block = {0};
+    std::vector<char> first_nibble_run_block(1,0);
     first_nibble_run_block.reserve(1);
     std::vector<char> second_nibble_run_block = {0};
     second_nibble_run_block.reserve(1);
@@ -407,6 +408,186 @@ void RLR::Decode_With_One_Nibble_Run_Length_Squared() {
 //     }
 // }
 
+//If this is too memory intensive, then break it up into chunks of 1024 bytes
+void RLR::Encode_With_Burrow_Wheeler_Transformation_Little_Endian() {
+    // Clear the encoded data vector
+    encoded_data_vec.clear();
+
+    std::vector<bool> data_type_sized_bytes_frequencey_vec(1ULL << (this->Get_Data_Type_Size() << 3), false);
+
+    std::vector<char> data_type_sized_bytes_vec(this->Get_Data_Type_Size(), 0);
+    std::vector<std::vector<char>> vec_of_data_type_sized_vec(binary_data_vec.size() + this->Get_Data_Type_Size());
+
+    uint64_t data_type_sized_bytes_frequencey_vec_index = 0;
+    for(int byte_index = 0; byte_index < binary_data_vec.size(); byte_index += this->Get_Data_Type_Size()){
+        data_type_sized_bytes_vec.assign(binary_data_vec.begin() + byte_index, binary_data_vec.begin() + byte_index + this->Get_Data_Type_Size());
+        for(int i = 0; i < data_type_sized_bytes_vec.size(); i++){
+            data_type_sized_bytes_frequencey_vec_index |= (static_cast<uint64_t>(static_cast<uint8_t>(data_type_sized_bytes_vec[i])) << (8 * i));
+        }
+        data_type_sized_bytes_frequencey_vec[data_type_sized_bytes_frequencey_vec_index] = true;
+        vec_of_data_type_sized_vec[byte_index / this->Get_Data_Type_Size()] = data_type_sized_bytes_vec;
+    }
+
+    bool sentinel_found = false;
+    sentinel_vec.reserve(this->Get_Data_Type_Size());
+    for(uint64_t i = 0; i < data_type_sized_bytes_frequencey_vec.size(); ++i) {
+        if(!data_type_sized_bytes_frequencey_vec[i]) {
+            sentinel_found = true;
+            for(int j = 0; j < sentinel_vec.size(); ++j) {
+                sentinel_vec[j] = static_cast<char>((i >> (8 * j)) & 0xFF);
+                PRINT_DEBUG(std::string{"sentinel_vec["} + std::to_string(j) + std::string{"]: "} + std::to_string(sentinel_vec[j]));
+            }
+            break;
+        }
+    }
+
+    if(!sentinel_found) {
+        ERROR_MSG("Error: Unable to find a sentinel.");
+        return;
+    }
+
+    vec_of_data_type_sized_vec.push_back(sentinel_vec);
+
+    std::vector<std::vector<std::vector<char>>> rotations_vec;
+    rotations_vec.reserve(vec_of_data_type_sized_vec.size());
+    rotations_vec.push_back(vec_of_data_type_sized_vec);
+
+    for(size_t rotation = 1; rotation < vec_of_data_type_sized_vec.size(); rotation++) {
+        rotations_vec.push_back(std::vector<std::vector<char>>(vec_of_data_type_sized_vec.size()));
+        // rotations_vec[rotation].insert(rotations_vec[rotation].end(), rotations_vec[rotation-1].begin() + 1, rotations_vec[rotation-1].end());
+        // rotations_vec[rotation].insert(rotations_vec[rotation].end(), rotations_vec[rotation-1].begin(), rotations_vec[rotation-1].begin() + 1);
+        // rotate rotations_vec[rotation] by 1 to the right and append to rotations_vec[rotation]
+    }
+    // Sort the rotations_vec
+    std::sort(rotations_vec[0].begin(), rotations_vec[0].end());
+
+    // Extract the last column from the sorted rotations_vec
+    // for(size_t i = 0; i < rotations_vec.size(); i++) {
+    //     for(size_t j = 0; j < rotations_vec[i][rotations_vec[i][0].size()].size(); j++) {
+    //         encoded_data_vec.push_back(rotations_vec[i][rotations_vec[i].size()-1][j]);
+    //         PRINT_DEBUG(std::string{"encoded_data_vec["} + std::to_string(encoded_data_vec.size()-1) + std::string{"]: "} + std::to_string(encoded_data_vec[encoded_data_vec.size()-1]));
+    //     }
+    // }
+
+    // Extract the last column from each row of sorted rotations_vec
+    for(size_t i = 0; i < rotations_vec.size(); i++) {
+        for(size_t j = 0; j < rotations_vec[i][rotations_vec[i][0].size()].size(); j++) {
+            encoded_data_vec.push_back(rotations_vec[i][rotations_vec[i].size()-1][j]);
+            PRINT_DEBUG(std::string{"encoded_data_vec["} + std::to_string(encoded_data_vec.size()-1) + std::string{"]: "} + std::to_string(encoded_data_vec[encoded_data_vec.size()-1]));
+        }
+    }
+
+
+    encoded_data_vec.shrink_to_fit();
+
+
+}
+
+void RLR::Decode_With_Inverse_Burrow_Wheeler_Transformation_Little_Endian(){
+    // First, we'll recreate the table of rotations.
+    std::vector<std::vector<char>> table(encoded_data_vec.size() / this->Get_Data_Type_Size(), std::vector<char>(this->Get_Data_Type_Size()));
+
+    // Fill the table with the data from the BWT vector.
+    for (size_t i = 0; i < encoded_data_vec.size(); i++) {
+        table[i / this->Get_Data_Type_Size()][i % this->Get_Data_Type_Size()] = encoded_data_vec[i];
+    }
+
+    // Sort the table by each column, adding characters from the BWT in each iteration.
+    for (size_t j = 0; j < this->Get_Data_Type_Size() - 1; j++) {
+        // Insert BWT chars into the table.
+        for (size_t i = 0; i < table.size(); i++) {
+            table[i].insert(table[i].begin(), encoded_data_vec[i * this->Get_Data_Type_Size() + j % this->Get_Data_Type_Size()]);
+        }
+        // Sort the table.
+        std::sort(table.begin(), table.end());
+    }
+
+    // Find the row that ends with the sentinel. This is the original data.
+    decoded_data_vec.clear();
+    for (const auto& row : table) {
+        if (std::equal(row.end() - sentinel_vec.size(), row.end(), sentinel_vec.begin())) {
+            decoded_data_vec.assign(row.begin(), row.end() - sentinel_vec.size());
+            break;
+        }
+    }
+
+    if (decoded_data_vec.empty()) {
+        ERROR_MSG_AND_EXIT("Error: Unable to find the sentinel in the table of rotations.");
+    }
+
+    // Remove the sentinel from the end of the binary data vector.
+    decoded_data_vec.erase(decoded_data_vec.end() - this->Get_Data_Type_Size(), decoded_data_vec.end());
+}
+
+//This may be a to guarentee to compress 1/8 of the data
+//if we pack the data into 8 bit chunks, then we can use the same algorithm as above
+void RLR::Encode_With_Move_To_Front_Transformation() {
+    // Clear the encoded data vector
+    encoded_data_vec.clear();
+
+    std::vector<char> data_type_sized_bytes_vec(this->Get_Data_Type_Size(), 0);
+    std::vector<std::vector<char>> vec_of_data_type_sized_vec(binary_data_vec.size() + this->Get_Data_Type_Size());
+
+    uint64_t data_type_sized_bytes_vec_index = 0;
+    for(int byte_index = 0; byte_index < binary_data_vec.size(); byte_index += this->Get_Data_Type_Size()){
+        data_type_sized_bytes_vec.assign(binary_data_vec.begin() + byte_index, binary_data_vec.begin() + byte_index + this->Get_Data_Type_Size());
+        vec_of_data_type_sized_vec[byte_index / this->Get_Data_Type_Size()] = data_type_sized_bytes_vec;
+    }
+
+    std::vector<char> alphabet(1ULL << (this->Get_Data_Type_Size() << 3), 0);
+    for(int i = 0; i < alphabet.size(); i++){
+        alphabet[i] = static_cast<char>(i);
+    }
+
+    for(int i = 0; i < vec_of_data_type_sized_vec.size(); i++){
+        for(int j = 0; j < vec_of_data_type_sized_vec[i].size(); j++){
+            for(int k = 0; k < alphabet.size(); k++){
+                if(vec_of_data_type_sized_vec[i][j] == alphabet[k]){
+                    encoded_data_vec.push_back(static_cast<char>(k));
+                    alphabet.erase(alphabet.begin() + k);
+                    alphabet.insert(alphabet.begin(), vec_of_data_type_sized_vec[i][j]);
+                    break;
+                }
+            }
+        }
+    }
+
+    encoded_data_vec.shrink_to_fit();
+}
+
+void RLR::Decode_With_Inverse_Move_To_Front_Transformation(){
+    // Clear the decoded data vector
+    decoded_data_vec.clear();
+
+    std::vector<char> data_type_sized_bytes_vec(this->Get_Data_Type_Size(), 0);
+    std::vector<std::vector<char>> vec_of_data_type_sized_vec(encoded_data_vec.size() + this->Get_Data_Type_Size());
+
+    uint64_t data_type_sized_bytes_vec_index = 0;
+    for(int byte_index = 0; byte_index < encoded_data_vec.size(); byte_index += this->Get_Data_Type_Size()){
+        data_type_sized_bytes_vec.assign(encoded_data_vec.begin() + byte_index, encoded_data_vec.begin() + byte_index + this->Get_Data_Type_Size());
+        vec_of_data_type_sized_vec[byte_index / this->Get_Data_Type_Size()] = data_type_sized_bytes_vec;
+    }
+
+    std::vector<char> alphabet(1ULL << (this->Get_Data_Type_Size() << 3), 0);
+    for(int i = 0; i < alphabet.size(); i++){
+        alphabet[i] = static_cast<char>(i);
+    }
+
+    for(int i = 0; i < vec_of_data_type_sized_vec.size(); i++){
+        for(int j = 0; j < vec_of_data_type_sized_vec[i].size(); j++){
+            for(int k = 0; k < alphabet.size(); k++){
+                if(vec_of_data_type_sized_vec[i][j] == static_cast<char>(k)){
+                    decoded_data_vec.push_back(alphabet[k]);
+                    alphabet.erase(alphabet.begin() + k);
+                    alphabet.insert(alphabet.begin(), static_cast<char>(k));
+                    break;
+                }
+            }
+        }
+    }
+
+    decoded_data_vec.shrink_to_fit();
+}
 
 void RLR::Write_Compressed_File(const std::filesystem::path& file_path) const {
     try {

@@ -34,7 +34,7 @@ const uint64_t Get_File_Size_Bytes(const std::filesystem::path& file_path);
  * @param dir_path Name of the directory to search in.
  * @return Number of .geobin files. Returns -1 in case of errors.
  */
-const int Get_Number_Of_Geobin_Files_Recursively(const std::filesystem::path& dir_path);
+const int Get_Number_Of_Geobin_Files_In_Directory(const std::filesystem::path& dir_path);
 
 const int Get_Number_Of_Geometa_Files(const std::filesystem::path& dir_path);
 
@@ -45,6 +45,8 @@ void Delete_Files_In_Directory(const std::filesystem::path& dir_path);
 const std::vector<std::filesystem::path> Get_Geobin_File_Vec(const std::filesystem::path& dir_path);
 
 const std::vector<std::filesystem::path> Get_Geobin_And_Geometa_Directory_Path_Vec(const std::filesystem::path& dir_path);
+
+std::filesystem::path Remove_all_Seperators_From_Path(const std::filesystem::path& path);
 
 /**
  * Process the given files and collect statistics on them.

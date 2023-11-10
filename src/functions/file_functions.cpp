@@ -22,6 +22,8 @@
 #define PRINT_DEBUG(msg) \
     std::cerr << msg << '\n'; \
 
+#define MAX_CHUNK_SIZE (1<<25)
+
 
 
 using json = nlohmann::json;
@@ -68,13 +70,13 @@ const uint64_t Get_File_Size_Bytes(const std::filesystem::path& file_path)
 }
 
 // Function to return the number of Geobin files in a directory
-const int Get_Number_Of_Geobin_Files_Recursively(const std::filesystem::path& dir_path) {
+const int Get_Number_Of_Geobin_Files_In_Directory(const std::filesystem::path& dir_path) {
     try {
         int count = 0;
 
-        for(const auto& entry : std::filesystem::recursive_directory_iterator(dir_path)) {
+        for(const auto& entry : std::filesystem::directory_iterator(dir_path)) {
             if (entry.is_regular_file() && (entry.path().extension() == std::filesystem::path{".geobin"})) {
-                ++count;
+                count++;
             }
         }
 
@@ -89,7 +91,7 @@ const int Get_Number_Of_Geometa_Files(const std::filesystem::path& dir_path){
     try {
         int count = 0;
 
-        for(const auto& entry : std::filesystem::recursive_directory_iterator(dir_path)) {
+        for(const auto& entry : std::filesystem::directory_iterator(dir_path)) {
             if (std::filesystem::is_regular_file(entry.status()) && (entry.path().extension() == std::filesystem::path{".geometa"})) {
                 count++;
             }
@@ -98,8 +100,6 @@ const int Get_Number_Of_Geometa_Files(const std::filesystem::path& dir_path){
         return count;
     }
     catch(const std::exception& e) {
-        // std::cerr << "ERROR: " << e.what() << '\n';
-        // PRINT_DEBUG(std::string{"ERROR: " + std::string{e.what()}});
         ERROR_MSG_AND_EXIT(std::string{"ERROR: "} + std::string{e.what()});
     }
 }
@@ -113,7 +113,6 @@ const std::filesystem::path  Get_Geometa_File_Path(const std::filesystem::path& 
             }
         }
     } catch(const std::exception& e) {
-        // PRINT_DEBUG(std::string{"Error accessing geometa file for " + dir_path.string() + ": " + std::string{e.what()}});
         ERROR_MSG_AND_EXIT(std::string{"Error accessing geometa file for " + dir_path.string() + ": " + std::string{e.what()}});
     }
 
@@ -153,7 +152,7 @@ const std::vector<std::filesystem::path> Get_Geobin_And_Geometa_Directory_Path_V
 
         for(const auto& entry : std::filesystem::recursive_directory_iterator(dir_path)) {
             if(std::filesystem::is_directory(entry.status())) {
-                if(Get_Number_Of_Geobin_Files_Recursively(entry.path()) > 0 && Get_Number_Of_Geometa_Files(entry.path()) > 0) {
+                if(Get_Number_Of_Geobin_Files_In_Directory(entry.path()) > 0 && Get_Number_Of_Geometa_Files(entry.path()) > 0) {
                     geobin_and_geometa_directory_path_vec.push_back(entry.path());
 #ifdef DEBUG_MODE
                     PRINT_DEBUG(std::string{"Directory with geobin and geometa files: " + entry.path().string()});
@@ -168,6 +167,13 @@ const std::vector<std::filesystem::path> Get_Geobin_And_Geometa_Directory_Path_V
     }
 }
 
+std::filesystem::path Remove_all_Seperators_From_Path(const std::filesystem::path& path) {
+    std::string path_string = path.string();
+    std::replace(path_string.begin(), path_string.end(), '/', '-');
+    std::replace(path_string.begin(), path_string.end(), '\\', '-');
+    return std::filesystem::path{path_string};
+}
+
 void Run_RLR_Compression_Decompression_On_Files(const std::vector<std::filesystem::path>& files_vec, const int& number_of_iterations, RLR& rlr_obj) {
 #ifdef DEBUG_MODE
     assert(std::filesystem::equivalent(files_vec[0].parent_path(), files_vec.at(0).parent_path()));
@@ -176,6 +182,8 @@ void Run_RLR_Compression_Decompression_On_Files(const std::vector<std::filesyste
     rlr_obj.Set_Data_Type_Size_And_Side_Resolutions(Get_Geometa_File_Path(files_vec.at(0).parent_path()));
 
     for(const auto& file : files_vec) {
+        const uint64_t file_size = Get_File_Size_Bytes(file);
+
 
 #ifdef DEBUG_MODE
         PRINT_DEBUG(std::string{"File to be compressed: " + file.string()});
@@ -206,29 +214,17 @@ void Run_RLR_Compression_Decompression_On_Files(const std::vector<std::filesyste
         // }
         // Delete_Files_In_Directory(encoded_squared_file_path.parent_path());
 
-
-        //lod could be over 9
-        //scan until you find non-numeric
-        // auto extract_character_after = [](const std::filesystem::path& path, const char* delimiter) -> const char {
-        //     const std::string filename = path.filename().string();
-        //     size_t pos = path.filename().string().rfind(delimiter);
-        //     if (pos != std::string::npos && pos + 1 < filename.length()) {
-        //         return filename[pos + std::string{delimiter}.length()];
-        //     }
-        //     // std::cerr << "ERROR: Unable to extract character after delimiter: " << delimiter << '\n';
-        //     ERROR_MSG_AND_EXIT(std::string{ "ERROR: Unable to extract character after delimiter: " + std::string{delimiter}});
-        // };
         auto extract_character_after = [](const std::filesystem::path& path, const std::string& delimiter) -> const std::string {
         const std::string filename = path.filename().string();
         size_t pos = filename.rfind(delimiter);
         if (pos != std::string::npos) {
             size_t start = pos + delimiter.length();
             while ((start < filename.length()) && !std::isdigit(filename[start])) {
-                ++start;
+                start++;
             }
             size_t end = start;
             while ((end < filename.length()) && std::isdigit(filename[end])) {
-                ++end;
+                end++;
             }
 
             if (start < end) {
@@ -251,37 +247,69 @@ void Run_RLR_Compression_Decompression_On_Files(const std::vector<std::filesyste
 #endif
 
         // const uint side_resolution = rlr_obj.Get_Side_Resolution(side, c_number);
-        const int64_t side_resolution = rlr_obj.Get_Side_Resolution(lod_number);
+        const uint64_t side_resolution = rlr_obj.Get_Side_Resolution(lod_number);
 
 #ifdef DEBUG_MODE
         PRINT_DEBUG(std::string{"Side Resolution: " + std::to_string(side_resolution)});
 #endif
 
-        const int64_t bytes_per_row = side_resolution * rlr_obj.Get_Data_Type_Size();
-        const int num_rows = static_cast<int64_t>(Get_File_Size_Bytes(file) / bytes_per_row);
+        uint64_t bytes_per_row = side_resolution * rlr_obj.Get_Data_Type_Size();
+        uint64_t num_rows = file_size / bytes_per_row;
+
+
+        if(bytes_per_row > MAX_CHUNK_SIZE) {
+            bytes_per_row = MAX_CHUNK_SIZE - (MAX_CHUNK_SIZE % side_resolution); // align with side_resolution
+            num_rows = file_size / bytes_per_row;
+        }
+
+        // If bytes_per_row is not an exact divisor of file_size, find the largest number of rows that can fit in MAX_CHUNK_SIZE
+        if(file_size % bytes_per_row != 0){
+            uint64_t sqrtMax = static_cast<uint64_t>(std::sqrt(MAX_CHUNK_SIZE));
+            bool found = false;
+            for (uint64_t i = sqrtMax; i > 0; i--) {
+                if (MAX_CHUNK_SIZE % i == 0) { // Check if it's a divisor of MAX_CHUNK_SIZE
+                    uint64_t potentialBytesPerRow = i * side_resolution; // must be a multiple of side_resolution
+                    if (potentialBytesPerRow <= MAX_CHUNK_SIZE && file_size % potentialBytesPerRow == 0) {
+                        bytes_per_row = potentialBytesPerRow;
+                        num_rows = file_size / bytes_per_row;
+                        found = true;
+                        break;
+                    }
+                }
+            }
+            if(!found) {
+                ERROR_MSG_AND_EXIT(std::string{"ERROR: Cannot find a suitable bytes_per_row that is a divisor of file_size and within MAX_CHUNK_SIZE."});
+            }
+        }
+
 
 #ifdef DEBUG_MODE
+        PRINT_DEBUG(std::string{"Number of rows: " + std::to_string(num_rows)});
+        PRINT_DEBUG(std::string{"Bytes per row: " + std::to_string(bytes_per_row)});
         if(Get_File_Size_Bytes(file) % bytes_per_row != 0) {
             PRINT_DEBUG(std::string{"ERROR: File size is not a multiple of the number of bytes per row."});
             PRINT_DEBUG(std::string{"ERROR: File size: " + std::to_string(Get_File_Size_Bytes(file))});
             PRINT_DEBUG(std::string{"ERROR: Bytes per row: " + std::to_string(bytes_per_row)});
             PRINT_DEBUG(std::string{"ERROR: This probably means that rlr_obj.data_type_size is wrong for the file that is being commpressed"});
             PRINT_DEBUG(std::string{"ERROR: You are trying to compress " + file.string()});
-            PRINT_DEBUG(std::string{"ERROR: Side Number is: " + std::string{extract_character_after(stem_path, "_s")}});
-            PRINT_DEBUG(std::string{"ERROR: C Number is: " + std::string{extract_character_after(stem_path, "_c")}});
+            PRINT_DEBUG(std::string{"ERROR: Side Number is: " + extract_character_after(stem_path, "_s")});
+            PRINT_DEBUG(std::string{"ERROR: C Number is: " + extract_character_after(stem_path, "_c")});
             PRINT_DEBUG(std::string{"ERROR: Side Resolution is: " + std::to_string(side_resolution)});
             PRINT_DEBUG(std::string{"ERROR: Bytes per row is: " + std::to_string(bytes_per_row)});
             PRINT_DEBUG(std::string{"ERROR: Bytes per row is: " + std::to_string(bytes_per_row)});
-            ERROR_MSG(std::string{"ERROR:"});
+            ERROR_MSG_AND_EXIT(std::string{"ERROR:"});
         }
 #endif
-
         for(int iteration = 0; iteration < number_of_iterations; iteration++){
-            for(int row = 0; row<num_rows; row++){
+            for(uint64_t row = 0; row<num_rows; row++){
                 rlr_obj.Read_File(file, bytes_per_row, row);
                 rlr_obj.Compute_Time_Encoded([&rlr_obj](){
-                    rlr_obj.Encode_With_One_Nibble_Run_Length();
+                    rlr_obj.Encode_With_Move_To_Front_Transformation();
                 });
+                // rlr_obj.Compute_Time_Encoded([&rlr_obj](){
+                //     rlr_obj.Encode_With_One_Nibble_Run_Length();
+                // });
+
                 rlr_obj.Write_Compressed_File(encoded_file_path);
 
                 // rlr_obj.Compute_Time_Encoded([&rlr_obj](){
@@ -294,9 +322,13 @@ void Run_RLR_Compression_Decompression_On_Files(const std::vector<std::filesyste
                 // });
                 // rlr_obj.Write_Decompressed_File_Squared(decoded_squared_file_path);
 
+                // rlr_obj.Compute_Time_Decoded([&rlr_obj](){
+                //     rlr_obj.Decode_With_One_Nibble_Run_Length();
+                // });
                 rlr_obj.Compute_Time_Decoded([&rlr_obj](){
-                    rlr_obj.Decode_With_One_Nibble_Run_Length();
+                    rlr_obj.Decode_With_Inverse_Move_To_Front_Transformation();
                 });
+
                 rlr_obj.Write_Decompressed_File(decoded_file_path);
 
                 if(!rlr_obj.Is_Decoded_Data_Equal_To_Original_Data(rlr_obj.Get_Decoded_Data_Vec(), rlr_obj.Get_Binary_Data_Vec())){
@@ -306,10 +338,10 @@ void Run_RLR_Compression_Decompression_On_Files(const std::vector<std::filesyste
             rlr_obj.Compute_Compression_Ratio(file, encoded_file_path);
             rlr_obj.Compute_Compressed_File_Size(encoded_file_path);
             // if(!(iteration == number_of_iterations - 1)) {
-            //     Delete_Files_In_Directory(encoded_file_path.parent_path());
+            // Delete_Files_In_Directory(encoded_file_path.parent_path());
             //     // Delete_Files_In_Directory(encoded_squared_file_path.parent_path());
             // }
         }
-        std::filesystem::remove_all(encoded_file_path.parent_path().parent_path());
+        // std::filesystem::remove_all(encoded_file_path.parent_path().parent_path());
     }
 }

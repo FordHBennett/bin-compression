@@ -70,6 +70,39 @@ CommonStats::CommonStats(CommonStats&& other) {
     data_type_byte_size = other.data_type_byte_size;
 }
 
+void CommonStats::Reset_Stats() {
+    average_compressed_file_size = 0.0;
+    average_original_file_size = 0.0;
+    average_time_encoded_in_microseconds  = 0.0;
+    average_time_decoded_in_microseconds  = 0.0;
+    average_compression_ratio = 0.0;
+    average_encoded_throughput = 0.0;
+    average_decoded_throughput = 0.0;
+}
+
+void CommonStats::Write_Stats_To_File(const std::filesystem::path& file_path, const char* compression_type, const std::string& directory_compressed) const {
+    // create a json object and write the stats to it
+    if(!std::filesystem::exists(file_path.parent_path())){
+        std::filesystem::create_directory(file_path.parent_path());
+    }
+    json stats_json;
+    // stats_json["Average File Size"] = average_compressed_file_size;
+    stats_json["Average Compression Ratio"] = average_compression_ratio;
+    stats_json["Average Encoded Time (microseconds)"] = average_time_encoded_in_microseconds;
+    stats_json["Average Decoded Time (microseconds)"] = average_time_decoded_in_microseconds;
+    stats_json["Average Encoded Throughput (bytes/microseconds)"] = average_encoded_throughput;
+    stats_json["Average Decoded Throughput (bytes/microseconds)"] = average_decoded_throughput;
+    stats_json["Data Type Size"] = data_type_byte_size;
+    stats_json["Compression Type"] = compression_type;
+    stats_json["Directory Compressed"] = directory_compressed;
+    stats_json["Average Uncompressed File Size (bytes)"] = average_original_file_size;
+    stats_json["Average Compressed File Size (bytes)"] = average_compressed_file_size;
+
+    // write the json object to a file
+    std::ofstream stats_file(file_path);
+    stats_file << std::setw(4) << stats_json << std::endl;
+}
+
 void CommonStats::Calculate_Cumulative_Average_Stats_For_Directory(const int& divisor, const int& number_of_files) {
     average_compressed_file_size /= (divisor*number_of_files);
     // average_time_encoded_in_microseconds  /= static_cast<double>((divisor*number_of_files));
@@ -79,23 +112,16 @@ void CommonStats::Calculate_Cumulative_Average_Stats_For_Directory(const int& di
     average_decoded_throughput /= static_cast<double>((divisor*number_of_files));
 }
 
-// template <typename EncodeFunction>
-// void CommonStats::Compute_Time_Encoded(EncodeFunction encode) {
-//     std::chrono::time_point<std::chrono::high_resolution_clock> start;
-//     encode();
-//     std::chrono::time_point<std::chrono::high_resolution_clock> end;
-//     std::chrono::nanoseconds duration = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start);
-//     average_time_encoded_in_microseconds += duration.count();
-// }
-
-// template <typename DecodeFunction>
-// void CommonStats::Compute_Time_Decoded(DecodeFunction decode) {
-//     std::chrono::time_point<std::chrono::high_resolution_clock> start = std::chrono::high_resolution_clock::now();
-//     decode();
-//     std::chrono::time_point<std::chrono::high_resolution_clock> end = std::chrono::high_resolution_clock::now();
-//     std::chrono::nanoseconds duration = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start);
-//     average_time_encoded_in_microseconds += duration.count();
-// }
+void CommonStats::Is_Little_Endian(){
+    //check if the system is little endian
+    int num = 1;
+    if(*(char *)&num == 1){
+        little_endian_flag = true;
+    }
+    else{
+        little_endian_flag = false;
+    }
+}
 
 void CommonStats::Compute_Compression_Ratio(const std::filesystem::path& original_file_path, const std::filesystem::path& compressed_file_path) {
     average_original_file_size += static_cast<double>(Get_File_Size_Bytes(original_file_path));
