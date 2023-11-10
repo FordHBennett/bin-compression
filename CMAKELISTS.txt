@@ -26,6 +26,7 @@ set(SOURCES
 set(HEADERS
     src/classes/common_stats.hpp
     src/classes/rlr_class.hpp
+    src/classes/alphabet_table.hpp
     # src/classes/lz4_class.hpp
     # src/classes/lzw_class.hpp
     # src/classes/lzp_class.hpp

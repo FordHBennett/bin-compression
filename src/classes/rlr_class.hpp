@@ -28,12 +28,11 @@ class RLR : public CommonStats {
         void Encode_With_Burrow_Wheeler_Transformation_Little_Endian();
         void Decode_With_Inverse_Burrow_Wheeler_Transformation_Little_Endian();
         void Encode_With_Move_To_Front_Transformation();
-        void Decode_With_Inverse_Move_To_Front_Transformation();
+        void Decode_With_Move_To_Front_Transformation();
 
         void Write_Compressed_File(const std::filesystem::path& file_path) const;
         void Write_Decompressed_File(const std::filesystem::path& file_path) const;
-        void Write_Compressed_File_Squared(const std::filesystem::path& file_path) const;
-        void Write_Decompressed_File_Squared(const std::filesystem::path& file_path) const;
+
 
         //getters
         const char* Get_Compression_Type() const;
@@ -53,9 +52,11 @@ class RLR : public CommonStats {
         std::vector<char> binary_data_vec = {0};
         std::vector<char> encoded_data_vec = {0};
         std::vector<char> decoded_data_vec = {0};
-        std::vector<char> encoded_squared_data_vec = {0};
-        std::vector<char> decoded_squared_data_vec = {0};
-        std::vector<char> sentinel_vec = {0};
+        // std::vector<char> encoded_move_to_front_data_vec = {0};
+        // std::vector<char> decoded_move_to_frontsquared_data_vec = {0};
+        // std::vector<char> sentinel_vec = {0};
+
+
 
 
 };
