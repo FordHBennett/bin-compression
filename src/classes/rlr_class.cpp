@@ -95,7 +95,6 @@ void RLR::Decode_With_One_Byte_Run_Length() {
     size_t byte_index = 0;
 
     while (byte_index < encoded_data_vec.size()) {
-
         uint8_t run_length = static_cast<uint8_t>(encoded_data_vec[byte_index]);
 
         byte_index++;
@@ -491,8 +490,7 @@ void RLR::Encode_With_Move_To_Front_Transformation() {
 void RLR::Decode_With_Move_To_Front_Transformation() {
     decoded_data_vec.clear();
 
-    size_t data_type_size = this->Get_Data_Type_Size();
-    size_t alphabet_size = 1ULL << (data_type_size * 8);
+    uint8_t data_type_size = this->Get_Data_Type_Size();
     std::vector<char> alphabet_vec = [&] {
         switch (data_type_size) {
             case 1:
@@ -505,7 +503,7 @@ void RLR::Decode_With_Move_To_Front_Transformation() {
         }
     }();
 
-    for(size_t index : encoded_data_vec) {
+    for(auto index : encoded_data_vec) {
         decoded_data_vec.resize(decoded_data_vec.size() + data_type_size);
         memcpy(decoded_data_vec.data() + decoded_data_vec.size() - data_type_size, alphabet_vec.data() + index * data_type_size, data_type_size);
         // Move to front
@@ -515,6 +513,82 @@ void RLR::Decode_With_Move_To_Front_Transformation() {
     decoded_data_vec.shrink_to_fit();
 }
 
+void RLR::Encode_With_Delta_Transformation(){
+    encoded_data_vec.clear();
+    const uint8_t data_type_size = this->Get_Data_Type_Size();
+    encoded_data_vec.insert(encoded_data_vec.end(), binary_data_vec.begin(), binary_data_vec.begin() + data_type_size);
+
+    std::vector<char> current_block(binary_data_vec.begin(), binary_data_vec.begin() + data_type_size);
+    std::vector<char> previous_block(data_type_size, 0);
+
+    std::vector<char> delta_block(data_type_size, 0);
+    //  for(auto i = 0; i < data_type_size; i++) {
+    //     delta_block[i] = current_block[i] - previous_block[i];
+    // }
+    // calculate the delta block without iterating through the loop
+    std::transform(current_block.begin(), current_block.end(), previous_block.begin(), delta_block.begin(), std::minus<char>());
+    encoded_data_vec.insert(encoded_data_vec.end(), delta_block.begin(), delta_block.end());
+
+    for(auto byte_index = data_type_size; byte_index < binary_data_vec.size(); byte_index += data_type_size) {
+        memcpy(previous_block.data(), current_block.data(), data_type_size);
+        memcpy(current_block.data(), binary_data_vec.data() + byte_index, data_type_size);
+
+        // for(auto i = 0; i < data_type_size; i++) {
+        //     delta_block[i] = current_block[i] - previous_block[i];
+        // }
+        // calculate the delta block without iterating through the loop
+        std::transform(current_block.begin(), current_block.end(), previous_block.begin(), delta_block.begin(), std::minus<char>());
+        encoded_data_vec.insert(encoded_data_vec.end(), delta_block.begin(), delta_block.end());
+    }
+
+   encoded_data_vec.shrink_to_fit();
+}
+
+void RLR::Decode_With_Delta_Transformation(){
+    decoded_data_vec.clear();
+    const uint8_t data_type_size = this->Get_Data_Type_Size();
+    decoded_data_vec.insert(decoded_data_vec.end(), encoded_data_vec.begin(), encoded_data_vec.begin() + data_type_size);
+
+    std::vector<char> current_block(encoded_data_vec.begin(), encoded_data_vec.begin() + data_type_size);
+    std::vector<char> previous_block(data_type_size, 0);
+
+    std::vector<char> delta_block(data_type_size, 0);
+    for(auto byte_index = data_type_size; byte_index < encoded_data_vec.size(); byte_index += data_type_size) {
+        memcpy(previous_block.data(), current_block.data(), data_type_size);
+        memcpy(delta_block.data(), encoded_data_vec.data() + byte_index, data_type_size);
+
+        // for(auto i = 0; i < data_type_size; i++) {
+        //     current_block[i] = delta_block[i] + previous_block[i];
+        // }
+        // calculate the current block without iterating through the loop
+        std::transform(delta_block.begin(), delta_block.end(), previous_block.begin(), current_block.begin(), std::plus<char>());
+        decoded_data_vec.insert(decoded_data_vec.end(), current_block.begin(), current_block.end());
+    }
+
+    decoded_data_vec.shrink_to_fit();
+}
+
+void RLR::Encode_With_XOR_Transformation() {
+    encoded_data_vec.clear();
+    encoded_data_vec.resize(binary_data_vec.size(), 0);
+
+    encoded_data_vec[0] = binary_data_vec[0];
+
+    for(auto byte_index = 1; byte_index < binary_data_vec.size(); byte_index++) {
+        encoded_data_vec[byte_index] = static_cast<char>(encoded_data_vec[byte_index - 1] ^ binary_data_vec[byte_index]);
+    }
+}
+
+void RLR::Decode_With_XOR_Transformation() {
+    decoded_data_vec.clear();
+    decoded_data_vec.resize(encoded_data_vec.size(), 0);
+
+    decoded_data_vec[0] = encoded_data_vec[0];
+
+    for(auto byte_index = 1; byte_index < encoded_data_vec.size(); byte_index++) {
+        decoded_data_vec[byte_index] = static_cast<char>(encoded_data_vec[byte_index - 1] ^ encoded_data_vec[byte_index]);
+    }
+}
 
 
 void RLR::Write_Compressed_File(const std::filesystem::path& file_path) const {

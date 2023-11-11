@@ -22,13 +22,18 @@ class RLR : public CommonStats {
 
         void Encode_With_One_Nibble_Run_Length();
         void Decode_With_One_Nibble_Run_Length();
-        void Encode_With_One_Nibble_Run_Length_Squared();
-        void Decode_With_One_Nibble_Run_Length_Squared();
 
         void Encode_With_Burrow_Wheeler_Transformation_Little_Endian();
         void Decode_With_Inverse_Burrow_Wheeler_Transformation_Little_Endian();
+
         void Encode_With_Move_To_Front_Transformation();
         void Decode_With_Move_To_Front_Transformation();
+
+        void Encode_With_Delta_Transformation();
+        void Decode_With_Delta_Transformation();
+
+        void Encode_With_XOR_Transformation();
+        void Decode_With_XOR_Transformation();
 
         void Write_Compressed_File(const std::filesystem::path& file_path) const;
         void Write_Decompressed_File(const std::filesystem::path& file_path) const;

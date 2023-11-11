@@ -190,33 +190,22 @@ void Run_RLR_Compression_Decompression_On_Files(const std::vector<std::filesyste
 #endif
         const std::filesystem::path stem_path = file.stem();
         const std::filesystem::path encoded_file_path = file.parent_path() / std::filesystem::path{"compressed_decompressed_rlr_files"} /
-                                                        stem_path / std::filesystem::path{(stem_path.string() + ".mtf_encoded")};
+                                                        stem_path / std::filesystem::path{(stem_path.string() + ".xor_encoded")};
         const std::filesystem::path decoded_file_path = file.parent_path() / std::filesystem::path{"compressed_decompressed_rlr_files"} /
-                                                        stem_path / std::filesystem::path{(stem_path.string() + ".mtf_decoded")};
+                                                        stem_path / std::filesystem::path{(stem_path.string() + ".xor_decoded")};
 
-        // const std::filesystem::path encoded_rlr_file_path = encoded_file_path.parent_path() / encoded_file_path.stem() / std::filesystem::path{(encoded_file_path.stem().string() + ".rlr_encoded")};
-        // const std::filesystem::path decoded_rlr_file_path = decoded_file_path.parent_path() / decoded_file_path.stem() / std::filesystem::path{(decoded_file_path.stem().string() + ".rlr_decoded")};
+        const std::filesystem::path encoded_rlr_file_path = encoded_file_path.parent_path() / encoded_file_path.stem() / std::filesystem::path{(encoded_file_path.stem().string() + ".rlr_encoded")};
+        const std::filesystem::path decoded_rlr_file_path = decoded_file_path.parent_path() / decoded_file_path.stem() / std::filesystem::path{(decoded_file_path.stem().string() + ".rlr_decoded")};
 
         if(!std::filesystem::exists(encoded_file_path.parent_path())) {
             std::filesystem::create_directories(encoded_file_path.parent_path());
         }
 
-        // if(!std::filesystem::exists(encoded_rlr_file_path.parent_path())) {
-        //     std::filesystem::create_directories(encoded_rlr_file_path.parent_path());
-        // }
+        if(!std::filesystem::exists(encoded_rlr_file_path.parent_path())) {
+            std::filesystem::create_directories(encoded_rlr_file_path.parent_path());
+        }
         Delete_Files_In_Directory(encoded_file_path.parent_path());
-        // Delete_Files_In_Directory(encoded_rlr_file_path.parent_path());
-
-        // const std::filesystem::path encoded_squared_file_path = file.parent_path() / "compressed_decompressed_rlr_files" / stem_path / "compressed_decompressed_squared_rlr_files"/ (stem_path.string() + ".rlr_encoded_bin");
-        // const std::filesystem::path decoded_squared_file_path = file.parent_path() /  "compressed_decompressed_rlr_files" / stem_path / "compressed_decompressed_squared_rlr_files"/ (stem_path.string() + ".rlr_decoded_bin");
-        // if(!std::filesystem::exists(encoded_squared_file_path.parent_path())) {
-        //     std::filesystem::create_directories(encoded_squared_file_path.parent_path());
-        // }
-
-        // if(!std::filesystem::exists(decoded_squared_file_path.parent_path())) {
-        //     std::filesystem::create_directories(decoded_squared_file_path.parent_path());
-        // }
-        // Delete_Files_In_Directory(encoded_squared_file_path.parent_path());
+        Delete_Files_In_Directory(encoded_rlr_file_path.parent_path());
 
         auto extract_character_after = [](const std::filesystem::path& path, const std::string& delimiter) -> const std::string {
         const std::string filename = path.filename().string();
@@ -255,6 +244,7 @@ void Run_RLR_Compression_Decompression_On_Files(const std::vector<std::filesyste
 
 #ifdef DEBUG_MODE
         PRINT_DEBUG(std::string{"Side Resolution: " + std::to_string(side_resolution)});
+        PRINT_DEBUG(std::string{"Data Type Size : " + std::to_string(rlr_obj.Get_Data_Type_Size())});
 #endif
 
         uint64_t bytes_per_row = side_resolution * rlr_obj.Get_Data_Type_Size();
@@ -307,33 +297,48 @@ void Run_RLR_Compression_Decompression_On_Files(const std::vector<std::filesyste
         for(int iteration = 0; iteration < number_of_iterations; iteration++){
             for(uint64_t row = 0; row<num_rows; row++){
                 rlr_obj.Read_File(file, bytes_per_row, row);
-                rlr_obj.Compute_Time_Encoded([&rlr_obj](){
-                    rlr_obj.Encode_With_Move_To_Front_Transformation();
-                });
+                // rlr_obj.Compute_Time_Encoded([&rlr_obj](){
+                //     rlr_obj.Encode_With_Move_To_Front_Transformation();
+                // });
+                // rlr_obj.Compute_Time_Encoded([&rlr_obj](){
+                //     rlr_obj.Encode_With_Delta_Transformation();
+                // });
+                // rlr_obj.Compute_Time_Encoded([&rlr_obj](){
+                //     rlr_obj.Encode_With_XOR_Transformation();
+                // });
                 // rlr_obj.Compute_Time_Encoded([&rlr_obj](){
                 //     rlr_obj.Encode_With_One_Nibble_Run_Length();
                 // });
+                // rlr_obj.Compute_Time_Encoded([&rlr_obj](){
+                //     rlr_obj.Encode_With_One_Byte_Run_Length();
+                // });
+                rlr_obj.Compute_Time_Encoded([&rlr_obj](){
+                    rlr_obj.Encode_With_Two_Byte_Run_Length();
+                });
 
                 rlr_obj.Write_Compressed_File(encoded_file_path);
 
-                // rlr_obj.Compute_Time_Encoded([&rlr_obj](){
-                //     rlr_obj.Encode_With_One_Nibble_Run_Length_Squared();
-                // });
-                // rlr_obj.Write_Compressed_File_Squared(encoded_squared_file_path);
 
+                rlr_obj.Compute_Time_Decoded([&rlr_obj](){
+                    rlr_obj.Decode_With_Two_Byte_Run_Length();
+                });
                 // rlr_obj.Compute_Time_Decoded([&rlr_obj](){
-                //     rlr_obj.Decode_With_One_Nibble_Run_Length_Squared();
+                //     rlr_obj.Decode_With_One_Byte_Run_Length();
                 // });
-                // rlr_obj.Write_Decompressed_File_Squared(decoded_squared_file_path);
-
                 // rlr_obj.Compute_Time_Decoded([&rlr_obj](){
                 //     rlr_obj.Decode_With_One_Nibble_Run_Length();
                 // });
-                rlr_obj.Compute_Time_Decoded([&rlr_obj](){
-                    rlr_obj.Decode_With_Move_To_Front_Transformation();
-                });
+                // rlr_obj.Compute_Time_Decoded([&rlr_obj](){
+                //     rlr_obj.Decode_With_XOR_Transformation();
+                // });
+                // rlr_obj.Compute_Time_Decoded([&rlr_obj](){
+                //     rlr_obj.Decode_With_Delta_Transformation();
+                // });
+                // rlr_obj.Compute_Time_Decoded([&rlr_obj](){
+                //     rlr_obj.Decode_With_Move_To_Front_Transformation();
+                // });
 
-                rlr_obj.Write_Decompressed_File(decoded_file_path);
+                rlr_obj.Write_Decompressed_File(decoded__file_path);
 
                 if(!rlr_obj.Is_Decoded_Data_Equal_To_Original_Data(rlr_obj.Get_Decoded_Data_Vec(), rlr_obj.Get_Binary_Data_Vec())){
                     ERROR_MSG_AND_EXIT(std::string{"ERROR: Decoded data is not equal to original data."});
@@ -342,10 +347,9 @@ void Run_RLR_Compression_Decompression_On_Files(const std::vector<std::filesyste
             rlr_obj.Compute_Compression_Ratio(file, encoded_file_path);
             rlr_obj.Compute_Compressed_File_Size(encoded_file_path);
             // if(!(iteration == number_of_iterations - 1)) {
-            Delete_Files_In_Directory(encoded_file_path.parent_path());
-                // Delete_Files_In_Directory(encoded_squared_file_path.parent_path());
+            // Delete_Files_In_Directory(encoded_file_path.parent_path());
             // }
         }
-        std::filesystem::remove_all(encoded_file_path.parent_path().parent_path());
+        // std::filesystem::remove_all(encoded_file_path.parent_path().parent_path());
     }
 }

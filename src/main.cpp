@@ -45,7 +45,7 @@ int main() {
 
     RLR rlr;
 
-    const std::vector<std::filesystem::path> geometa_and_geobin_dir_path_vec = Get_Geobin_And_Geometa_Directory_Path_Vec(std::filesystem::path("PlanetData"));
+    const std::vector<std::filesystem::path> geometa_and_geobin_dir_path_vec = Get_Geobin_And_Geometa_Directory_Path_Vec(std::filesystem::path("PlanetData/Mars"));
     for(int i = 0; i < geometa_and_geobin_dir_path_vec.size(); i++){
         std::vector<std::filesystem::path> geobin_files_vec = Get_Geobin_File_Vec(geometa_and_geobin_dir_path_vec[i]);
         Run_RLR_Compression_Decompression_On_Files(geobin_files_vec, number_of_iteration, rlr);
