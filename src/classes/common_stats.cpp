@@ -87,16 +87,16 @@ void CommonStats::Write_Stats_To_File(const std::filesystem::path& file_path, co
     }
     json stats_json;
     // stats_json["Average File Size"] = average_compressed_file_size;
-    stats_json["Average Compression Ratio"] = average_compression_ratio;
-    stats_json["Average Encoded Time (microseconds)"] = average_time_encoded_in_microseconds;
-    stats_json["Average Decoded Time (microseconds)"] = average_time_decoded_in_microseconds;
-    stats_json["Average Encoded Throughput (bytes/microseconds)"] = average_encoded_throughput;
-    stats_json["Average Decoded Throughput (bytes/microseconds)"] = average_decoded_throughput;
-    stats_json["Data Type Size"] = data_type_byte_size;
-    stats_json["Compression Type"] = compression_type;
-    stats_json["Directory Compressed"] = directory_compressed;
-    stats_json["Average Uncompressed File Size (bytes)"] = average_original_file_size;
-    stats_json["Average Compressed File Size (bytes)"] = average_compressed_file_size;
+    stats_json["average_compression_ratio"] = average_compression_ratio;
+    stats_json["average_encoded_time_microseconds"] = average_time_encoded_in_microseconds;
+    stats_json["average_decoded_time_microseconds"] = average_time_decoded_in_microseconds;
+    stats_json["average_encoded_throughput_bytes_per_microseconds"] = average_encoded_throughput;
+    stats_json["average_decoded_throughput_bytes_per_microseconds"] = average_decoded_throughput;
+    stats_json["data_type_size"] = data_type_byte_size;
+    stats_json["compression_type"] = compression_type;
+    stats_json["directory_compressed"] = directory_compressed;
+    stats_json["average_uncompressed_file_size_bytes"] = average_original_file_size;
+    stats_json["average_compressed_file_size_bytes"] = average_compressed_file_size;
 
     // write the json object to a file
     std::ofstream stats_file(file_path);

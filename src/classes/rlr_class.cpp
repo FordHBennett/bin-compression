@@ -4,6 +4,15 @@
 #include <iostream>
 #include <vector>
 #include <algorithm>
+#include <boost/multiprecision/cpp_int.hpp>
+
+#define U_NIBBLE_MAX 15
+#define U_ONE_BYTE_MAX 255
+#define U_TWO_BYTE_MAX 65535
+#define U_THREE_BYTE_MAX 16777215
+#define U_FOUR_BYTE_MAX 4294967295
+#define U_FIVE_BYTE_MAX 1099511627775
+
 
 #define ERROR_MSG(msg) \
     std::cerr << msg << " OCCURED IN: " << '\n'; \
@@ -47,145 +56,24 @@ void RLR::Read_File(const std::filesystem::path& file_path, const int& number_of
     input_file.close();
 }
 
-void RLR::Encode_With_One_Byte_Run_Length() {
-    // Clear the encoded data vector
-    encoded_data_vec.clear();
-
-    const int data_type_size = this->Get_Data_Type_Size();
-    encoded_data_vec.reserve(binary_data_vec.size() / 8);
-    int byte_index = 0;
-    std::vector<char> current_block;
-    current_block.reserve(data_type_size);
-
-    while (byte_index < binary_data_vec.size()) {
-        uint8_t run_length = 1;
-        int next_index = byte_index + data_type_size;
-
-        current_block.assign(binary_data_vec.begin() + byte_index,
-                                        binary_data_vec.begin() + byte_index + data_type_size);
-
-        while ((next_index < binary_data_vec.size()) && run_length < 255) {
-            if (std::equal(current_block.begin(), current_block.end(),
-                           binary_data_vec.begin() + next_index)) {
-                run_length++;
-                next_index += data_type_size;
-            } else {
-                break;
-            }
-        }
-
-        encoded_data_vec.push_back(static_cast<char>(run_length));
-        encoded_data_vec.insert(encoded_data_vec.end(), current_block.begin(), current_block.end());
-
-        byte_index = next_index;
-    }
-
-    encoded_data_vec.shrink_to_fit();
-}
-
-void RLR::Decode_With_One_Byte_Run_Length() {
-    // Clear the vector to make sure we're starting fresh.
-    decoded_data_vec.clear();
-
-    decoded_data_vec.reserve(binary_data_vec.size());
-
-    decoded_data_vec.clear();
-    decoded_data_vec.reserve(binary_data_vec.size());
-    const int data_type_size = this->Get_Data_Type_Size();
-    size_t byte_index = 0;
-
-    while (byte_index < encoded_data_vec.size()) {
-        uint8_t run_length = static_cast<uint8_t>(encoded_data_vec[byte_index]);
-
-        byte_index++;
-
-        decoded_data_vec.insert(decoded_data_vec.end(), run_length * data_type_size,encoded_data_vec[byte_index]);
-        byte_index += data_type_size;
-
-    }
-}
-
-
-void RLR::Encode_With_Two_Byte_Run_Length() {
-    // Clear the encoded data vector
-    encoded_data_vec.clear();
-
-    int data_type_size = this->Get_Data_Type_Size();
-    encoded_data_vec.reserve(binary_data_vec.size());
-    int byte_index = 0;
-
-    while (byte_index < binary_data_vec.size()) {
-        uint16_t run_length = 1;
-        int next_index = byte_index + data_type_size;
-
-        std::vector<char> current_block(binary_data_vec.begin() + byte_index,
-                                        binary_data_vec.begin() + byte_index + data_type_size);
-
-        while ((next_index < binary_data_vec.size()) && run_length < 65535) {
-            if (std::equal(current_block.begin(), current_block.end(),
-                           binary_data_vec.begin() + next_index)) {
-                run_length++;
-                next_index += data_type_size;
-            } else {
-                break;
-            }
-        }
-
-        encoded_data_vec.push_back(static_cast<uint8_t>(run_length >> 8));
-        encoded_data_vec.push_back(static_cast<uint8_t>(run_length & 0xFF));
-        encoded_data_vec.insert(encoded_data_vec.end(), current_block.begin(), current_block.end());
-
-        byte_index = next_index;
-    }
-
-    encoded_data_vec.shrink_to_fit();
-}
-
-// why does this work?
-void RLR::Decode_With_Two_Byte_Run_Length() {
-    // Clear the vector to make sure we're starting fresh.
-    decoded_data_vec.clear();
-
-    decoded_data_vec.reserve(binary_data_vec.size());
-
-    int data_type_size = this->Get_Data_Type_Size();
-    size_t byte_index = 0;
-
-    while (byte_index < encoded_data_vec.size()) {
-        uint16_t run_length = static_cast<uint8_t>(encoded_data_vec[byte_index]) << 8;
-        run_length |= static_cast<uint8_t>(encoded_data_vec[byte_index + 1]) & 0xFF;
-
-        byte_index += 2;
-
-        for (int i = 0; i < run_length; ++i) {
-            decoded_data_vec.insert(decoded_data_vec.end(),
-                                    encoded_data_vec.begin() + byte_index,
-                                    encoded_data_vec.begin() + byte_index + data_type_size);
-        }
-        byte_index += data_type_size;
-    }
-}
-
 //FASTER
 void RLR::Encode_With_One_Nibble_Run_Length() {
     encoded_data_vec.clear();
+    encoded_data_vec.reserve(binary_data_vec.size());
 
-    const int data_type_size = this->Get_Data_Type_Size();
-    encoded_data_vec.reserve(binary_data_vec.size() / 8);
-    int byte_index = 0;
-    std::vector<char> first_nibble_run_block = {0};
-    first_nibble_run_block.reserve(data_type_size);
-    std::vector<char> second_nibble_run_block = {0};
-    second_nibble_run_block.reserve(data_type_size);
+    const uint8_t data_type_size = this->Get_Data_Type_Size();
+    auto byte_index = 0;
+    std::vector<char> first_nibble_run_block(data_type_size, 0);
+    std::vector<char> second_nibble_run_block(data_type_size, 0);
 
     while (byte_index < binary_data_vec.size()) {
         uint8_t first_nibble_run_length = 1;
         uint8_t second_nibble_run_length = 0;
-        int next_index = byte_index + data_type_size;
+        auto next_index = byte_index + data_type_size;
 
         first_nibble_run_block.assign(binary_data_vec.begin() + byte_index, binary_data_vec.begin() + byte_index + data_type_size);
 
-        while ((next_index < binary_data_vec.size()) && (first_nibble_run_length < 15) &&
+        while ((next_index < binary_data_vec.size()) && (first_nibble_run_length < U_NIBBLE_MAX) &&
                 (std::equal(first_nibble_run_block.begin(), first_nibble_run_block.end(), binary_data_vec.begin() + next_index))) {
             first_nibble_run_length++;
             next_index += data_type_size;
@@ -196,7 +84,7 @@ void RLR::Encode_With_One_Nibble_Run_Length() {
         if (byte_index < binary_data_vec.size()) {
             second_nibble_run_block.assign(binary_data_vec.begin() + byte_index, binary_data_vec.begin() + byte_index + data_type_size);
 
-            while ((next_index < binary_data_vec.size()) && (second_nibble_run_length < 15) &&
+            while ((next_index < binary_data_vec.size()) && (second_nibble_run_length < U_NIBBLE_MAX) &&
                         (std::equal(second_nibble_run_block.begin(), second_nibble_run_block.end(), binary_data_vec.begin() + next_index))) {
                 second_nibble_run_length++;
                 next_index += data_type_size;
@@ -217,72 +105,17 @@ void RLR::Encode_With_One_Nibble_Run_Length() {
 }
 
 
-
-//SLOWER
-// void RLR::Encode_With_One_Nibble_Run_Length() {
-//     encoded_data_vec.clear();
-
-//     const int data_type_size = this->Get_Data_Type_Size();
-//     encoded_data_vec.reserve(binary_data_vec.size());
-
-//     size_t byte_index = 0;
-
-//     while (byte_index < binary_data_vec.size()) {
-//         const char* current_block = &binary_data_vec[byte_index];
-//         uint8_t first_nibble_run_length = 1;
-//         uint8_t second_nibble_run_length = 0;
-
-//         while ((byte_index + first_nibble_run_length * data_type_size < binary_data_vec.size()) &&
-//                (memcmp(current_block, &binary_data_vec[byte_index + first_nibble_run_length * data_type_size], data_type_size) == 0) &&
-//                (first_nibble_run_length < 15)) {
-//             ++first_nibble_run_length;
-//         }
-
-//         size_t current_block_end_index = byte_index + first_nibble_run_length * data_type_size;
-
-//         // Calculate the second run length if there's more data
-//         if (current_block_end_index < binary_data_vec.size()) {
-//             current_block = &binary_data_vec[current_block_end_index];
-//             while ((current_block_end_index + second_nibble_run_length * data_type_size < binary_data_vec.size()) &&
-//                    (memcmp(current_block, &binary_data_vec[current_block_end_index + second_nibble_run_length * data_type_size], data_type_size) == 0) &&
-//                    (second_nibble_run_length < 15)) {
-//                 ++second_nibble_run_length;
-//             }
-//         }
-
-
-//         uint8_t packed_run_lengths = (first_nibble_run_length << 4) | second_nibble_run_length;
-//         encoded_data_vec.push_back(static_cast<char>(packed_run_lengths));
-
-//         size_t new_size = encoded_data_vec.size() + data_type_size;
-//         encoded_data_vec.resize(new_size);
-//         memcpy(encoded_data_vec.data() + new_size - data_type_size, current_block, data_type_size);
-//         byte_index += first_nibble_run_length * data_type_size;
-
-//         if (second_nibble_run_length > 0) {
-//             new_size = encoded_data_vec.size() + data_type_size;
-//             encoded_data_vec.resize(new_size);
-//             memcpy(encoded_data_vec.data() + new_size - data_type_size, current_block, data_type_size);
-//             byte_index += second_nibble_run_length * data_type_size;
-//         }
-//     }
-
-
-//     encoded_data_vec.shrink_to_fit();
-// }
-
 //FASTER
 void RLR::Decode_With_One_Nibble_Run_Length() {
     decoded_data_vec.clear();
-    decoded_data_vec.reserve(binary_data_vec.size());
-    const int data_type_size = this->Get_Data_Type_Size();
-    size_t byte_index = 0;
+    // decoded_data_vec.reserve(binary_data_vec.size());
+    const uint8_t data_type_size = this->Get_Data_Type_Size();
+    auto byte_index = 0;
 
     while (byte_index < encoded_data_vec.size()) {
-
-        uint8_t packed_run_lengths = static_cast<uint8_t>(encoded_data_vec[byte_index]);
-        uint8_t first_nibble_run_length = packed_run_lengths >> 4;
-        uint8_t second_nibble_run_length = packed_run_lengths & 0x0F;
+        const uint8_t packed_run_lengths = static_cast<uint8_t>(encoded_data_vec[byte_index]);
+        const uint8_t first_nibble_run_length = packed_run_lengths >> 4;
+        const uint8_t second_nibble_run_length = packed_run_lengths & 0x0F;
 
         byte_index++;
 
@@ -298,49 +131,284 @@ void RLR::Decode_With_One_Nibble_Run_Length() {
 }
 
 
+void RLR::Encode_With_One_Byte_Run_Length() {
+    encoded_data_vec.clear();
+    const uint8_t data_type_size = this->Get_Data_Type_Size();
+    encoded_data_vec.reserve(binary_data_vec.size());
+    auto byte_index = 0;
+
+    std::vector<char> current_block(binary_data_vec.begin() + byte_index,
+                                    binary_data_vec.begin() + byte_index + data_type_size);
+
+    while (byte_index < binary_data_vec.size()) {
+        uint8_t run_length = 1;
+        int next_index = byte_index + data_type_size;
+        current_block.assign(binary_data_vec.begin() + byte_index,
+                             binary_data_vec.begin() + byte_index + data_type_size);
+
+        while (next_index < binary_data_vec.size() && (run_length < U_ONE_BYTE_MAX) &&
+                (std::equal(current_block.begin(), current_block.end(), binary_data_vec.begin() + next_index))) {
+
+            run_length++;
+            next_index += data_type_size;
+        }
+        encoded_data_vec.push_back(static_cast<char>(run_length));
+        encoded_data_vec.insert(encoded_data_vec.end(), current_block.begin(), current_block.end());
+        byte_index = next_index;
+    }
+
+    encoded_data_vec.shrink_to_fit();
+}
+
+void RLR::Decode_With_One_Byte_Run_Length() {
+    decoded_data_vec.clear();
+
+    const uint8_t data_type_size = this->Get_Data_Type_Size();
+    auto byte_index = 0;
+
+    while (byte_index < encoded_data_vec.size()) {
+        const uint8_t run_length = static_cast<uint8_t>(encoded_data_vec[byte_index]);
+
+        byte_index++;
+
+        decoded_data_vec.insert(decoded_data_vec.end(),
+                                run_length * data_type_size,
+                                encoded_data_vec[byte_index]);
+
+        byte_index += data_type_size;
+
+    }
+}
 
 
-//SLOWER
-// void RLR::Decode_With_One_Nibble_Run_Length() {
-//     decoded_data_vec.clear();
+void RLR::Encode_With_Two_Byte_Run_Length() {
+    encoded_data_vec.clear();
 
-//     // Assuming the encoded data contains at least one data block after each byte of run lengths
-//     const int data_type_size = this->Get_Data_Type_Size();
-//     // Reserve some space upfront to reduce allocations
-//     decoded_data_vec.reserve(encoded_data_vec.size() * data_type_size);
+    const uint8_t data_type_size = this->Get_Data_Type_Size();
+    encoded_data_vec.reserve(binary_data_vec.size());
+    auto byte_index = 0;
 
-//     // Iterate through each byte of run length information
-//     for (size_t i = 0; i < encoded_data_vec.size(); ) {
-//         // Extract run lengths from the current byte
-//         uint8_t packed_run_lengths = static_cast<uint8_t>(encoded_data_vec[i]);
-//         uint8_t first_nibble_run_length = (packed_run_lengths >> 4) & 0x0F;  // Upper nibble
-//         uint8_t second_nibble_run_length = packed_run_lengths & 0x0F;         // Lower nibble
+    std::vector<char> current_block(binary_data_vec.begin() + byte_index,
+                                        binary_data_vec.begin() + byte_index + data_type_size);
 
-//         // Move to the next index where the actual data starts
-//         ++i;
+    while (byte_index < binary_data_vec.size()) {
+        auto run_length = 1;
+        auto next_index = byte_index + data_type_size;
+        current_block.assign(binary_data_vec.begin() + byte_index,
+                             binary_data_vec.begin() + byte_index + data_type_size);
 
-//         // Handle the first run length's data block
-//         for (int run = 0; run < first_nibble_run_length; ++run) {
-//             decoded_data_vec.insert(decoded_data_vec.end(),
-//                                     encoded_data_vec.begin() + i,
-//                                     encoded_data_vec.begin() + i + data_type_size);
-//         }
+        while ((next_index < binary_data_vec.size()) && (run_length <= U_TWO_BYTE_MAX) &&
+                (std::equal(current_block.begin(), current_block.end(), binary_data_vec.begin() + next_index))) {
+                run_length++;
+                next_index += data_type_size;
+        }
 
-//         // Move past the data block we just processed
-//         i += data_type_size;
+        encoded_data_vec.push_back(static_cast<uint8_t>(run_length >> 8));
+        encoded_data_vec.push_back(static_cast<uint8_t>(run_length & 0xFF));
+        encoded_data_vec.insert(encoded_data_vec.end(), current_block.begin(), current_block.end());
 
-//         // Handle the second run length's data block, if there is one
-//         if (second_nibble_run_length > 0 && i < encoded_data_vec.size()) {
-//             for (int run = 0; run < second_nibble_run_length; ++run) {
-//                 decoded_data_vec.insert(decoded_data_vec.end(),
-//                                         encoded_data_vec.begin() + i,
-//                                         encoded_data_vec.begin() + i + data_type_size);
-//             }
-//             // Move past the second data block
-//             i += data_type_size;
-//         }
-//     }
-// }
+        byte_index = next_index;
+    }
+
+    encoded_data_vec.shrink_to_fit();
+}
+
+void RLR::Decode_With_Two_Byte_Run_Length() {
+    decoded_data_vec.clear();
+
+    const uint8_t data_type_size = this->Get_Data_Type_Size();
+    auto byte_index = 0;
+
+    while (byte_index < encoded_data_vec.size()) {
+        uint16_t run_length = static_cast<uint16_t>(encoded_data_vec[byte_index]) << 8;
+        run_length |= static_cast<uint8_t>(encoded_data_vec[byte_index + 1]) & 0xFF;
+
+        byte_index += 2;
+
+        decoded_data_vec.insert(decoded_data_vec.end(),
+                                run_length * data_type_size,
+                                encoded_data_vec[byte_index]);
+        byte_index += data_type_size;
+    }
+}
+
+void RLR::Encode_With_Three_Byte_Run_Length(){
+    encoded_data_vec.clear();
+    const int data_type_size = this->Get_Data_Type_Size();
+    encoded_data_vec.reserve(binary_data_vec.size());
+    auto byte_index = 0;
+
+    std::vector<char> current_block(binary_data_vec.begin() + byte_index,
+                                        binary_data_vec.begin() + byte_index + data_type_size);
+
+    while (byte_index < binary_data_vec.size()) {
+        auto run_length = 1;
+        auto next_index = byte_index + data_type_size;
+        current_block.assign(binary_data_vec.begin() + byte_index,
+                             binary_data_vec.begin() + byte_index + data_type_size);
+
+        while ((next_index < binary_data_vec.size()) && (run_length <= U_THREE_BYTE_MAX) &&
+                (std::equal(current_block.begin(), current_block.end(), binary_data_vec.begin() + next_index))) {
+                run_length++;
+                next_index += data_type_size;
+        }
+
+        encoded_data_vec.push_back(static_cast<uint8_t>(run_length >> 16));
+        encoded_data_vec.push_back(static_cast<uint8_t>(run_length >> 8));
+        encoded_data_vec.push_back(static_cast<uint8_t>(run_length & 0xFF));
+        encoded_data_vec.insert(encoded_data_vec.end(), current_block.begin(), current_block.end());
+
+        byte_index = next_index;
+    }
+
+    encoded_data_vec.shrink_to_fit();
+}
+
+void RLR::Decode_With_Three_Byte_Run_Length(){
+    decoded_data_vec.clear();
+    // decoded_data_vec.reserve(binary_data_vec.size());
+
+    const uint8_t data_type_size = this->Get_Data_Type_Size();
+    auto byte_index = 0;
+
+    while (byte_index < encoded_data_vec.size()) {
+        uint32_t run_length = static_cast<uint32_t>(encoded_data_vec[byte_index]) << 16;
+        run_length |= static_cast<uint8_t>(encoded_data_vec[byte_index + 1]) << 8;
+        run_length |= static_cast<uint8_t>(encoded_data_vec[byte_index + 2]) & 0xFF;
+
+        byte_index += 3;
+        decoded_data_vec.insert(decoded_data_vec.end(),
+                                run_length * data_type_size,
+                                encoded_data_vec[byte_index]);
+        byte_index += data_type_size;
+    }
+
+    decoded_data_vec.shrink_to_fit();
+}
+
+void RLR::Encode_With_Four_Byte_Run_Length(){
+    encoded_data_vec.clear();
+    const int data_type_size = this->Get_Data_Type_Size();
+    encoded_data_vec.reserve(binary_data_vec.size());
+    auto byte_index = 0;
+
+    std::vector<char> current_block(binary_data_vec.begin() + byte_index,
+                                        binary_data_vec.begin() + byte_index + data_type_size);
+
+    while (byte_index < binary_data_vec.size()) {
+        uint32_t run_length = 1;
+        auto next_index = byte_index + data_type_size;
+        current_block.assign(binary_data_vec.begin() + byte_index,
+                             binary_data_vec.begin() + byte_index + data_type_size);
+
+        while ((next_index < binary_data_vec.size()) && (run_length <= U_FOUR_BYTE_MAX) &&
+                (std::equal(current_block.begin(), current_block.end(), binary_data_vec.begin() + next_index))) {
+                run_length++;
+                next_index += data_type_size;
+        }
+
+        encoded_data_vec.push_back(static_cast<uint8_t>(run_length >> 24));
+        encoded_data_vec.push_back(static_cast<uint8_t>(run_length >> 16));
+        encoded_data_vec.push_back(static_cast<uint8_t>(run_length >> 8));
+        encoded_data_vec.push_back(static_cast<uint8_t>(run_length & 0xFF));
+        encoded_data_vec.insert(encoded_data_vec.end(), current_block.begin(), current_block.end());
+
+        byte_index = next_index;
+    }
+
+    encoded_data_vec.shrink_to_fit();
+}
+
+void RLR::Decode_With_Four_Byte_Run_Length(){
+    decoded_data_vec.clear();
+
+    const uint8_t data_type_size = this->Get_Data_Type_Size();
+    auto byte_index = 0;
+
+    while (byte_index < encoded_data_vec.size()) {
+        uint32_t run_length = static_cast<uint8_t>(encoded_data_vec[byte_index]) << 24;
+        run_length |= static_cast<uint32_t>(encoded_data_vec[byte_index + 1]) << 16;
+        run_length |= static_cast<uint8_t>(encoded_data_vec[byte_index + 2]) << 8;
+        run_length |= static_cast<uint8_t>(encoded_data_vec[byte_index + 3]) & 0xFF;
+
+        byte_index += 4;
+        decoded_data_vec.insert(decoded_data_vec.end(),
+                                run_length * data_type_size,
+                                encoded_data_vec[byte_index]);
+        byte_index += data_type_size;
+    }
+
+    decoded_data_vec.shrink_to_fit();
+
+}
+
+void RLR::Encode_With_Five_Byte_Run_Length(){
+    encoded_data_vec.clear();
+    const int data_type_size = this->Get_Data_Type_Size();
+    encoded_data_vec.reserve(binary_data_vec.size());
+    auto byte_index = 0;
+    std::vector<char> current_block(binary_data_vec.begin() + byte_index,
+                                        binary_data_vec.begin() + byte_index + data_type_size);
+
+    while (byte_index < binary_data_vec.size()) {
+        boost::multiprecision::uint128_t run_length = 1;
+        auto next_index = byte_index + data_type_size;
+        current_block.assign(binary_data_vec.begin() + byte_index,
+                             binary_data_vec.begin() + byte_index + data_type_size);
+
+        while ((next_index < binary_data_vec.size()) && (run_length <= U_FIVE_BYTE_MAX) &&
+                (std::equal(current_block.begin(), current_block.end(), binary_data_vec.begin() + next_index))) {
+                run_length++;
+                next_index += data_type_size;
+        }
+
+        encoded_data_vec.push_back(static_cast<uint8_t>(run_length >> 32));
+        encoded_data_vec.push_back(static_cast<uint8_t>(run_length >> 24));
+        encoded_data_vec.push_back(static_cast<uint8_t>(run_length >> 16));
+        encoded_data_vec.push_back(static_cast<uint8_t>(run_length >> 8));
+        encoded_data_vec.push_back(static_cast<uint8_t>(run_length & 0xFF));
+        encoded_data_vec.insert(encoded_data_vec.end(), current_block.begin(), current_block.end());
+
+        byte_index = next_index;
+    }
+
+    encoded_data_vec.shrink_to_fit();
+}
+
+void RLR::Decode_With_Five_Byte_Run_Length(){
+    decoded_data_vec.clear();
+
+    const uint8_t data_type_size = this->Get_Data_Type_Size();
+    auto byte_index = 0;
+
+    while (byte_index < encoded_data_vec.size()) {
+        boost::multiprecision::uint128_t run_length = static_cast<boost::multiprecision::uint128_t>(encoded_data_vec[byte_index]) << 32;
+        run_length |= static_cast<uint8_t>(encoded_data_vec[byte_index + 1]) << 24;
+        run_length |= static_cast<uint8_t>(encoded_data_vec[byte_index + 2]) << 16;
+        run_length |= static_cast<uint8_t>(encoded_data_vec[byte_index + 3]) << 8;
+        run_length |= static_cast<uint8_t>(encoded_data_vec[byte_index + 4]) & 0xFF;
+
+        byte_index += 5;
+        if(!(run_length > UINT64_MAX)){
+            decoded_data_vec.insert(decoded_data_vec.end(),
+                                static_cast<uint64_t>(run_length) * data_type_size,
+                                encoded_data_vec[byte_index]);
+        } else {
+            uint64_t first_64_bits = static_cast<uint64_t>(run_length >> 64);
+            uint64_t last_64_bits = static_cast<uint64_t>(run_length & 0xFFFFFFFFFFFFFFFF);
+            decoded_data_vec.insert(decoded_data_vec.end(),
+                                first_64_bits * data_type_size,
+                                encoded_data_vec[byte_index]);
+
+            decoded_data_vec.insert(decoded_data_vec.end(),
+                                last_64_bits * data_type_size,
+                                encoded_data_vec[byte_index]);
+        }
+        byte_index += data_type_size;
+    }
+
+    decoded_data_vec.shrink_to_fit();
+}
 
 // This is too memory intensive
 // void RLR::Encode_With_Burrow_Wheeler_Transformation_Little_Endian() {
@@ -522,10 +590,6 @@ void RLR::Encode_With_Delta_Transformation(){
     std::vector<char> previous_block(data_type_size, 0);
 
     std::vector<char> delta_block(data_type_size, 0);
-    //  for(auto i = 0; i < data_type_size; i++) {
-    //     delta_block[i] = current_block[i] - previous_block[i];
-    // }
-    // calculate the delta block without iterating through the loop
     std::transform(current_block.begin(), current_block.end(), previous_block.begin(), delta_block.begin(), std::minus<char>());
     encoded_data_vec.insert(encoded_data_vec.end(), delta_block.begin(), delta_block.end());
 
@@ -533,10 +597,6 @@ void RLR::Encode_With_Delta_Transformation(){
         memcpy(previous_block.data(), current_block.data(), data_type_size);
         memcpy(current_block.data(), binary_data_vec.data() + byte_index, data_type_size);
 
-        // for(auto i = 0; i < data_type_size; i++) {
-        //     delta_block[i] = current_block[i] - previous_block[i];
-        // }
-        // calculate the delta block without iterating through the loop
         std::transform(current_block.begin(), current_block.end(), previous_block.begin(), delta_block.begin(), std::minus<char>());
         encoded_data_vec.insert(encoded_data_vec.end(), delta_block.begin(), delta_block.end());
     }

@@ -14,14 +14,23 @@ class RLR : public CommonStats {
 
         void Read_File(const std::filesystem::path& file_path, const int& number_of_bytes_to_read, const int& row);
 
+        void Encode_With_One_Nibble_Run_Length();
+        void Decode_With_One_Nibble_Run_Length();
+
         void Encode_With_One_Byte_Run_Length();
         void Decode_With_One_Byte_Run_Length();
 
         void Encode_With_Two_Byte_Run_Length();
         void Decode_With_Two_Byte_Run_Length();
 
-        void Encode_With_One_Nibble_Run_Length();
-        void Decode_With_One_Nibble_Run_Length();
+        void Encode_With_Three_Byte_Run_Length();
+        void Decode_With_Three_Byte_Run_Length();
+
+        void Encode_With_Four_Byte_Run_Length();
+        void Decode_With_Four_Byte_Run_Length();
+
+        void Encode_With_Five_Byte_Run_Length();
+        void Decode_With_Five_Byte_Run_Length();
 
         void Encode_With_Burrow_Wheeler_Transformation_Little_Endian();
         void Decode_With_Inverse_Burrow_Wheeler_Transformation_Little_Endian();
@@ -53,15 +62,11 @@ class RLR : public CommonStats {
 
 
     private:
-        const char* compression_type = "RLR";
+        const char* compression_type = "rlr_one_nibble";
         std::vector<char> binary_data_vec = {0};
         std::vector<char> encoded_data_vec = {0};
         std::vector<char> decoded_data_vec = {0};
         // std::vector<char> encoded_move_to_front_data_vec = {0};
         // std::vector<char> decoded_move_to_frontsquared_data_vec = {0};
         // std::vector<char> sentinel_vec = {0};
-
-
-
-
 };

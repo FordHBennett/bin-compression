@@ -42,15 +42,25 @@ set(HEADERS
 # Add the executable target first
 add_executable(geobin_compression ${SOURCES})
 
-# Include directories
-target_include_directories(geobin_compression PUBLIC src/classes)
-target_include_directories(geobin_compression PUBLIC src/functions)
+# # Include directories
+# target_include_directories(geobin_compression PUBLIC src/classes)
+# target_include_directories(geobin_compression PUBLIC src/functions)
 
 # Find the nlohmann_json package
 find_package(nlohmann_json CONFIG REQUIRED)
 
 # Link the executable to the nlohmann_json library
 target_link_libraries(geobin_compression PUBLIC nlohmann_json::nlohmann_json)
+
+# Find Boost
+find_package(Boost REQUIRED)
+
+# If you need specific Boost components, list them like this:
+# find_package(Boost REQUIRED COMPONENTS
+# Include directories
+target_include_directories(geobin_compression PUBLIC ${Boost_INCLUDE_DIRS})
+target_include_directories(geobin_compression PUBLIC src/classes)
+target_include_directories(geobin_compression PUBLIC src/functions)
 
 # Debug build options
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O0 -g3 -Wall -fsanitize=undefined -fsanitize=address -fno-omit-frame-pointer -D_GLIBCXX_DEBUG -D_GLIBCXX_DEBUG_PEDANTIC -gdwarf-5 -fstack-protector")

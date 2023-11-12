@@ -168,7 +168,18 @@ const std::vector<std::filesystem::path> Get_Geobin_And_Geometa_Directory_Path_V
 }
 
 std::filesystem::path Remove_all_Seperators_From_Path(const std::filesystem::path& path) {
-    std::string path_string = path.string();
+    std::filesystem::path removed_planet_data_path = path;
+    bool first = true;
+
+    for (const auto& part : path) {
+        if (first) {
+            first = false; // Skip the first directory
+            continue;
+        }
+        removed_planet_data_path /= part; // Append the remaining parts
+    }
+
+    std::string path_string = removed_planet_data_path.string();
     std::replace(path_string.begin(), path_string.end(), '/', '-');
     std::replace(path_string.begin(), path_string.end(), '\\', '-');
     return std::filesystem::path{path_string};
@@ -190,9 +201,9 @@ void Run_RLR_Compression_Decompression_On_Files(const std::vector<std::filesyste
 #endif
         const std::filesystem::path stem_path = file.stem();
         const std::filesystem::path encoded_file_path = file.parent_path() / std::filesystem::path{"compressed_decompressed_rlr_files"} /
-                                                        stem_path / std::filesystem::path{(stem_path.string() + ".xor_encoded")};
+                                                        stem_path / std::filesystem::path{(stem_path.string() + std::string{'.'} + std::string{rlr_obj.Get_Compression_Type()} + std::string{"_encoded"})};
         const std::filesystem::path decoded_file_path = file.parent_path() / std::filesystem::path{"compressed_decompressed_rlr_files"} /
-                                                        stem_path / std::filesystem::path{(stem_path.string() + ".xor_decoded")};
+                                                        stem_path / std::filesystem::path{(stem_path.string() + std::string{'.'} + std::string{rlr_obj.Get_Compression_Type()} + std::string{"_decoded"})};
 
         const std::filesystem::path encoded_rlr_file_path = encoded_file_path.parent_path() / encoded_file_path.stem() / std::filesystem::path{(encoded_file_path.stem().string() + ".rlr_encoded")};
         const std::filesystem::path decoded_rlr_file_path = decoded_file_path.parent_path() / decoded_file_path.stem() / std::filesystem::path{(decoded_file_path.stem().string() + ".rlr_decoded")};
@@ -251,30 +262,30 @@ void Run_RLR_Compression_Decompression_On_Files(const std::vector<std::filesyste
         uint64_t num_rows = file_size / bytes_per_row;
 
 
-        if(bytes_per_row > MAX_CHUNK_SIZE) {
-            bytes_per_row = MAX_CHUNK_SIZE - (MAX_CHUNK_SIZE % side_resolution); // align with side_resolution
-            num_rows = file_size / bytes_per_row;
-        }
+        // if(bytes_per_row > MAX_CHUNK_SIZE) {
+        //     bytes_per_row = MAX_CHUNK_SIZE - (MAX_CHUNK_SIZE % side_resolution); // align with side_resolution
+        //     num_rows = file_size / bytes_per_row;
+        // }
 
-        // If bytes_per_row is not an exact divisor of file_size, find the largest number of rows that can fit in MAX_CHUNK_SIZE
-        if(file_size % bytes_per_row != 0){
-            uint64_t sqrtMax = static_cast<uint64_t>(std::sqrt(MAX_CHUNK_SIZE));
-            bool found = false;
-            for (uint64_t i = sqrtMax; i > 0; i--) {
-                if (MAX_CHUNK_SIZE % i == 0) { // Check if it's a divisor of MAX_CHUNK_SIZE
-                    uint64_t potentialBytesPerRow = i * side_resolution; // must be a multiple of side_resolution
-                    if (potentialBytesPerRow <= MAX_CHUNK_SIZE && file_size % potentialBytesPerRow == 0) {
-                        bytes_per_row = potentialBytesPerRow;
-                        num_rows = file_size / bytes_per_row;
-                        found = true;
-                        break;
-                    }
-                }
-            }
-            if(!found) {
-                ERROR_MSG_AND_EXIT(std::string{"ERROR: Cannot find a suitable bytes_per_row that is a divisor of file_size and within MAX_CHUNK_SIZE."});
-            }
-        }
+        // // If bytes_per_row is not an exact divisor of file_size, find the largest number of rows that can fit in MAX_CHUNK_SIZE
+        // if(file_size % bytes_per_row != 0){
+        //     uint64_t sqrtMax = static_cast<uint64_t>(std::sqrt(MAX_CHUNK_SIZE));
+        //     bool found = false;
+        //     for (uint64_t i = sqrtMax; i > 0; i--) {
+        //         if (MAX_CHUNK_SIZE % i == 0) { // Check if it's a divisor of MAX_CHUNK_SIZE
+        //             uint64_t potentialBytesPerRow = i * side_resolution; // must be a multiple of side_resolution
+        //             if (potentialBytesPerRow <= MAX_CHUNK_SIZE && file_size % potentialBytesPerRow == 0) {
+        //                 bytes_per_row = potentialBytesPerRow;
+        //                 num_rows = file_size / bytes_per_row;
+        //                 found = true;
+        //                 break;
+        //             }
+        //         }
+        //     }
+        //     if(!found) {
+        //         ERROR_MSG_AND_EXIT(std::string{"ERROR: Cannot find a suitable bytes_per_row that is a divisor of file_size and within MAX_CHUNK_SIZE."});
+        //     }
+        // }
 
 
 #ifdef DEBUG_MODE
@@ -306,28 +317,48 @@ void Run_RLR_Compression_Decompression_On_Files(const std::vector<std::filesyste
                 // rlr_obj.Compute_Time_Encoded([&rlr_obj](){
                 //     rlr_obj.Encode_With_XOR_Transformation();
                 // });
-                // rlr_obj.Compute_Time_Encoded([&rlr_obj](){
-                //     rlr_obj.Encode_With_One_Nibble_Run_Length();
-                // });
+
+                rlr_obj.Compute_Time_Encoded([&rlr_obj](){
+                    rlr_obj.Encode_With_One_Nibble_Run_Length();
+                });
                 // rlr_obj.Compute_Time_Encoded([&rlr_obj](){
                 //     rlr_obj.Encode_With_One_Byte_Run_Length();
                 // });
-                rlr_obj.Compute_Time_Encoded([&rlr_obj](){
-                    rlr_obj.Encode_With_Two_Byte_Run_Length();
-                });
+                // rlr_obj.Compute_Time_Encoded([&rlr_obj](){
+                //     rlr_obj.Encode_With_Two_Byte_Run_Length();
+                // });
+                // rlr_obj.Compute_Time_Encoded([&rlr_obj](){
+                //     rlr_obj.Encode_With_Three_Byte_Run_Length();
+                // });
+                // rlr_obj.Compute_Time_Encoded([&rlr_obj](){
+                //     rlr_obj.Encode_With_Four_Byte_Run_Length();
+                // });
+                // rlr_obj.Compute_Time_Encoded([&rlr_obj](){
+                //     rlr_obj.Encode_With_Five_Byte_Run_Length();
+                // });
 
                 rlr_obj.Write_Compressed_File(encoded_file_path);
 
 
-                rlr_obj.Compute_Time_Decoded([&rlr_obj](){
-                    rlr_obj.Decode_With_Two_Byte_Run_Length();
-                });
+                // rlr_obj.Compute_Time_Decoded([&rlr_obj](){
+                //     rlr_obj.Decode_With_Five_Byte_Run_Length();
+                // });
+                // rlr_obj.Compute_Time_Decoded([&rlr_obj](){
+                //     rlr_obj.Decode_With_Four_Byte_Run_Length();
+                // });
+                // rlr_obj.Compute_Time_Decoded([&rlr_obj](){
+                //     rlr_obj.Decode_With_Three_Byte_Run_Length();
+                // });
+                // rlr_obj.Compute_Time_Decoded([&rlr_obj](){
+                //     rlr_obj.Decode_With_Two_Byte_Run_Length();
+                // });
                 // rlr_obj.Compute_Time_Decoded([&rlr_obj](){
                 //     rlr_obj.Decode_With_One_Byte_Run_Length();
                 // });
-                // rlr_obj.Compute_Time_Decoded([&rlr_obj](){
-                //     rlr_obj.Decode_With_One_Nibble_Run_Length();
-                // });
+                rlr_obj.Compute_Time_Decoded([&rlr_obj](){
+                    rlr_obj.Decode_With_One_Nibble_Run_Length();
+                });
+
                 // rlr_obj.Compute_Time_Decoded([&rlr_obj](){
                 //     rlr_obj.Decode_With_XOR_Transformation();
                 // });
@@ -338,7 +369,7 @@ void Run_RLR_Compression_Decompression_On_Files(const std::vector<std::filesyste
                 //     rlr_obj.Decode_With_Move_To_Front_Transformation();
                 // });
 
-                rlr_obj.Write_Decompressed_File(decoded__file_path);
+                rlr_obj.Write_Decompressed_File(decoded_file_path);
 
                 if(!rlr_obj.Is_Decoded_Data_Equal_To_Original_Data(rlr_obj.Get_Decoded_Data_Vec(), rlr_obj.Get_Binary_Data_Vec())){
                     ERROR_MSG_AND_EXIT(std::string{"ERROR: Decoded data is not equal to original data."});
@@ -347,9 +378,9 @@ void Run_RLR_Compression_Decompression_On_Files(const std::vector<std::filesyste
             rlr_obj.Compute_Compression_Ratio(file, encoded_file_path);
             rlr_obj.Compute_Compressed_File_Size(encoded_file_path);
             // if(!(iteration == number_of_iterations - 1)) {
-            // Delete_Files_In_Directory(encoded_file_path.parent_path());
+            Delete_Files_In_Directory(encoded_file_path.parent_path());
             // }
         }
-        // std::filesystem::remove_all(encoded_file_path.parent_path().parent_path());
+        std::filesystem::remove_all(encoded_file_path.parent_path().parent_path());
     }
 }
