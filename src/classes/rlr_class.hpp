@@ -38,11 +38,35 @@ class RLR : public CommonStats {
         void Encode_With_Move_To_Front_Transformation();
         void Decode_With_Move_To_Front_Transformation();
 
+        void Encode_With_Move_To_Front_Transformation_With_One_Byte_Run_Length();
+        void Decode_With_Move_To_Front_Transformation_With_One_Byte_Run_Length();
+
+        void Encode_With_Move_To_Front_Transformation_With_Two_Byte_Run_Length();
+        void Decode_With_Move_To_Front_Transformation_With_Two_Byte_Run_Length();
+
+        void Encode_With_Move_To_Front_Transformation_With_Three_Byte_Run_Length();
+        void Decode_With_Move_To_Front_Transformation_With_Three_Byte_Run_Length();
+
+        void Encode_With_Move_To_Front_Transformation_With_Four_Byte_Run_Length();
+        void Decode_With_Move_To_Front_Transformation_With_Four_Byte_Run_Length();
+
         void Encode_With_Delta_Transformation();
         void Decode_With_Delta_Transformation();
 
         void Encode_With_XOR_Transformation();
         void Decode_With_XOR_Transformation();
+
+        void Encode_With_XOR_Transformation_With_One_Byte_Run_Length();
+        void Decode_With_XOR_Transformation_With_One_Byte_Run_Length();
+
+        void Encode_With_XOR_Transformation_With_Two_Byte_Run_Length();
+        void Decode_With_XOR_Transformation_With_Two_Byte_Run_Length();
+
+        void Encode_With_XOR_Transformation_With_Three_Byte_Run_Length();
+        void Decode_With_XOR_Transformation_With_Three_Byte_Run_Length();
+
+        void Encode_With_XOR_Transformation_With_Four_Byte_Run_Length();
+        void Decode_With_XOR_Transformation_With_Four_Byte_Run_Length();
 
         void Write_Compressed_File(const std::filesystem::path& file_path) const;
         void Write_Decompressed_File(const std::filesystem::path& file_path) const;
@@ -62,7 +86,7 @@ class RLR : public CommonStats {
 
 
     private:
-        const char* compression_type = "rlr_two_byte";
+        const char* compression_type = "rlr_three_byte";
         std::vector<char> binary_data_vec = {0};
         std::vector<char> encoded_data_vec = {0};
         std::vector<char> decoded_data_vec = {0};

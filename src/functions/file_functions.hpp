@@ -32,6 +32,8 @@ const std::vector<std::filesystem::path> Get_Geobin_And_Geometa_Directory_Path_V
 
 std::filesystem::path Remove_all_Seperators_From_Path(const std::filesystem::path& path);
 
+const uint64_t Get_Side_Resolution(const std::filesystem::path& stem_path, RLR& rlr_obj);
+
 void Run_RLR_Compression_Decompression_On_Files(const std::vector<std::filesystem::path>& files, RLR& rlr_obj);
 
 void Write_Shannon_Fano_Frequencies_To_Files(const std::vector<std::filesystem::path>& files, ShannonFano& shannon_fano);
