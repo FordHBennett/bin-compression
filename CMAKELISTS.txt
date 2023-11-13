@@ -12,6 +12,7 @@ set(SOURCES
     src/main.cpp
     src/classes/common_stats.cpp
     src/classes/rlr_class.cpp
+    src/classes/shannon_fano.cpp
     # src/classes/lz4_class.cpp
     # src/classes/lzw_class.cpp
     # src/classes/lzp_class.cpp
@@ -27,6 +28,7 @@ set(HEADERS
     src/classes/common_stats.hpp
     src/classes/rlr_class.hpp
     src/classes/alphabet_table.hpp
+    src/classes/shannon_fano.hpp
     # src/classes/lz4_class.hpp
     # src/classes/lzw_class.hpp
     # src/classes/lzp_class.hpp

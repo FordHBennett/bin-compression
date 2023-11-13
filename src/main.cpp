@@ -10,6 +10,7 @@
 
 #include "classes/common_stats.hpp"
 #include "classes/rlr_class.hpp"
+#include "classes/shannon_fano.hpp"
 // #include "classes/lz4_class.hpp"
 // #include "classes/lzw_class.h"
 // #include "classes/lzp_class.h"
@@ -41,15 +42,15 @@
 
 //create a common stats class that has all the stats and then pass it to the processFiles function
 int main() {
-    const int number_of_iteration = 1;
-
     RLR rlr;
+    rlr.Set_Number_Of_Iterations(5);
 
     const std::vector<std::filesystem::path> geometa_and_geobin_dir_path_vec = Get_Geobin_And_Geometa_Directory_Path_Vec(std::filesystem::path("PlanetData"));
     for(int i = 0; i < geometa_and_geobin_dir_path_vec.size(); i++){
         std::vector<std::filesystem::path> geobin_files_vec = Get_Geobin_File_Vec(geometa_and_geobin_dir_path_vec[i]);
-        Run_RLR_Compression_Decompression_On_Files(geobin_files_vec, number_of_iteration, rlr);
-        rlr.Calculate_Cumulative_Average_Stats_For_Directory(number_of_iteration, geobin_files_vec.size());
+        Run_RLR_Compression_Decompression_On_Files(geobin_files_vec, rlr);
+
+        rlr.Calculate_Cumulative_Average_Stats_For_Directory(geobin_files_vec.size());
         rlr.Compute_Encoded_Throughput();
         rlr.Compute_Decoded_Throughput();
         rlr.Write_Stats_To_File(std::filesystem::path{std::string{rlr.Get_Compression_Type()} + std::string{"_stats"}} /
@@ -58,5 +59,12 @@ int main() {
         rlr.Reset_Stats();
     }
 
+    // ShannonFano shannon_fano;
+    // shannon_fano.Set_Number_Of_Iterations(1);
+    // const std::vector<std::filesystem::path> geometa_and_geobin_dir_path_vec = Get_Geobin_And_Geometa_Directory_Path_Vec(std::filesystem::path("PlanetData"));
+    // for(int i = 0; i < geometa_and_geobin_dir_path_vec.size(); i++){
+    //     std::vector<std::filesystem::path> geobin_files_vec = Get_Geobin_File_Vec(geometa_and_geobin_dir_path_vec[i]);
+    //     Write_Shannon_Fano_Frequencies_To_Files(geobin_files_vec, shannon_fano);
+    // }
     return 0;
 }

@@ -1,6 +1,7 @@
 #include "file_functions.hpp"
 #include "../classes/rlr_class.hpp"
 #include "../classes/common_stats.hpp"
+#include "../classes/shannon_fano.hpp"
 #include <nlohmann/json.hpp>
 #include <filesystem>
 #include <fstream>
@@ -168,24 +169,13 @@ const std::vector<std::filesystem::path> Get_Geobin_And_Geometa_Directory_Path_V
 }
 
 std::filesystem::path Remove_all_Seperators_From_Path(const std::filesystem::path& path) {
-    std::filesystem::path removed_planet_data_path = path;
-    bool first = true;
-
-    for (const auto& part : path) {
-        if (first) {
-            first = false; // Skip the first directory
-            continue;
-        }
-        removed_planet_data_path /= part; // Append the remaining parts
-    }
-
-    std::string path_string = removed_planet_data_path.string();
+    std::string path_string = path.string();
     std::replace(path_string.begin(), path_string.end(), '/', '-');
     std::replace(path_string.begin(), path_string.end(), '\\', '-');
     return std::filesystem::path{path_string};
 }
 
-void Run_RLR_Compression_Decompression_On_Files(const std::vector<std::filesystem::path>& files_vec, const int& number_of_iterations, RLR& rlr_obj) {
+void Run_RLR_Compression_Decompression_On_Files(const std::vector<std::filesystem::path>& files_vec, RLR& rlr_obj) {
 #ifdef DEBUG_MODE
     assert(std::filesystem::equivalent(files_vec[0].parent_path(), files_vec.at(0).parent_path()));
 #endif
@@ -305,28 +295,45 @@ void Run_RLR_Compression_Decompression_On_Files(const std::vector<std::filesyste
             ERROR_MSG_AND_EXIT(std::string{"ERROR:"});
         }
 #endif
-        for(int iteration = 0; iteration < number_of_iterations; iteration++){
+        for(int iteration = 0; iteration < rlr_obj.Get_Number_Of_Iterations(); iteration++){
             for(uint64_t row = 0; row<num_rows; row++){
+                // rlr_obj.Read_File(file, bytes_per_row, row);
                 rlr_obj.Read_File(file, bytes_per_row, row);
+                // switch (rlr_obj.Get_Data_Type_Size())
+                // {
+                // case 1:
+                //     rlr_obj.Compute_Time_Encoded([&rlr_obj](){
+                //         rlr_obj.Encode_With_Move_To_Front_Transformation();
+                //     });
+                //     break;
+                // case 2:
+                //     rlr_obj.Compute_Time_Encoded([&rlr_obj](){
+                //         rlr_obj.Encode_With_Move_To_Front_Transformation();
+                //     });
+                //     break;
+
+                // default:
+                //     rlr_obj.Compute_Time_Encoded([&rlr_obj](){
+                //         rlr_obj.Encode_With_XOR_Transformation();
+                //     });
+                //     break;
+                // }
                 // rlr_obj.Compute_Time_Encoded([&rlr_obj](){
-                //     rlr_obj.Encode_With_Move_To_Front_Transformation();
+                //     rlr_obj.Encode_With_XOR_Transformation();
                 // });
                 // rlr_obj.Compute_Time_Encoded([&rlr_obj](){
                 //     rlr_obj.Encode_With_Delta_Transformation();
                 // });
-                // rlr_obj.Compute_Time_Encoded([&rlr_obj](){
-                //     rlr_obj.Encode_With_XOR_Transformation();
-                // });
 
-                rlr_obj.Compute_Time_Encoded([&rlr_obj](){
-                    rlr_obj.Encode_With_One_Nibble_Run_Length();
-                });
+                // rlr_obj.Compute_Time_Encoded([&rlr_obj](){
+                //     rlr_obj.Encode_With_One_Nibble_Run_Length();
+                // });
                 // rlr_obj.Compute_Time_Encoded([&rlr_obj](){
                 //     rlr_obj.Encode_With_One_Byte_Run_Length();
                 // });
-                // rlr_obj.Compute_Time_Encoded([&rlr_obj](){
-                //     rlr_obj.Encode_With_Two_Byte_Run_Length();
-                // });
+                rlr_obj.Compute_Time_Encoded([&rlr_obj](){
+                    rlr_obj.Encode_With_Two_Byte_Run_Length();
+                });
                 // rlr_obj.Compute_Time_Encoded([&rlr_obj](){
                 //     rlr_obj.Encode_With_Three_Byte_Run_Length();
                 // });
@@ -349,24 +356,41 @@ void Run_RLR_Compression_Decompression_On_Files(const std::vector<std::filesyste
                 // rlr_obj.Compute_Time_Decoded([&rlr_obj](){
                 //     rlr_obj.Decode_With_Three_Byte_Run_Length();
                 // });
-                // rlr_obj.Compute_Time_Decoded([&rlr_obj](){
-                //     rlr_obj.Decode_With_Two_Byte_Run_Length();
-                // });
+                rlr_obj.Compute_Time_Decoded([&rlr_obj](){
+                    rlr_obj.Decode_With_Two_Byte_Run_Length();
+                });
                 // rlr_obj.Compute_Time_Decoded([&rlr_obj](){
                 //     rlr_obj.Decode_With_One_Byte_Run_Length();
                 // });
-                rlr_obj.Compute_Time_Decoded([&rlr_obj](){
-                    rlr_obj.Decode_With_One_Nibble_Run_Length();
-                });
-
                 // rlr_obj.Compute_Time_Decoded([&rlr_obj](){
-                //     rlr_obj.Decode_With_XOR_Transformation();
+                //     rlr_obj.Decode_With_One_Nibble_Run_Length();
                 // });
+
                 // rlr_obj.Compute_Time_Decoded([&rlr_obj](){
                 //     rlr_obj.Decode_With_Delta_Transformation();
                 // });
+                // switch (rlr_obj.Get_Data_Type_Size())
+                // {
+                // case 1:
+                //     rlr_obj.Compute_Time_Decoded([&rlr_obj](){
+                //         rlr_obj.Decode_With_Move_To_Front_Transformation();
+                //     });
+                //     break;
+                // case 2:
+                //     rlr_obj.Compute_Time_Decoded([&rlr_obj](){
+                //         rlr_obj.Decode_With_Move_To_Front_Transformation();
+                //     });
+                //     break;
+
+                // default:
+                //     rlr_obj.Compute_Time_Decoded([&rlr_obj](){
+                //         rlr_obj.Decode_With_XOR_Transformation();
+                //     });
+                //     break;
+                // }
+
                 // rlr_obj.Compute_Time_Decoded([&rlr_obj](){
-                //     rlr_obj.Decode_With_Move_To_Front_Transformation();
+                //     rlr_obj.Decode_With_XOR_Transformation();
                 // });
 
                 rlr_obj.Write_Decompressed_File(decoded_file_path);
@@ -382,5 +406,62 @@ void Run_RLR_Compression_Decompression_On_Files(const std::vector<std::filesyste
             // }
         }
         std::filesystem::remove_all(encoded_file_path.parent_path().parent_path());
+    }
+}
+
+void Write_Shannon_Fano_Frequencies_To_Files(const std::vector<std::filesystem::path>& files, ShannonFano& shannon_fano) {
+    for(const auto& file : files) {
+        const std::filesystem::path stem_path = file.stem();
+        const std::filesystem::path freq_path = file.relative_path() / std::filesystem::path{"shannon_fano_frequency_files"} /
+                                                        stem_path / std::filesystem::path{stem_path.string() + std::string{".json"}};
+
+
+
+        if(!std::filesystem::exists(freq_path.parent_path().parent_path())) {
+            std::filesystem::create_directories(freq_path.parent_path());
+        }
+
+        if(!std::filesystem::exists(freq_path.parent_path())) {
+            std::filesystem::create_directories(freq_path.parent_path());
+        }
+
+        auto extract_character_after = [](const std::filesystem::path& path, const std::string& delimiter) -> const std::string {
+        const std::string filename = path.filename().string();
+        size_t pos = filename.rfind(delimiter);
+        if (pos != std::string::npos) {
+            size_t start = pos + delimiter.length();
+            while ((start < filename.length()) && !std::isdigit(filename[start])) {
+                start++;
+            }
+            size_t end = start;
+            while ((end < filename.length()) && std::isdigit(filename[end])) {
+                end++;
+            }
+
+            if (start < end) {
+                return filename.substr(start, end - start);
+            }
+        }
+#ifdef DEBUG_MODE
+        ERROR_MSG_AND_EXIT(std::string{"ERROR: Unable to extract number after delimiter: " + delimiter});
+#endif
+};
+
+
+        const uint8_t lod_number = static_cast<uint8_t>(std::stoi(extract_character_after(stem_path, std::string{"_lod"})));
+#ifdef DEBUG_MODE
+        const uint8_t side = static_cast<uint8_t>(std::stoi(extract_character_after(stem_path, std::string{"_s"})));
+        const uint8_t c_number = static_cast<uint8_t>(std::stoi(extract_character_after(stem_path, std::string{"_c"})));
+        PRINT_DEBUG(std::string{"Side: "} + std::to_string(side));
+        PRINT_DEBUG(std::string{"C Number: "} + std::to_string(c_number));
+        PRINT_DEBUG(std::string{"LOD Number: "} + std::to_string(lod_number));
+#endif
+
+#ifdef DEBUG_MODE
+        PRINT_DEBUG(std::string{"Data Type Size : " + std::to_string(shannon_fano.Get_Data_Type_Size())});
+#endif
+
+
+        shannon_fano.Write_Frequencies_To_JSON_File(file, freq_path);
     }
 }

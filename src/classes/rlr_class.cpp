@@ -6,12 +6,15 @@
 #include <algorithm>
 #include <boost/multiprecision/cpp_int.hpp>
 
-#define U_NIBBLE_MAX 15
-#define U_ONE_BYTE_MAX 255
-#define U_TWO_BYTE_MAX 65535
-#define U_THREE_BYTE_MAX 16777215
-#define U_FOUR_BYTE_MAX 4294967295
-#define U_FIVE_BYTE_MAX 1099511627775
+#define ONE_NIBBLE_MAX 15
+#define ONE_BYTE_MAX 255
+#define ONE_BYTE_AND_ONE_NIBBLE_MAX 4095
+#define TWO_BYTE_MAX 65535
+#define TWO_BYTE_AND_ONE_NIBBLE_MAX 1048575
+#define THREE_BYTE_MAX 16777215
+#define THREE_BYTE_AND_ONE_NIBBLE_MAX 268435455
+#define FOUR_BYTE_MAX 4294967295
+#define FIVE_BYTE_MAX 1099511627775
 
 
 #define ERROR_MSG(msg) \
@@ -73,7 +76,7 @@ void RLR::Encode_With_One_Nibble_Run_Length() {
 
         first_nibble_run_block.assign(binary_data_vec.begin() + byte_index, binary_data_vec.begin() + byte_index + data_type_size);
 
-        while ((next_index < binary_data_vec.size()) && (first_nibble_run_length < U_NIBBLE_MAX) &&
+        while ((next_index < binary_data_vec.size()) && (first_nibble_run_length < ONE_NIBBLE_MAX) &&
                 (std::equal(first_nibble_run_block.begin(), first_nibble_run_block.end(), binary_data_vec.begin() + next_index))) {
             first_nibble_run_length++;
             next_index += data_type_size;
@@ -84,8 +87,8 @@ void RLR::Encode_With_One_Nibble_Run_Length() {
         if (byte_index < binary_data_vec.size()) {
             second_nibble_run_block.assign(binary_data_vec.begin() + byte_index, binary_data_vec.begin() + byte_index + data_type_size);
 
-            while ((next_index < binary_data_vec.size()) && (second_nibble_run_length < U_NIBBLE_MAX) &&
-                        (std::equal(second_nibble_run_block.begin(), second_nibble_run_block.end(), binary_data_vec.begin() + next_index))) {
+            while ((next_index < binary_data_vec.size()) && (second_nibble_run_length < ONE_NIBBLE_MAX) &&
+                    (std::equal(second_nibble_run_block.begin(), second_nibble_run_block.end(), binary_data_vec.begin() + next_index))) {
                 second_nibble_run_length++;
                 next_index += data_type_size;
             }
@@ -108,7 +111,6 @@ void RLR::Encode_With_One_Nibble_Run_Length() {
 //FASTER
 void RLR::Decode_With_One_Nibble_Run_Length() {
     decoded_data_vec.clear();
-    // decoded_data_vec.reserve(binary_data_vec.size());
     const uint8_t data_type_size = this->Get_Data_Type_Size();
     auto byte_index = 0;
 
@@ -146,7 +148,7 @@ void RLR::Encode_With_One_Byte_Run_Length() {
         current_block.assign(binary_data_vec.begin() + byte_index,
                              binary_data_vec.begin() + byte_index + data_type_size);
 
-        while (next_index < binary_data_vec.size() && (run_length < U_ONE_BYTE_MAX) &&
+        while (next_index < binary_data_vec.size() && (run_length < ONE_BYTE_MAX) &&
                 (std::equal(current_block.begin(), current_block.end(), binary_data_vec.begin() + next_index))) {
 
             run_length++;
@@ -197,7 +199,7 @@ void RLR::Encode_With_Two_Byte_Run_Length() {
         current_block.assign(binary_data_vec.begin() + byte_index,
                              binary_data_vec.begin() + byte_index + data_type_size);
 
-        while ((next_index < binary_data_vec.size()) && (run_length <= U_TWO_BYTE_MAX) &&
+        while ((next_index < binary_data_vec.size()) && (run_length <= TWO_BYTE_MAX) &&
                 (std::equal(current_block.begin(), current_block.end(), binary_data_vec.begin() + next_index))) {
                 run_length++;
                 next_index += data_type_size;
@@ -247,7 +249,7 @@ void RLR::Encode_With_Three_Byte_Run_Length(){
         current_block.assign(binary_data_vec.begin() + byte_index,
                              binary_data_vec.begin() + byte_index + data_type_size);
 
-        while ((next_index < binary_data_vec.size()) && (run_length <= U_THREE_BYTE_MAX) &&
+        while ((next_index < binary_data_vec.size()) && (run_length <= THREE_BYTE_MAX) &&
                 (std::equal(current_block.begin(), current_block.end(), binary_data_vec.begin() + next_index))) {
                 run_length++;
                 next_index += data_type_size;
@@ -301,7 +303,7 @@ void RLR::Encode_With_Four_Byte_Run_Length(){
         current_block.assign(binary_data_vec.begin() + byte_index,
                              binary_data_vec.begin() + byte_index + data_type_size);
 
-        while ((next_index < binary_data_vec.size()) && (run_length <= U_FOUR_BYTE_MAX) &&
+        while ((next_index < binary_data_vec.size()) && (run_length <= FOUR_BYTE_MAX) &&
                 (std::equal(current_block.begin(), current_block.end(), binary_data_vec.begin() + next_index))) {
                 run_length++;
                 next_index += data_type_size;
@@ -356,7 +358,7 @@ void RLR::Encode_With_Five_Byte_Run_Length(){
         current_block.assign(binary_data_vec.begin() + byte_index,
                              binary_data_vec.begin() + byte_index + data_type_size);
 
-        while ((next_index < binary_data_vec.size()) && (run_length <= U_FIVE_BYTE_MAX) &&
+        while ((next_index < binary_data_vec.size()) && (run_length <= FIVE_BYTE_MAX) &&
                 (std::equal(current_block.begin(), current_block.end(), binary_data_vec.begin() + next_index))) {
                 run_length++;
                 next_index += data_type_size;
@@ -594,8 +596,10 @@ void RLR::Encode_With_Delta_Transformation(){
     encoded_data_vec.insert(encoded_data_vec.end(), delta_block.begin(), delta_block.end());
 
     for(auto byte_index = data_type_size; byte_index < binary_data_vec.size(); byte_index += data_type_size) {
-        memcpy(previous_block.data(), current_block.data(), data_type_size);
-        memcpy(current_block.data(), binary_data_vec.data() + byte_index, data_type_size);
+        // memcpy(previous_block.data(), current_block.data(), data_type_size);
+        // memcpy(current_block.data(), binary_data_vec.data() + byte_index, data_type_size);
+        std::copy(current_block.begin(), current_block.end(), previous_block.begin());
+        std::copy(binary_data_vec.begin() + byte_index, binary_data_vec.begin() + byte_index + data_type_size, current_block.begin());
 
         std::transform(current_block.begin(), current_block.end(), previous_block.begin(), delta_block.begin(), std::minus<char>());
         encoded_data_vec.insert(encoded_data_vec.end(), delta_block.begin(), delta_block.end());
@@ -614,13 +618,11 @@ void RLR::Decode_With_Delta_Transformation(){
 
     std::vector<char> delta_block(data_type_size, 0);
     for(auto byte_index = data_type_size; byte_index < encoded_data_vec.size(); byte_index += data_type_size) {
-        memcpy(previous_block.data(), current_block.data(), data_type_size);
-        memcpy(delta_block.data(), encoded_data_vec.data() + byte_index, data_type_size);
+        // memcpy(previous_block.data(), current_block.data(), data_type_size);
+        // memcpy(delta_block.data(), encoded_data_vec.data() + byte_index, data_type_size);
+        std::copy(current_block.begin(), current_block.end(), previous_block.begin());
+        std::copy(encoded_data_vec.begin() + byte_index, encoded_data_vec.begin() + byte_index + data_type_size, delta_block.begin());
 
-        // for(auto i = 0; i < data_type_size; i++) {
-        //     current_block[i] = delta_block[i] + previous_block[i];
-        // }
-        // calculate the current block without iterating through the loop
         std::transform(delta_block.begin(), delta_block.end(), previous_block.begin(), current_block.begin(), std::plus<char>());
         decoded_data_vec.insert(decoded_data_vec.end(), current_block.begin(), current_block.end());
     }

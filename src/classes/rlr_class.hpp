@@ -62,7 +62,7 @@ class RLR : public CommonStats {
 
 
     private:
-        const char* compression_type = "rlr_one_nibble";
+        const char* compression_type = "rlr_two_byte";
         std::vector<char> binary_data_vec = {0};
         std::vector<char> encoded_data_vec = {0};
         std::vector<char> decoded_data_vec = {0};

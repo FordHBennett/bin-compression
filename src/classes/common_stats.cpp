@@ -35,6 +35,7 @@ CommonStats::CommonStats() {
     average_encoded_throughput = 0.0;
     average_decoded_throughput = 0.0;
     data_type_byte_size = 0;
+    number_of_iterations = 0;
 }
 
 CommonStats::CommonStats(const CommonStats& other) {
@@ -45,6 +46,7 @@ CommonStats::CommonStats(const CommonStats& other) {
     average_encoded_throughput = other.average_encoded_throughput;
     average_decoded_throughput = other.average_decoded_throughput;
     data_type_byte_size = other.data_type_byte_size;
+    number_of_iterations = other.number_of_iterations;
 }
 
 CommonStats& CommonStats::operator=(const CommonStats& other) {
@@ -55,6 +57,7 @@ CommonStats& CommonStats::operator=(const CommonStats& other) {
     average_encoded_throughput = other.average_encoded_throughput;
     average_decoded_throughput = other.average_decoded_throughput;
     data_type_byte_size = other.data_type_byte_size;
+    number_of_iterations = other.number_of_iterations;
 
     return *this;
 }
@@ -68,6 +71,7 @@ CommonStats::CommonStats(CommonStats&& other) {
     average_encoded_throughput = other.average_encoded_throughput;
     average_decoded_throughput = other.average_decoded_throughput;
     data_type_byte_size = other.data_type_byte_size;
+    number_of_iterations = other.number_of_iterations;
 }
 
 void CommonStats::Reset_Stats() {
@@ -97,19 +101,18 @@ void CommonStats::Write_Stats_To_File(const std::filesystem::path& file_path, co
     stats_json["directory_compressed"] = directory_compressed;
     stats_json["average_uncompressed_file_size_bytes"] = average_original_file_size;
     stats_json["average_compressed_file_size_bytes"] = average_compressed_file_size;
+    stats_json["number_of_iterations"] = number_of_iterations;
 
     // write the json object to a file
     std::ofstream stats_file(file_path);
     stats_file << std::setw(4) << stats_json << std::endl;
 }
 
-void CommonStats::Calculate_Cumulative_Average_Stats_For_Directory(const int& divisor, const int& number_of_files) {
-    average_compressed_file_size /= (divisor*number_of_files);
-    // average_time_encoded_in_microseconds  /= static_cast<double>((divisor*number_of_files));
-    // average_time_decoded_in_microseconds  /= static_cast<double>((divisor*number_of_files));
-    average_compression_ratio /= static_cast<double>((divisor*number_of_files));
-    average_encoded_throughput /= static_cast<double>((divisor*number_of_files));
-    average_decoded_throughput /= static_cast<double>((divisor*number_of_files));
+void CommonStats::Calculate_Cumulative_Average_Stats_For_Directory(const int& number_of_files) {
+    average_compressed_file_size /= (number_of_iterations*number_of_files);
+    average_time_encoded_in_microseconds  /= static_cast<double>((number_of_iterations*number_of_files));
+    average_time_decoded_in_microseconds  /= static_cast<double>((number_of_iterations*number_of_files));
+    average_compression_ratio /= static_cast<double>((number_of_iterations*number_of_files));
 }
 
 void CommonStats::Is_Little_Endian(){
@@ -224,10 +227,20 @@ void CommonStats::Set_Data_Type_Size_And_Side_Resolutions(const std::filesystem:
     }
 }
 
+
 //getters
 const int64_t CommonStats::Get_Side_Resolution(const uint8_t& lod_number) const {
     return (1 + (1 << (6 + lod_number)));
 }
 const int CommonStats::Get_Data_Type_Size() const {
     return data_type_byte_size;
+}
+
+const int CommonStats::Get_Number_Of_Iterations() const {
+    return number_of_iterations;
+}
+
+// setters
+void CommonStats::Set_Number_Of_Iterations(const int& number_of_iterations) {
+    this->number_of_iterations = number_of_iterations;
 }

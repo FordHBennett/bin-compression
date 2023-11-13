@@ -17,23 +17,6 @@ enum class Side {
 };
 
 class CommonStats {
-    private:
-        //member variables
-            double average_original_file_size = 0.0;
-            double average_compressed_file_size = 0.0;
-            double average_time_encoded_in_microseconds = 0;
-            double average_time_decoded_in_microseconds = 0;
-            double average_compression_ratio = 0.0;
-            double average_encoded_throughput = 0.0;
-            double average_decoded_throughput = 0.0;
-            int8_t data_type_byte_size = 0;
-            bool little_endian_flag = false;
-
-            std::array<std::array<uint16_t,4>, static_cast<size_t>(Side::NUMBER_SIDES)> side_resolutions;
-
-
-            //create a look up table full of data_type and their corresponding size
-
         public:
         //default constructor
         CommonStats();
@@ -48,8 +31,8 @@ class CommonStats {
         void Write_Stats_To_File(const std::filesystem::path& file_path, const char* compression_type, const std::string& directory_compressed) const;
         void Is_Little_Endian();
 
-        //member functions
-        void Calculate_Cumulative_Average_Stats_For_Directory(const int& divisor, const int& number_of_files);
+        void Calculate_Cumulative_Average_Stats_For_Directory(const int& number_of_files);
+
         template <typename EncodeFunction>
         void Compute_Time_Encoded(EncodeFunction encode) {
             auto start = std::chrono::high_resolution_clock::now(); // Start timing before calling the function
@@ -79,4 +62,27 @@ class CommonStats {
         //getters
         const int64_t Get_Side_Resolution(const uint8_t& lod_number) const;
         const int Get_Data_Type_Size() const;
+        const int Get_Number_Of_Iterations() const;
+
+        //setters
+        void Set_Number_Of_Iterations(const int& number_of_iterations);
+
+    private:
+        //member variables
+        double average_original_file_size = 0.0;
+        double average_compressed_file_size = 0.0;
+        double average_time_encoded_in_microseconds = 0;
+        double average_time_decoded_in_microseconds = 0;
+        double average_compression_ratio = 0.0;
+        double average_encoded_throughput = 0.0;
+        double average_decoded_throughput = 0.0;
+        int8_t data_type_byte_size = 0;
+        int number_of_iterations = 0;
+        bool little_endian_flag = false;
+
+        std::array<std::array<uint16_t,4>, static_cast<size_t>(Side::NUMBER_SIDES)> side_resolutions;
+
+
+        //create a look up table full of data_type and their corresponding size
+
 };

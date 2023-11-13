@@ -66,6 +66,9 @@
         "valarray": "cpp",
         "variant": "cpp",
         "vector": "cpp",
-        "algorithm": "cpp"
+        "algorithm": "cpp",
+        "cfenv": "cpp",
+        "source_location": "cpp",
+        "strstream": "cpp"
     }
 }
