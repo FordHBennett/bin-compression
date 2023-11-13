@@ -318,6 +318,9 @@ void Run_RLR_Compression_Decompression_On_Files(const std::vector<std::filesyste
                 // }
 
 
+                // rlr_obj.Compute_Time_Encoded([&rlr_obj](){
+                //     rlr_obj.Encode_With_XOR_Transformation();
+                // });
                 rlr_obj.Compute_Time_Encoded([&rlr_obj](){
                     rlr_obj.Encode_With_XOR_Transformation_With_One_Byte_Run_Length();
                 });
@@ -334,7 +337,9 @@ void Run_RLR_Compression_Decompression_On_Files(const std::vector<std::filesyste
 
                 rlr_obj.Write_Compressed_File(encoded_file_path);
 
-
+                // rlr_obj.Compute_Time_Decoded([&rlr_obj](){
+                //     rlr_obj.Decode_With_XOR_Transformation();
+                // });
                 rlr_obj.Compute_Time_Decoded([&rlr_obj](){
                     rlr_obj.Decode_With_XOR_Transformation_With_One_Byte_Run_Length();
                 });

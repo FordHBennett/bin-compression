@@ -633,123 +633,151 @@ void RLR::Decode_With_Delta_Transformation(){
 
 void RLR::Encode_With_XOR_Transformation() {
     encoded_data_vec.clear();
+    const uint8_t data_type_size = this->Get_Data_Type_Size();
+
     encoded_data_vec.resize(binary_data_vec.size(), 0);
 
-    encoded_data_vec[0] = binary_data_vec[0];
-
-    for(auto byte_index = 1; byte_index < binary_data_vec.size(); byte_index++) {
-        encoded_data_vec[byte_index] = static_cast<char>(encoded_data_vec[byte_index - 1] ^ binary_data_vec[byte_index]);
+    switch (data_type_size) {
+        case 1:
+            encoded_data_vec[0] = binary_data_vec[0];
+            for (uint64_t byte_index = 1; byte_index < binary_data_vec.size(); byte_index++) {
+                encoded_data_vec[byte_index] = static_cast<char>(encoded_data_vec[byte_index - 1] ^ binary_data_vec[byte_index]);
+            }
+            break;
+        case 2:
+        case 4:
+            for (uint64_t byte_index = data_type_size; byte_index < binary_data_vec.size(); byte_index += data_type_size) {
+                uint64_t prev_block = 0, current_block = 0;
+                memcpy(&prev_block, &binary_data_vec[byte_index - data_type_size], data_type_size);
+                memcpy(&current_block, &binary_data_vec[byte_index], data_type_size);
+                uint64_t xor_result = prev_block ^ current_block;
+                memcpy(&encoded_data_vec[byte_index], &xor_result, data_type_size);
+            }
+            break;
+        default:
+            ERROR_MSG_AND_EXIT("Error: Data type size is not 1, 2, or 4.");
     }
 }
+
 
 void RLR::Decode_With_XOR_Transformation() {
     decoded_data_vec.clear();
     decoded_data_vec.resize(encoded_data_vec.size(), 0);
+    const uint8_t data_type_size = this->Get_Data_Type_Size();
 
-    decoded_data_vec[0] = encoded_data_vec[0];
-
-    for(auto byte_index = 1; byte_index < encoded_data_vec.size(); byte_index++) {
-        decoded_data_vec[byte_index] = static_cast<char>(encoded_data_vec[byte_index - 1] ^ encoded_data_vec[byte_index]);
+    switch(data_type_size){
+        case 1:
+        {
+            decoded_data_vec[0] = encoded_data_vec[0];
+            for(uint64_t byte_index = 1; byte_index < encoded_data_vec.size(); byte_index++) {
+                decoded_data_vec[byte_index] = static_cast<char>(encoded_data_vec[byte_index - 1] ^ encoded_data_vec[byte_index]);
+            }
+            break;
+        }
+        case 2:
+        case 4:
+        {
+            uint64_t xor_result = 0;
+            for(uint64_t byte_index = data_type_size; byte_index < encoded_data_vec.size(); byte_index += data_type_size) {
+                uint64_t prev_block = 0;
+                uint64_t current_block = 0;
+                memcpy(&prev_block, &encoded_data_vec[byte_index - data_type_size], data_type_size);
+                memcpy(&current_block, &encoded_data_vec[byte_index], data_type_size);
+                xor_result = prev_block ^ current_block;
+                memcpy(&decoded_data_vec[byte_index], &xor_result, data_type_size);
+            }
+            break;
+        }
+        default:
+            ERROR_MSG_AND_EXIT("Error: Data type size is not 1, 2, or 4.");
+        break;
     }
 }
 
-// void RLR::Encode_With_XOR_Transformation_With_One_Byte_Run_Length() {
-//     std::vector<char> xor_encoded_data;
-//     xor_encoded_data.resize(binary_data_vec.size(), 0);
-
-//     xor_encoded_data[0] = binary_data_vec[0];
-
-//     for(auto byte_index = 1; byte_index < binary_data_vec.size(); byte_index++) {
-//         xor_encoded_data[byte_index] = static_cast<char>(xor_encoded_data[byte_index - 1] ^ binary_data_vec[byte_index]);
-//     }
-
-//     // run-length encoding
-//     encoded_data_vec.clear();
-//     const uint8_t data_type_size = this->Get_Data_Type_Size();
-//     encoded_data_vec.reserve(xor_encoded_data.size());
-//     auto byte_index = 0;
-
-//     std::vector<char> current_block(xor_encoded_data.begin() + byte_index,
-//                                     xor_encoded_data.begin() + byte_index + data_type_size);
-
-//     while (byte_index < xor_encoded_data.size()) {
-//         uint8_t run_length = 1;
-//         int next_index = byte_index + data_type_size;
-//         current_block.assign(xor_encoded_data.begin() + byte_index,
-//                              xor_encoded_data.begin() + byte_index + data_type_size);
-
-//         while (next_index < xor_encoded_data.size() && (run_length < ONE_BYTE_MAX) &&
-//                 (std::equal(current_block.begin(), current_block.end(), xor_encoded_data.begin() + next_index))) {
-
-//             run_length++;
-//             next_index += data_type_size;
-//         }
-//         encoded_data_vec.push_back(static_cast<char>(run_length));
-//         encoded_data_vec.insert(encoded_data_vec.end(), current_block.begin(), current_block.end());
-//         byte_index = next_index;
-//     }
-
-//     encoded_data_vec.shrink_to_fit();
-// }
-
-// void RLR::Decode_With_XOR_Transformation_With_One_Byte_Run_Length() {
-//     std::vector<char> rlr_decoded;
-
-//     // Run-Length Decoding
-//     const uint8_t data_type_size = this->Get_Data_Type_Size();
-//     auto byte_index = 0;
-
-//     while (byte_index < encoded_data_vec.size()) {
-//         const uint8_t run_length = static_cast<uint8_t>(encoded_data_vec[byte_index]);
-//         byte_index++;
-//         rlr_decoded.insert(rlr_decoded.end(),
-//                             run_length * data_type_size,
-//                             encoded_data_vec[byte_index]);
-//         byte_index += data_type_size;
-//     }
-
-//     // XOR Transformation
-//     decoded_data_vec.clear();
-//     decoded_data_vec.resize(rlr_decoded.size(), 0);
-//     decoded_data_vec[0] = rlr_decoded[0];
-
-//     for (auto byte_index = 1; byte_index < rlr_decoded.size(); byte_index++) {
-//         decoded_data_vec[byte_index] = static_cast<char>(rlr_decoded[byte_index - 1] ^ rlr_decoded[byte_index]);
-//     }
-// }
-
 void RLR::Encode_With_XOR_Transformation_With_One_Byte_Run_Length() {
     encoded_data_vec.clear();
+    encoded_data_vec.reserve(binary_data_vec.size());
     const uint8_t data_type_size = this->Get_Data_Type_Size();
 
-    if (binary_data_vec.empty()) {
-        return;
-    }
+    switch(data_type_size){
+        case 1:
+        {
+            auto one_byte_index = 0;
+            char last_one_byte_xor_value = binary_data_vec[0];
+            std::vector<char> one_byte_current_block(data_type_size, 0);
+            one_byte_current_block[0] = last_one_byte_xor_value;
 
-    // Perform XOR transformation in-place
-    for (auto byte_index = 1; byte_index < binary_data_vec.size(); byte_index++) {
-        binary_data_vec[byte_index] ^= binary_data_vec[byte_index - 1];
-    }
+            while (one_byte_index < binary_data_vec.size()) {
+                uint8_t run_length = 1;
+                int next_index = one_byte_index + data_type_size;
 
-    // Run-length encoding
-    auto byte_index = 0;
-    while (byte_index < binary_data_vec.size()) {
-        uint8_t run_length = 1;
-        int next_index = byte_index + data_type_size;
+                while ((next_index < binary_data_vec.size()) && (run_length < ONE_BYTE_MAX)) {
+                    for (size_t i = 0; (i < data_type_size) && (next_index + i < binary_data_vec.size()); ++i) {
+                        char next_xor_value = binary_data_vec[next_index + i] ^ last_one_byte_xor_value;
+                        if (next_xor_value != one_byte_current_block[i]) {
+                            goto end_of_loop_data_type_size_one;
+                        }
+                        last_one_byte_xor_value = next_xor_value;
+                    }
 
-        while (next_index < binary_data_vec.size() && run_length < ONE_BYTE_MAX &&
-               std::equal(binary_data_vec.begin() + byte_index,
-                          binary_data_vec.begin() + byte_index + data_type_size,
-                          binary_data_vec.begin() + next_index)) {
-            run_length++;
-            next_index += data_type_size;
+                    run_length++;
+                    next_index += data_type_size;
+                }
+end_of_loop_data_type_size_one:
+
+                encoded_data_vec.push_back(static_cast<char>(run_length));
+                encoded_data_vec.insert(encoded_data_vec.end(), one_byte_current_block.begin(), one_byte_current_block.end());
+
+                if (next_index < binary_data_vec.size()) {
+                    memcpy(one_byte_current_block.data(), &binary_data_vec[next_index], data_type_size);
+                    std::transform(one_byte_current_block.begin(), one_byte_current_block.end(), one_byte_current_block.begin(), [&last_one_byte_xor_value](char& c) { return c ^= last_one_byte_xor_value; });
+                    memcpy(&last_one_byte_xor_value, one_byte_current_block.data(), data_type_size);
+                }
+
+                one_byte_index = next_index;
+            }
+            break;
         }
+        case 2:
+        case 4:
+        {
+            uint64_t two_byte_index = 0;
+            std::vector<char> two_byte_current_block(data_type_size, 0);
+            uint64_t last_xor_value = 0;
+            memcpy(&last_xor_value, binary_data_vec.data(), data_type_size);
 
-        encoded_data_vec.push_back(static_cast<char>(run_length));
-        encoded_data_vec.insert(encoded_data_vec.end(),
-                                binary_data_vec.begin() + byte_index,
-                                binary_data_vec.begin() + byte_index + data_type_size);
-        byte_index = next_index;
+            while (two_byte_index < binary_data_vec.size()) {
+                uint8_t run_length = 1;
+                uint64_t next_two_byte_index = two_byte_index + data_type_size;
+
+                while ((next_two_byte_index < binary_data_vec.size()) && (run_length < ONE_BYTE_MAX)) {
+                    uint64_t next_xor_value = 0;
+                    memcpy(&next_xor_value, &binary_data_vec[next_two_byte_index], data_type_size);
+                    next_xor_value ^= last_xor_value;
+
+                    if (next_xor_value != last_xor_value) {
+                        break;
+                    }
+                    run_length++;
+                    next_two_byte_index += data_type_size;
+                }
+
+                encoded_data_vec.push_back(static_cast<char>(run_length));
+                encoded_data_vec.insert(encoded_data_vec.end(), two_byte_current_block.begin(), two_byte_current_block.end());
+
+                if (next_two_byte_index < binary_data_vec.size()) {
+                    memcpy(two_byte_current_block.data(), &binary_data_vec[next_two_byte_index], data_type_size);
+                    std::transform(two_byte_current_block.begin(), two_byte_current_block.end(), two_byte_current_block.begin(), [&last_xor_value](char& c) { return c ^= last_xor_value; });
+                    memcpy(&last_xor_value, two_byte_current_block.data(), data_type_size);
+                }
+
+                two_byte_index = next_two_byte_index;
+            }
+            break;
+        }
+        default:
+            ERROR_MSG_AND_EXIT("Error: Data type size is not 1, 2, or 4.");
+
     }
 
     encoded_data_vec.shrink_to_fit();
@@ -759,227 +787,52 @@ void RLR::Decode_With_XOR_Transformation_With_One_Byte_Run_Length() {
     decoded_data_vec.clear();
     const uint8_t data_type_size = this->Get_Data_Type_Size();
 
-    if (encoded_data_vec.empty()) {
-        return;
-    }
+    switch(data_type_size){
+        case 1:
+        {
+            uint64_t one_byte_index = 0;
+            while (one_byte_index < encoded_data_vec.size()) {
+                const uint8_t run_length = static_cast<uint8_t>(encoded_data_vec[one_byte_index]);
+                one_byte_index++;
+                decoded_data_vec.insert(decoded_data_vec.end(),
+                                        run_length * data_type_size,
+                                        encoded_data_vec[one_byte_index]);
+                one_byte_index += data_type_size;
 
-    // Run-length decoding
-    auto byte_index = 0;
-    while (byte_index < encoded_data_vec.size()) {
-        const uint8_t run_length = static_cast<uint8_t>(encoded_data_vec[byte_index]);
-        byte_index++;
-        decoded_data_vec.insert(decoded_data_vec.end(),
-                                run_length * data_type_size,
-                                encoded_data_vec[byte_index]);
-        byte_index += data_type_size;
-    }
-
-    // XOR Transformation
-    for (auto i = decoded_data_vec.size() - 1; i > 0; i--) {
-        decoded_data_vec[i] ^= decoded_data_vec[i - 1];
-    }
-}
-
-void RLR::Encode_With_XOR_Transformation_With_Two_Byte_Run_Length() {
-    encoded_data_vec.clear();
-    const uint8_t data_type_size = this->Get_Data_Type_Size();
-
-    if (binary_data_vec.empty()) {
-        return;
-    }
-
-    // Perform XOR transformation in-place
-    for (auto byte_index = 1; byte_index < binary_data_vec.size(); byte_index++) {
-        binary_data_vec[byte_index] ^= binary_data_vec[byte_index - 1];
-    }
-
-    // Run-length encoding
-    auto byte_index = 0;
-    while (byte_index < binary_data_vec.size()) {
-        uint16_t run_length = 1;
-        int next_index = byte_index + data_type_size;
-
-        while (next_index < binary_data_vec.size() && run_length < TWO_BYTE_MAX &&
-               std::equal(binary_data_vec.begin() + byte_index,
-                          binary_data_vec.begin() + byte_index + data_type_size,
-                          binary_data_vec.begin() + next_index)) {
-            run_length++;
-            next_index += data_type_size;
+                // XOR Transformation
+                for (uint64_t i = one_byte_index - 1; i > one_byte_index - data_type_size; i--) {
+                    decoded_data_vec[i] ^= decoded_data_vec[i - 1];
+                }
+            }
+            break;
         }
+        case 2:
+        case 4:
+        {
+            uint64_t two_byte_index = 0;
+            uint64_t last_two_byte_xor_value = 0;
 
-        encoded_data_vec.push_back(static_cast<char>(run_length >> 8));
-        encoded_data_vec.push_back(static_cast<char>(run_length & 0xFF));
-        encoded_data_vec.insert(encoded_data_vec.end(),
-                                binary_data_vec.begin() + byte_index,
-                                binary_data_vec.begin() + byte_index + data_type_size);
-        byte_index = next_index;
-    }
+            while (two_byte_index < encoded_data_vec.size()) {
+                // Read the run length
+                uint8_t run_length = static_cast<uint8_t>(encoded_data_vec[two_byte_index]);
+                two_byte_index++;
+                decoded_data_vec.resize(decoded_data_vec.size() + run_length * data_type_size);
 
-    encoded_data_vec.shrink_to_fit();
-}
+                char* decode_ptr = &decoded_data_vec[decoded_data_vec.size() - run_length * data_type_size];
 
-void RLR::Decode_With_XOR_Transformation_With_Two_Byte_Run_Length() {
-    decoded_data_vec.clear();
-    const uint8_t data_type_size = this->Get_Data_Type_Size();
+                memcpy(decode_ptr, encoded_data_vec.data() + two_byte_index, run_length * data_type_size);
 
-    if (encoded_data_vec.empty()) {
-        return;
-    }
+                memset(decode_ptr, last_two_byte_xor_value, run_length * data_type_size);
 
-    // Run-length decoding
-    auto byte_index = 0;
-    while (byte_index < encoded_data_vec.size()) {
-        uint16_t run_length = static_cast<uint8_t>(encoded_data_vec[byte_index]) << 8;
-        run_length |= static_cast<uint8_t>(encoded_data_vec[byte_index + 1]) & 0xFF;
+                two_byte_index += data_type_size;
 
-        byte_index += 2;
-        decoded_data_vec.insert(decoded_data_vec.end(),
-                                run_length * data_type_size,
-                                encoded_data_vec[byte_index]);
-        byte_index += data_type_size;
-    }
-
-    // XOR Transformation
-    for (auto i = decoded_data_vec.size() - 1; i > 0; i--) {
-        decoded_data_vec[i] ^= decoded_data_vec[i - 1];
-    }
-}
-
-void RLR::Encode_With_XOR_Transformation_With_Three_Byte_Run_Length() {
-    encoded_data_vec.clear();
-    const uint8_t data_type_size = this->Get_Data_Type_Size();
-
-    if (binary_data_vec.empty()) {
-        return;
-    }
-
-    // Perform XOR transformation in-place
-    for (auto byte_index = 1; byte_index < binary_data_vec.size(); byte_index++) {
-        binary_data_vec[byte_index] ^= binary_data_vec[byte_index - 1];
-    }
-
-    // Run-length encoding
-    auto byte_index = 0;
-    while (byte_index < binary_data_vec.size()) {
-        uint32_t run_length = 1;
-        int next_index = byte_index + data_type_size;
-
-        while (next_index < binary_data_vec.size() && run_length < THREE_BYTE_MAX &&
-               std::equal(binary_data_vec.begin() + byte_index,
-                          binary_data_vec.begin() + byte_index + data_type_size,
-                          binary_data_vec.begin() + next_index)) {
-            run_length++;
-            next_index += data_type_size;
+            }
+            break;
         }
-
-        encoded_data_vec.push_back(static_cast<char>(run_length >> 16));
-        encoded_data_vec.push_back(static_cast<char>(run_length >> 8));
-        encoded_data_vec.push_back(static_cast<char>(run_length & 0xFF));
-        encoded_data_vec.insert(encoded_data_vec.end(),
-                                binary_data_vec.begin() + byte_index,
-                                binary_data_vec.begin() + byte_index + data_type_size);
-        byte_index = next_index;
     }
-
-    encoded_data_vec.shrink_to_fit();
+    decoded_data_vec.shrink_to_fit();
 }
 
-void RLR::Decode_With_XOR_Transformation_With_Three_Byte_Run_Length() {
-    decoded_data_vec.clear();
-    const uint8_t data_type_size = this->Get_Data_Type_Size();
-
-    if (encoded_data_vec.empty()) {
-        return;
-    }
-
-    // Run-length decoding
-    auto byte_index = 0;
-    while (byte_index < encoded_data_vec.size()) {
-        uint32_t run_length = static_cast<uint8_t>(encoded_data_vec[byte_index]) << 16;
-        run_length |= static_cast<uint8_t>(encoded_data_vec[byte_index + 1]) << 8;
-        run_length |= static_cast<uint8_t>(encoded_data_vec[byte_index + 2]) & 0xFF;
-
-        byte_index += 3;
-        decoded_data_vec.insert(decoded_data_vec.end(),
-                                run_length * data_type_size,
-                                encoded_data_vec[byte_index]);
-        byte_index += data_type_size;
-    }
-
-    // XOR Transformation
-    for (auto i = decoded_data_vec.size() - 1; i > 0; i--) {
-        decoded_data_vec[i] ^= decoded_data_vec[i - 1];
-    }
-}
-
-void RLR::Encode_With_XOR_Transformation_With_Four_Byte_Run_Length() {
-    encoded_data_vec.clear();
-    const uint8_t data_type_size = this->Get_Data_Type_Size();
-
-    if (binary_data_vec.empty()) {
-        return;
-    }
-
-    // Perform XOR transformation in-place
-    for (auto byte_index = 1; byte_index < binary_data_vec.size(); byte_index++) {
-        binary_data_vec[byte_index] ^= binary_data_vec[byte_index - 1];
-    }
-
-    // Run-length encoding
-    auto byte_index = 0;
-    while (byte_index < binary_data_vec.size()) {
-        uint32_t run_length = 1;
-        int next_index = byte_index + data_type_size;
-
-        while (next_index < binary_data_vec.size() && run_length < FOUR_BYTE_MAX &&
-               std::equal(binary_data_vec.begin() + byte_index,
-                          binary_data_vec.begin() + byte_index + data_type_size,
-                          binary_data_vec.begin() + next_index)) {
-            run_length++;
-            next_index += data_type_size;
-        }
-
-        encoded_data_vec.push_back(static_cast<char>(run_length >> 24));
-        encoded_data_vec.push_back(static_cast<char>(run_length >> 16));
-        encoded_data_vec.push_back(static_cast<char>(run_length >> 8));
-        encoded_data_vec.push_back(static_cast<char>(run_length & 0xFF));
-        encoded_data_vec.insert(encoded_data_vec.end(),
-                                binary_data_vec.begin() + byte_index,
-                                binary_data_vec.begin() + byte_index + data_type_size);
-        byte_index = next_index;
-    }
-
-    encoded_data_vec.shrink_to_fit();
-}
-
-void RLR::Decode_With_XOR_Transformation_With_Four_Byte_Run_Length() {
-    decoded_data_vec.clear();
-    const uint8_t data_type_size = this->Get_Data_Type_Size();
-
-    if (encoded_data_vec.empty()) {
-        return;
-    }
-
-    // Run-length decoding
-    auto byte_index = 0;
-    while (byte_index < encoded_data_vec.size()) {
-        uint32_t run_length = static_cast<uint8_t>(encoded_data_vec[byte_index]) << 24;
-        run_length |= static_cast<uint8_t>(encoded_data_vec[byte_index + 1]) << 16;
-        run_length |= static_cast<uint8_t>(encoded_data_vec[byte_index + 2]) << 8;
-        run_length |= static_cast<uint8_t>(encoded_data_vec[byte_index + 3]) & 0xFF;
-
-        byte_index += 4;
-        decoded_data_vec.insert(decoded_data_vec.end(),
-                                run_length * data_type_size,
-                                encoded_data_vec[byte_index]);
-        byte_index += data_type_size;
-    }
-
-    // XOR Transformation
-    for (auto i = decoded_data_vec.size() - 1; i > 0; i--) {
-        decoded_data_vec[i] ^= decoded_data_vec[i - 1];
-    }
-}
 
 
 void RLR::Write_Compressed_File(const std::filesystem::path& file_path) const {
