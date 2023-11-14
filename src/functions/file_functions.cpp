@@ -306,13 +306,13 @@ void Run_RLR_Compression_Decompression_On_Files(const std::vector<std::filesyste
                     break;
                 case 2:
                     rlr_obj.Compute_Time_Encoded([&rlr_obj](){
-                        rlr_obj.Encode_With_XOR_Transformation_With_One_Byte_Run_Length();
+                        rlr_obj.Encode_With_XOR_Transformation_With_Two_Byte_Run_Length();
                     });
                     break;
 
                 default:
                     rlr_obj.Compute_Time_Encoded([&rlr_obj](){
-                        rlr_obj.Encode_With_XOR_Transformation_With_One_Byte_Run_Length();
+                        rlr_obj.Encode_With_XOR_Transformation_With_Two_Byte_Run_Length();
                     });
                     break;
                 }
