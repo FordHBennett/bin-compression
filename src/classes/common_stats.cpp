@@ -82,6 +82,7 @@ void CommonStats::Reset_Stats() {
     average_compression_ratio = 0.0;
     average_encoded_throughput = 0.0;
     average_decoded_throughput = 0.0;
+    data_type_byte_size = 0;
 }
 
 void CommonStats::Write_Stats_To_File(const std::filesystem::path& file_path, const char* compression_type, const std::string& directory_compressed) const {
