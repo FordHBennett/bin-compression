@@ -65,11 +65,11 @@ target_include_directories(geobin_compression PUBLIC src/classes)
 target_include_directories(geobin_compression PUBLIC src/functions)
 
 # Debug build options
-set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O0 -g3 -Wall -fsanitize=undefined -fsanitize=address -fno-omit-frame-pointer -D_GLIBCXX_DEBUG -D_GLIBCXX_DEBUG_PEDANTIC -gdwarf-5 -fstack-protector")
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O0 -g3 -Wall -fsanitize=undefined -fsanitize=address -fsanitize=memory -fno-omit-frame-pointer -D_GLIBCXX_DEBUG -D_GLIBCXX_DEBUG_PEDANTIC -gdwarf-5 -fstack-protector")
 
 
 # Release build options
-set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3")
+set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3 -finline-functions -faligned-allocation -fapprox-func -fjump-tables -freciprocal-math -fstrict-flex-arrays=2 -funroll-loops -fvectorize")
 
 # Custom Release with Debug Info build options
 set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} -O2 -g -gdwarf-5 -fno-omit-frame-pointer -fdump-tree-cfg-graph -c")

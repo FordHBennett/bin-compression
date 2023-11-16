@@ -297,31 +297,25 @@ void Run_RLR_Compression_Decompression_On_Files(const std::vector<std::filesyste
             for(uint64_t row = 0; row<num_rows; row++){
                 // rlr_obj.Read_File(file, bytes_per_row, row);
                 rlr_obj.Read_File(file, bytes_per_row, row);
-                // switch (rlr_obj.Get_Data_Type_Size())
-                // {
-                // case 1:
-                //     rlr_obj.Compute_Time_Encoded([&rlr_obj](){
-                //         rlr_obj.Encode_With_Move_To_Front_Transformation_With_One_Byte_Run_Length();
-                //     });
-                //     break;
-                // case 2:
-                //     rlr_obj.Compute_Time_Encoded([&rlr_obj](){
-                //         rlr_obj.Encode_With_XOR_Transformation_With_One_Byte_Run_Length();
-                //     });
-                //     break;
-
-                // default:
-                //     rlr_obj.Compute_Time_Encoded([&rlr_obj](){
-                //         rlr_obj.Encode_With_XOR_Transformation_With_One_Byte_Run_Length();
-                //     });
-                //     break;
-                // }
+                switch (rlr_obj.Get_Data_Type_Size())
+                {
+                case 1:
+                    rlr_obj.Compute_Time_Encoded([&rlr_obj](){
+                        rlr_obj.Encode_With_Move_To_Front_Transformation_With_One_Byte_Run_Length();
+                    });
+                    // rlr_obj.Compute_Time_Encoded([&rlr_obj](){
+                    //     rlr_obj.Encode_With_Move_To_Front_Transformation_With_Two_Byte_Run_Length();
+                    // });
+                    break;
+                default:
                     rlr_obj.Compute_Time_Encoded([&rlr_obj](){
                         rlr_obj.Encode_With_XOR_Transformation_With_One_Byte_Run_Length();
                     });
-                // rlr_obj.Compute_Time_Encoded([&rlr_obj](){
-                //     rlr_obj.Encode_With_XOR_Transformation();
-                // });
+                    // rlr_obj.Compute_Time_Encoded([&rlr_obj](){
+                    //     rlr_obj.Encode_With_XOR_Transformation_With_Two_Byte_Run_Length();
+                    // });
+                    break;
+                }
 
                 // rlr_obj.Compute_Time_Encoded([&rlr_obj](){
                 //     rlr_obj.Encode_With_Move_To_Front_Transformation();
@@ -372,31 +366,26 @@ void Run_RLR_Compression_Decompression_On_Files(const std::vector<std::filesyste
                 //     rlr_obj.Decode_With_Move_To_Front_Transformation();
                 // });
 
-                // rlr_obj.Compute_Time_Decoded([&rlr_obj](){
-                //     rlr_obj.Decode_With_XOR_Transformation();
-                // });
+
+                switch (rlr_obj.Get_Data_Type_Size())
+                {
+                case 1:
+                    rlr_obj.Compute_Time_Decoded([&rlr_obj](){
+                        rlr_obj.Decode_With_Move_To_Front_Transformation_With_One_Byte_Run_Length();
+                    });
+                    // rlr_obj.Compute_Time_Decoded([&rlr_obj](){
+                    //     rlr_obj.Decode_With_Move_To_Front_Transformation_With_Two_Byte_Run_Length();
+                    // });
+                    break;
+                default:
                     rlr_obj.Compute_Time_Decoded([&rlr_obj](){
                         rlr_obj.Decode_With_XOR_Transformation_With_One_Byte_Run_Length();
                     });
-
-                // switch (rlr_obj.Get_Data_Type_Size())
-                // {
-                // case 1:
-                //     rlr_obj.Compute_Time_Decoded([&rlr_obj](){
-                //         rlr_obj.Decode_With_Move_To_Front_Transformation_With_One_Byte_Run_Length();
-                //     });
-                //     break;
-                // case 2:
-                //     rlr_obj.Compute_Time_Decoded([&rlr_obj](){
-                //         rlr_obj.Decode_With_XOR_Transformation_With_One_Byte_Run_Length();
-                //     });
-                //     break;
-                // default:
-                //     rlr_obj.Compute_Time_Decoded([&rlr_obj](){
-                //         rlr_obj.Decode_With_XOR_Transformation_With_One_Byte_Run_Length();
-                //     });
-                //     break;
-                // }
+                    // rlr_obj.Compute_Time_Decoded([&rlr_obj](){
+                    //     rlr_obj.Decode_With_XOR_Transformation_With_Two_Byte_Run_Length();
+                    // });
+                    break;
+                }
 
 
                 rlr_obj.Write_Decompressed_File(decoded_file_path);

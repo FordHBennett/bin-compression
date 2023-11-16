@@ -43,7 +43,7 @@
 //create a common stats class that has all the stats and then pass it to the processFiles function
 int main() {
     RLR rlr;
-    rlr.Set_Number_Of_Iterations(1);
+    rlr.Set_Number_Of_Iterations(5);
 
     const std::vector<std::filesystem::path> geometa_and_geobin_dir_path_vec = Get_Geobin_And_Geometa_Directory_Path_Vec(std::filesystem::path("PlanetData"));
     for(int i = 0; i < geometa_and_geobin_dir_path_vec.size(); i++){
