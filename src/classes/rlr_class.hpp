@@ -86,7 +86,7 @@ class RLR : public CommonStats {
 
 
     private:
-        const char* compression_type = "mtf_xor_rlr_1B";
+        const char* compression_type = "rlr_4B";
         std::vector<char> binary_data_vec = {0};
         std::vector<char> encoded_data_vec = {0};
         std::vector<char> decoded_data_vec = {0};
