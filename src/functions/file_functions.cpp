@@ -300,76 +300,84 @@ void Run_RLR_Compression_Decompression_On_Files(const std::vector<std::filesyste
                 // switch (rlr_obj.Get_Data_Type_Size())
                 // {
                 //     case 1:
-                //         // rlr_obj.Compute_Time_Encoded([&rlr_obj](){
-                //         //     rlr_obj.Encode_With_Move_To_Front_Transformation_With_One_Byte_Run_Length();
-                //         // });
+                //         rlr_obj.Compute_Time_Encoded([&rlr_obj](){
+                //             rlr_obj.Encode_With_Move_To_Front_Transformation_With_One_Byte_Run_Length();
+                //         });
                 //         // rlr_obj.Compute_Time_Encoded([&rlr_obj](){
                 //         //     rlr_obj.Encode_With_Move_To_Front_Transformation_With_Two_Byte_Run_Length();
                 //         // });
                 //         // rlr_obj.Compute_Time_Encoded([&rlr_obj](){
                 //         //     rlr_obj.Encode_With_Move_To_Front_Transformation_With_Three_Byte_Run_Length();
                 //         // });
-                //         rlr_obj.Compute_Time_Encoded([&rlr_obj](){
-                //             rlr_obj.Encode_With_Move_To_Front_Transformation_With_Four_Byte_Run_Length();
-                //         });
+                //         // rlr_obj.Compute_Time_Encoded([&rlr_obj](){
+                //         //     rlr_obj.Encode_With_Move_To_Front_Transformation_With_Four_Byte_Run_Length();
+                //         // });
                 //     break;
                 //     default:
-                //         // rlr_obj.Compute_Time_Encoded([&rlr_obj](){
-                //         //     rlr_obj.Encode_With_XOR_Transformation_With_One_Byte_Run_Length();
-                //         // });
+                //         rlr_obj.Compute_Time_Encoded([&rlr_obj](){
+                //             rlr_obj.Encode_With_XOR_Transformation_With_One_Byte_Run_Length();
+                //         });
                 //         // rlr_obj.Compute_Time_Encoded([&rlr_obj](){
                 //         //     rlr_obj.Encode_With_XOR_Transformation_With_Two_Byte_Run_Length();
                 //         // });
                 //         // rlr_obj.Compute_Time_Encoded([&rlr_obj](){
                 //         //     rlr_obj.Encode_With_XOR_Transformation_With_Three_Byte_Run_Length();
                 //         // });
-                //         rlr_obj.Compute_Time_Encoded([&rlr_obj](){
-                //             rlr_obj.Encode_With_XOR_Transformation_With_Four_Byte_Run_Length();
-                //         });
+                //         // rlr_obj.Compute_Time_Encoded([&rlr_obj](){
+                //         //     rlr_obj.Encode_With_XOR_Transformation_With_Four_Byte_Run_Length();
+                //         // });
                 //     break;
                 // }
 
                 rlr_obj.Compute_Time_Encoded([&rlr_obj](){
-                    rlr_obj.Encode_With_Four_Byte_Run_Length();
+                    rlr_obj.Encode_With_One_Byte_Run_Length();
                 });
+
+                // rlr_obj.Compute_Time_Encoded([&rlr_obj](){
+                //     rlr_obj.Encode_With_Four_Byte_Run_Length();
+                // });
 
 
                 rlr_obj.Write_Compressed_File(encoded_file_path);
 
                 rlr_obj.Compute_Time_Decoded([&rlr_obj](){
-                    rlr_obj.Decode_With_Four_Byte_Run_Length();
+                    rlr_obj.Decode_With_One_Byte_Run_Length();
                 });
+
+                // rlr_obj.Compute_Time_Decoded([&rlr_obj](){
+                //     rlr_obj.Decode_With_Four_Byte_Run_Length();
+                // });
 
 
                 // switch (rlr_obj.Get_Data_Type_Size())
                 // {
                 // case 1:
-                //     // rlr_obj.Compute_Time_Decoded([&rlr_obj](){
-                //     //     rlr_obj.Decode_With_Move_To_Front_Transformation_With_One_Byte_Run_Length();
-                //     // });
+                //     rlr_obj.Compute_Time_Decoded([&rlr_obj](){
+                //         rlr_obj.Decode_With_Move_To_Front_Transformation_With_One_Byte_Run_Length();
+                //     });
                 //     // rlr_obj.Compute_Time_Decoded([&rlr_obj](){
                 //     //     rlr_obj.Decode_With_Move_To_Front_Transformation_With_Two_Byte_Run_Length();
                 //     // });
                 //     // rlr_obj.Compute_Time_Decoded([&rlr_obj](){
                 //     //     rlr_obj.Decode_With_Move_To_Front_Transformation_With_Three_Byte_Run_Length();
                 //     // });
-                //     rlr_obj.Compute_Time_Decoded([&rlr_obj](){
-                //         rlr_obj.Decode_With_Move_To_Front_Transformation_With_Four_Byte_Run_Length();
-                //     });
+                //     // rlr_obj.Compute_Time_Decoded([&rlr_obj](){
+                //     //     rlr_obj.Decode_With_Move_To_Front_Transformation_With_Four_Byte_Run_Length();
+                //     // });
                 //     break;
                 // default:
-                //     // rlr_obj.Compute_Time_Decoded([&rlr_obj](){
-                //     //     rlr_obj.Decode_With_XOR_Transformation_With_One_Byte_Run_Length();
-                //     // });
+                //     rlr_obj.Compute_Time_Decoded([&rlr_obj](){
+                //         rlr_obj.Decode_With_XOR_Transformation_With_One_Byte_Run_Length();
+                //     });
                 //     // rlr_obj.Compute_Time_Decoded([&rlr_obj](){
                 //     //     rlr_obj.Decode_With_XOR_Transformation_With_Two_Byte_Run_Length();
                 //     // });
                 //     // rlr_obj.Compute_Time_Decoded([&rlr_obj](){
                 //     //     rlr_obj.Decode_With_XOR_Transformation_With_Three_Byte_Run_Length();
                 //     // });
-                //     rlr_obj.Compute_Time_Decoded([&rlr_obj](){
-                //         rlr_obj.Decode_With_XOR_Transformation_With_Four_Byte_Run_Length();
-                //     });
+                //     // rlr_obj.Compute_Time_Decoded([&rlr_obj](){
+                //     //     rlr_obj.Decode_With_XOR_Transformation_With_Four_Byte_Run_Length();
+                //     // });
                 //     break;
                 // }
 
@@ -393,20 +401,18 @@ void Run_RLR_Compression_Decompression_On_Files(const std::vector<std::filesyste
 void Write_Shannon_Fano_Frequencies_To_Files(const std::vector<std::filesystem::path>& files, ShannonFano& shannon_fano) {
     for(const auto& file : files) {
         const std::filesystem::path stem_path = file.stem();
-        const std::filesystem::path freq_path = file.relative_path() / std::filesystem::path{"shannon_fano_frequency_files"} /
+        const std::filesystem::path freq_path = std::filesystem::path{"shannon_fano_frequency_files"} /
                                                         stem_path / std::filesystem::path{stem_path.string() + std::string{".json"}};
 
 
 
-        if(!std::filesystem::exists(freq_path.parent_path().parent_path())) {
-            std::filesystem::create_directories(freq_path.parent_path());
-        }
+        // if(!std::filesystem::exists(freq_path.parent_path().parent_path())) {
+        //     std::filesystem::create_directories(freq_path.parent_path());
+        // }
 
         if(!std::filesystem::exists(freq_path.parent_path())) {
             std::filesystem::create_directories(freq_path.parent_path());
         }
-
-
 
         shannon_fano.Write_Frequencies_To_JSON_File(file, freq_path);
     }

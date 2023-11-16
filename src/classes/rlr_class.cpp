@@ -47,6 +47,7 @@ void RLR::Read_File(const std::filesystem::path& file_path, const int& number_of
         ERROR_MSG_AND_EXIT("Error: Unable to open the file.");
     }
 #endif
+
     binary_data_vec.resize(number_of_bytes_to_read);
     // populate the binary data vector with the data from the file starting at number_of_bytes_to_read * row
     std::streampos start_position = static_cast<std::streampos>(number_of_bytes_to_read) * row;
@@ -56,8 +57,18 @@ void RLR::Read_File(const std::filesystem::path& file_path, const int& number_of
         ERROR_MSG_AND_EXIT("Error: Unable to seek to the specified position in the file.");
     }
 #endif
+
+    // Read the data from the file into the vector.
+    input_file.read(reinterpret_cast<char*>(binary_data_vec.data()), number_of_bytes_to_read);
+#ifdef DEBUG
+if (input_file.fail() && !input_file.eof()) {
+    ERROR_MSG_AND_EXIT("Error: Unable to read from the file.");
+}
+#endif
+
     input_file.close();
 }
+
 
 //FASTER
 void RLR::Encode_With_One_Nibble_Run_Length() {
@@ -132,54 +143,103 @@ void RLR::Decode_With_One_Nibble_Run_Length() {
     }
 }
 
+// void RLR::Encode_With_One_Byte_Run_Length() {
+//     encoded_data_vec.clear();
+//     const uint8_t data_type_size = this->Get_Data_Type_Size();
+//     encoded_data_vec.reserve(binary_data_vec.size());
+//     auto byte_index = 0;
+
+//     std::vector<char> current_block(binary_data_vec.begin() + byte_index,
+//                                     binary_data_vec.begin() + byte_index + data_type_size);
+
+//     while (byte_index < binary_data_vec.size()) {
+//         uint8_t run_length = 1;
+//         int next_index = byte_index + data_type_size;
+//         current_block.assign(binary_data_vec.begin() + byte_index,
+//                              binary_data_vec.begin() + byte_index + data_type_size);
+
+//         while (next_index < binary_data_vec.size() && (run_length < ONE_BYTE_MAX) &&
+//                 (std::equal(current_block.begin(), current_block.end(), binary_data_vec.begin() + next_index))) {
+
+//             run_length++;
+//             next_index += data_type_size;
+//         }
+//         encoded_data_vec.push_back(static_cast<char>(run_length));
+//         encoded_data_vec.insert(encoded_data_vec.end(), current_block.begin(), current_block.end());
+//         byte_index = next_index;
+//     }
+
+//     encoded_data_vec.shrink_to_fit();
+// }
+
+// void RLR::Decode_With_One_Byte_Run_Length() {
+//     decoded_data_vec.clear();
+
+//     const uint8_t data_type_size = this->Get_Data_Type_Size();
+//     auto byte_index = 0;
+
+//     while (byte_index < encoded_data_vec.size()) {
+//         const uint8_t run_length = static_cast<uint8_t>(encoded_data_vec[byte_index]);
+
+//         byte_index++;
+
+//         decoded_data_vec.insert(decoded_data_vec.end(),
+//                                 run_length * data_type_size,
+//                                 encoded_data_vec[byte_index]);
+
+//         byte_index += data_type_size;
+
+//     }
+// }
+
 void RLR::Encode_With_One_Byte_Run_Length() {
     encoded_data_vec.clear();
     const uint8_t data_type_size = this->Get_Data_Type_Size();
     encoded_data_vec.reserve(binary_data_vec.size());
-    auto byte_index = 0;
-
-    std::vector<char> current_block(binary_data_vec.begin() + byte_index,
-                                    binary_data_vec.begin() + byte_index + data_type_size);
+    size_t byte_index = 0;
 
     while (byte_index < binary_data_vec.size()) {
         uint8_t run_length = 1;
-        int next_index = byte_index + data_type_size;
-        current_block.assign(binary_data_vec.begin() + byte_index,
-                             binary_data_vec.begin() + byte_index + data_type_size);
+        size_t next_index = byte_index + data_type_size;
 
         while (next_index < binary_data_vec.size() && (run_length < ONE_BYTE_MAX) &&
-                (std::equal(current_block.begin(), current_block.end(), binary_data_vec.begin() + next_index))) {
+               std::equal(binary_data_vec.begin() + byte_index,
+                          binary_data_vec.begin() + byte_index + data_type_size,
+                          binary_data_vec.begin() + next_index)) {
 
             run_length++;
             next_index += data_type_size;
         }
         encoded_data_vec.push_back(static_cast<char>(run_length));
-        encoded_data_vec.insert(encoded_data_vec.end(), current_block.begin(), current_block.end());
+        encoded_data_vec.insert(encoded_data_vec.end(),
+                                binary_data_vec.begin() + byte_index,
+                                binary_data_vec.begin() + byte_index + data_type_size);
         byte_index = next_index;
     }
 
     encoded_data_vec.shrink_to_fit();
 }
 
+
 void RLR::Decode_With_One_Byte_Run_Length() {
     decoded_data_vec.clear();
-
     const uint8_t data_type_size = this->Get_Data_Type_Size();
-    auto byte_index = 0;
+    size_t byte_index = 0;
 
     while (byte_index < encoded_data_vec.size()) {
         const uint8_t run_length = static_cast<uint8_t>(encoded_data_vec[byte_index]);
-
         byte_index++;
 
-        decoded_data_vec.insert(decoded_data_vec.end(),
-                                run_length * data_type_size,
-                                encoded_data_vec[byte_index]);
+        for (uint8_t i = 0; i < run_length; ++i) {
+            decoded_data_vec.insert(decoded_data_vec.end(),
+                                    encoded_data_vec.begin() + byte_index,
+                                    encoded_data_vec.begin() + byte_index + data_type_size);
+        }
 
         byte_index += data_type_size;
-
     }
 }
+
 
 
 void RLR::Encode_With_Two_Byte_Run_Length() {
@@ -322,6 +382,11 @@ void RLR::Encode_With_Four_Byte_Run_Length(){
 
 void RLR::Decode_With_Four_Byte_Run_Length(){
     decoded_data_vec.clear();
+    // PRINT_DEBUG("binary_data_vec.size(): " + std::to_string(binary_data_vec.size()));
+    // print_binary_data_vec();
+    for(int i = 0; i < binary_data_vec.size(); i++){
+        PRINT_DEBUG("binary_data_vec[" + std::to_string(i) + "]: " + std::to_string(binary_data_vec[i]));
+    }
 
     const uint8_t data_type_size = this->Get_Data_Type_Size();
     auto byte_index = 0;
@@ -587,6 +652,7 @@ void RLR::Encode_With_Move_To_Front_Transformation_With_One_Byte_Run_Length() {
     std::vector<char> alphabet_vec = ONE_BYTE_ALPHABET_VEC;
     encoded_data_vec.clear();
     encoded_data_vec.reserve(binary_data_vec.size());
+
 
     char prev_transformed_byte = -1; // Initialize to a value that is not in the alphabet
     uint8_t run_length = 0;

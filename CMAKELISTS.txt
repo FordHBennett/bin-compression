@@ -65,7 +65,7 @@ target_include_directories(geobin_compression PUBLIC src/classes)
 target_include_directories(geobin_compression PUBLIC src/functions)
 
 # Debug build options
-set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O0 -g3 -Wall -fsanitize=undefined -fsanitize=address -fsanitize=memory -fno-omit-frame-pointer -D_GLIBCXX_DEBUG -D_GLIBCXX_DEBUG_PEDANTIC -gdwarf-5 -fstack-protector")
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O0 -g3 -Wall -fsanitize=undefined -fsanitize=address -fno-omit-frame-pointer -D_GLIBCXX_DEBUG -D_GLIBCXX_DEBUG_PEDANTIC -gdwarf-5 -fstack-protector")
 
 
 # Release build options
