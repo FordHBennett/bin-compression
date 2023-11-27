@@ -32,7 +32,9 @@ const std::vector<std::filesystem::path> Get_Geobin_And_Geometa_Directory_Path_V
 
 std::filesystem::path Remove_all_Seperators_From_Path(const std::filesystem::path& path);
 
-const uint64_t Get_Side_Resolution(const std::filesystem::path& stem_path, RLR& rlr_obj);
+const uint64_t Get_Side_Resolution(const std::filesystem::path& stem_path, CommonStats& stats_obj);
+
+const int Get_Lod_Number(const std::filesystem::path& stem_path);
 
 void Run_RLR_Compression_Decompression_On_Files(const std::vector<std::filesystem::path>& files, RLR& rlr_obj);
 

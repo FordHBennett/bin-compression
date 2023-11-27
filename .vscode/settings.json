@@ -69,6 +69,7 @@
         "algorithm": "cpp",
         "cfenv": "cpp",
         "source_location": "cpp",
-        "strstream": "cpp"
+        "strstream": "cpp",
+        "set": "cpp"
     }
 }

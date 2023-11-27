@@ -175,7 +175,7 @@ std::filesystem::path Remove_all_Seperators_From_Path(const std::filesystem::pat
     return std::filesystem::path{path_string};
 }
 
-const uint64_t Get_Side_Resolution(const std::filesystem::path& stem_path, RLR& rlr_obj) {
+const uint64_t Get_Side_Resolution(const std::filesystem::path& stem_path, CommonStats& stats_obj) {
     auto extract_character_after = [](const std::filesystem::path& path, const std::string& delimiter) -> const std::string {
     const std::string filename = path.filename().string();
     size_t pos = filename.rfind(delimiter);
@@ -208,15 +208,41 @@ const uint64_t Get_Side_Resolution(const std::filesystem::path& stem_path, RLR& 
     PRINT_DEBUG(std::string{"LOD Number: "} + std::to_string(lod_number));
 #endif
 
-    // const uint side_resolution = rlr_obj.Get_Side_Resolution(side, c_number);
-    const uint64_t side_resolution = rlr_obj.Get_Side_Resolution(lod_number);
+    // const uint side_resolution = stats_obj.Get_Side_Resolution(side, c_number);
+    const uint64_t side_resolution = stats_obj.Get_Side_Resolution(lod_number);
 
 #ifdef DEBUG_MODE
     PRINT_DEBUG(std::string{"Side Resolution: " + std::to_string(side_resolution)});
-    PRINT_DEBUG(std::string{"Data Type Size : " + std::to_string(rlr_obj.Get_Data_Type_Size())});
+    PRINT_DEBUG(std::string{"Data Type Size : " + std::to_string(stats_obj.Get_Data_Type_Size())});
 #endif
 
     return side_resolution;
+}
+
+const int Get_Lod_Number(const std::filesystem::path& stem_path) {
+    auto extract_character_after = [](const std::filesystem::path& path, const std::string& delimiter) -> const std::string {
+    const std::string filename = path.filename().string();
+    size_t pos = filename.rfind(delimiter);
+    if (pos != std::string::npos) {
+        size_t start = pos + delimiter.length();
+        while ((start < filename.length()) && !std::isdigit(filename[start])) {
+            start++;
+        }
+        size_t end = start;
+        while ((end < filename.length()) && std::isdigit(filename[end])) {
+            end++;
+        }
+
+        if (start < end) {
+            return filename.substr(start, end - start);
+        }
+    }
+#ifdef DEBUG_MODE
+    ERROR_MSG_AND_EXIT(std::string{"ERROR: Unable to extract number after delimiter: " + delimiter});
+#endif
+};
+
+    return std::stoi(extract_character_after(stem_path, std::string{"_lod"}));
 }
 
 void Run_RLR_Compression_Decompression_On_Files(const std::vector<std::filesystem::path>& files_vec, RLR& rlr_obj) {
@@ -247,6 +273,7 @@ void Run_RLR_Compression_Decompression_On_Files(const std::vector<std::filesyste
 
         const uint64_t side_resolution = Get_Side_Resolution(stem_path, rlr_obj);
         uint64_t bytes_per_row = side_resolution * rlr_obj.Get_Data_Type_Size();
+        rlr_obj.number_of_bytes_per_row = bytes_per_row;
         uint64_t num_rows = file_size / bytes_per_row;
 
 
@@ -295,6 +322,7 @@ void Run_RLR_Compression_Decompression_On_Files(const std::vector<std::filesyste
 #endif
         for(int iteration = 0; iteration < rlr_obj.Get_Number_Of_Iterations(); iteration++){
             for(uint64_t row = 0; row<num_rows; row++){
+                rlr_obj.row_number = row;
                 // rlr_obj.Read_File(file, bytes_per_row, row);
                 rlr_obj.Read_File(file, bytes_per_row, row);
                 // switch (rlr_obj.Get_Data_Type_Size())
@@ -336,7 +364,9 @@ void Run_RLR_Compression_Decompression_On_Files(const std::vector<std::filesyste
                 // rlr_obj.Compute_Time_Encoded([&rlr_obj](){
                 //     rlr_obj.Encode_With_Four_Byte_Run_Length();
                 // });
-
+                // rlr_obj.Compute_Time_Encoded([&rlr_obj](){
+                //     rlr_obj.Encode_With_XOR_Transformation();
+                // });
 
                 rlr_obj.Write_Compressed_File(encoded_file_path);
 
@@ -346,6 +376,10 @@ void Run_RLR_Compression_Decompression_On_Files(const std::vector<std::filesyste
 
                 // rlr_obj.Compute_Time_Decoded([&rlr_obj](){
                 //     rlr_obj.Decode_With_Four_Byte_Run_Length();
+                // });
+
+                // rlr_obj.Compute_Time_Decoded([&rlr_obj](){
+                //     rlr_obj.Decode_With_XOR_Transformation();
                 // });
 
 
@@ -399,21 +433,50 @@ void Run_RLR_Compression_Decompression_On_Files(const std::vector<std::filesyste
 }
 
 void Write_Shannon_Fano_Frequencies_To_Files(const std::vector<std::filesystem::path>& files, ShannonFano& shannon_fano) {
+    shannon_fano.Set_Data_Type_Size_And_Side_Resolutions(Get_Geometa_File_Path(files.at(0).parent_path()));
+
     for(const auto& file : files) {
         const std::filesystem::path stem_path = file.stem();
-        const std::filesystem::path freq_path = std::filesystem::path{"shannon_fano_frequency_files"} /
-                                                        stem_path / std::filesystem::path{stem_path.string() + std::string{".json"}};
+        const std::filesystem::path json_path = std::filesystem::path{"shannon_fano_frequency_files"} /
+                                                        file.parent_path() / std::filesystem::path{stem_path.string() + std::string{".json"}};
+
+        if(!std::filesystem::exists(json_path.parent_path())) {
+            std::filesystem::create_directories(json_path.parent_path());
+        }
+        // const int lod_number = Get_Lod_Number(stem_path);
+        const uint64_t side_resolution = Get_Side_Resolution(stem_path, shannon_fano);
+        uint64_t bytes_per_row = side_resolution * shannon_fano.Get_Data_Type_Size();
+        uint64_t num_rows = Get_File_Size_Bytes(file) / bytes_per_row;
 
 
+#ifdef DEBUG_MODE
+        PRINT_DEBUG(std::string{"Number of rows: " + std::to_string(num_rows)});
+        PRINT_DEBUG(std::string{"Bytes per row: " + std::to_string(bytes_per_row)});
+        if(Get_File_Size_Bytes(file) % bytes_per_row != 0) {
+            PRINT_DEBUG(std::string{"ERROR: File size is not a multiple of the number of bytes per row."});
+            PRINT_DEBUG(std::string{"ERROR: File size: " + std::to_string(Get_File_Size_Bytes(file))});
+            PRINT_DEBUG(std::string{"ERROR: Bytes per row: " + std::to_string(bytes_per_row)});
+            PRINT_DEBUG(std::string{"ERROR: This probably means that shannon_fano.data_type_size is wrong for the file that is being commpressed"});
+            PRINT_DEBUG(std::string{"ERROR: You are trying to compress " + file.string()});
+            // PRINT_DEBUG(std::string{"ERROR: Side Number is: " + extract_character_after(stem_path, "_s")});
+            // PRINT_DEBUG(std::string{"ERROR: C Number is: " + extract_character_after(stem_path, "_c")});
+            PRINT_DEBUG(std::string{"ERROR: Side Resolution is: " + std::to_string(side_resolution)});
+            PRINT_DEBUG(std::string{"ERROR: Bytes per row is: " + std::to_string(bytes_per_row)});
+            PRINT_DEBUG(std::string{"ERROR: Bytes per row is: " + std::to_string(bytes_per_row)});
+            ERROR_MSG_AND_EXIT(std::string{"ERROR:"});
+        }
+#endif
 
-        // if(!std::filesystem::exists(freq_path.parent_path().parent_path())) {
-        //     std::filesystem::create_directories(freq_path.parent_path());
-        // }
-
-        if(!std::filesystem::exists(freq_path.parent_path())) {
-            std::filesystem::create_directories(freq_path.parent_path());
+        if(shannon_fano.Get_Data_Type_Size() == 4) {
+            shannon_fano.Write_Binary_Frequencies_Per_File_To_Json_File(file, json_path,  Get_File_Size_Bytes(file));
+        } else {
+            for(uint64_t row = 0; row<num_rows; row++){
+                shannon_fano.Write_Binary_Frequencies_Per_Row_To_Json_File(file, json_path, row, bytes_per_row);
+            }
         }
 
-        shannon_fano.Write_Frequencies_To_JSON_File(file, freq_path);
+        // shannon_fano.Write_Binary_Frequencies_Per_File_To_Json_File(file, json_path,  Get_File_Size_Bytes(file));
+
+        // shannon_fano.Write_Frequencies_To_JSON_File(file, json_path);
     }
 }

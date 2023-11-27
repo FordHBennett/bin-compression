@@ -68,8 +68,14 @@ class RLR : public CommonStats {
         void Encode_With_XOR_Transformation_With_Four_Byte_Run_Length();
         void Decode_With_XOR_Transformation_With_Four_Byte_Run_Length();
 
+        void Encode_Using_Planet_Data_Headers(const int& number_of_bytes_per_row, const int& row_number);
+        void Decode_Using_Planet_Data_Headers(const std::filesystem::path& file_path, const int& number_of_bytes_to_read, const int& row_number);
+
         void Write_Compressed_File(const std::filesystem::path& file_path) const;
         void Write_Decompressed_File(const std::filesystem::path& file_path) const;
+
+
+
 
 
         //getters
@@ -83,11 +89,14 @@ class RLR : public CommonStats {
         //functions
         // void getFileStats(std::vector<char> &binaryData, const char* encodedFilename, const char* decodedFilename, size_t fileSize, std::filesystem::path& currentDir);
         // Control_Stats getStatsFromEncodingDecodingFunctions(const char* filename, int numIterations, std::filesystem::path& currentDir, CommonStats &localStats);
+        uint64_t number_of_bytes_per_row = 0;
+        uint64_t row_number = 0;
+
 
 
     private:
         const char* compression_type = "rlr_1B";
-        std::vector<char> binary_data_vec;
+        std::vector<char> binary_data_vec = {0};
         std::vector<char> encoded_data_vec = {0};
         std::vector<char> decoded_data_vec = {0};
         // std::vector<char> encoded_move_to_front_data_vec = {0};
