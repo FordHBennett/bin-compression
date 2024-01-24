@@ -13,7 +13,7 @@ set(SOURCES
     src/classes/common_stats.cpp
     src/classes/rlr_class.cpp
     src/classes/shannon_fano.cpp
-    # src/classes/lz4_class.cpp
+    # src/classes/lzw_class.cpp
     # src/classes/lzw_class.cpp
     # src/classes/lzp_class.cpp
     # src/classes/huffman_stats.cpp
@@ -29,7 +29,7 @@ set(HEADERS
     src/classes/rlr_class.hpp
     src/classes/alphabet_table.hpp
     src/classes/shannon_fano.hpp
-    # src/classes/lz4_class.hpp
+    # src/classes/lzw_class.hpp
     # src/classes/lzw_class.hpp
     # src/classes/lzp_class.hpp
     # src/classes/huffman_stats.hpp
@@ -69,7 +69,7 @@ set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O0 -g3 -Wall -fsanitize=und
 
 
 # Release build options
-set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3 -finline-functions -faligned-allocation -fapprox-func -fjump-tables -freciprocal-math -fstrict-flex-arrays=2 -funroll-loops -fvectorize")
+set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3 -finline-functions -faligned-allocation -fapprox-func -fjump-tables  -fstrict-flex-arrays=2 -funroll-loops -fvectorize")
 
 # Custom Release with Debug Info build options
 set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} -O2 -g -gdwarf-5 -fno-omit-frame-pointer -fdump-tree-cfg-graph -c")

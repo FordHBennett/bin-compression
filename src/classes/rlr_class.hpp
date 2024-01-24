@@ -4,6 +4,7 @@
 #include "../functions/file_functions.hpp"
 #include <vector>
 #include <filesystem>
+#include <cstdint>
 
 
 
@@ -83,6 +84,7 @@ class RLR : public CommonStats {
         const std::vector<char> Get_Encoded_Data_Vec() const;
         const std::vector<char> Get_Decoded_Data_Vec() const;
         const std::vector<char> Get_Binary_Data_Vec() const;
+        
 
 
 
@@ -95,10 +97,11 @@ class RLR : public CommonStats {
 
 
     private:
-        const char* compression_type = "rlr_1B";
+        const char* compression_type = "mtf_rlr_1B";
         std::vector<char> binary_data_vec = {0};
         std::vector<char> encoded_data_vec = {0};
         std::vector<char> decoded_data_vec = {0};
+
         // std::vector<char> encoded_move_to_front_data_vec = {0};
         // std::vector<char> decoded_move_to_frontsquared_data_vec = {0};
         // std::vector<char> sentinel_vec = {0};

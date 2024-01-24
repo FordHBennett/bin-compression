@@ -1,15 +1,15 @@
 #pragma once
 #include "common_stats.hpp"
 // #include "../functions/file_functions.hpp"
-// #include "lz4.h"
+// #include "lzw.h"
 
-class LZ4 : public CommonStats {
+class LZW : public CommonStats {
     public:
         // Constructors
-        LZ4();
+        LZW();
 
         //compress function (size_t max_bytes, size_t ringBufferBytes)
-        //create a lz4 stream
+        //create a lzw stream
         // void encode(std::ifstream& input_stream, const size_t& max_bytes, const size_t& ring_buffer_bytes);
 
         // //decompress function
@@ -19,9 +19,9 @@ class LZ4 : public CommonStats {
 
         // void Write_Decompressed_File(const std::vector<char>& decoded_data, const char* filename);
 
-        const int Compress_File(FILE* input_file_ptr, FILE* output_file_ptr);
+        void Encoding_Using_LZW();
 
-        const int Decompress_File(FILE* input_file_ptr, FILE* output_file_ptr);
+        void Decoding_Using_LZW();
 
 
 
@@ -32,7 +32,8 @@ class LZ4 : public CommonStats {
         std::vector<char> Get_Decoded_Data() const;
 
     private:
-        std::vector<char> encoded_data;
-        std::vector<char> decoded_data;
-        const char* compression_type = "lz4";
+        std::vector<char> binary_data_vec = {0};
+        std::vector<char> encoded_data_vec = {0};
+        std::vector<char> decoded_data_vec = {0};
+        const char* compression_type = "lzw";
 };

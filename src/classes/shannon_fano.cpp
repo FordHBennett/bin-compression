@@ -109,28 +109,40 @@ void ShannonFano::Write_Binary_Frequencies_Per_Row_To_Json_File(const std::files
     // previous row variables
     std::unordered_map<char, int> previous_byte_to_index_map;
     std::vector<std::pair<char, int>> previous_byte_frequencies_vec;
-    int previous_row_number = 0;
+    size_t previous_row_number = 0;
     size_t previous_start_position = 0;
 
-    for(int row_number = 0; row_number < file_size / row_length; row_number++){
-        binary_data_vec.resize(row_length);
+    for(size_t row_number = 0; row_number < file_size / row_length; row_number++){
+        binary_data_vec.resize(row_length*2);
         // populate the binary data vector with the data from the file starting at row_length * row
         std::streampos start_position = static_cast<std::streampos>(row_length) * row_number;
-        input_file.seekg(start_position);
-    #ifdef DEBUG
+        input_file.seekg(start_position, std::ios::beg);
+
+    // #ifdef DEBUG
         if (input_file.fail()) {
+            std::cerr << "Error: Unable to seek to the specified position in the file." << '\n';
+            std::cerr << "position: " << start_position << '\n';
+            std::cerr << "row_length: " << row_length << '\n';
+            std::cerr << "row_number: " << row_number << '\n';
+            std::cerr << "file_size: " << file_size << '\n';
+            std::cerr << "binary_path: " << binary_path << '\n';
+            std::cerr << "json_path: " << json_path << '\n';
+            std::cerr << "current_path: " << std::filesystem::current_path() << '\n';
             ERROR_MSG_AND_EXIT("Error: Unable to seek to the specified position in the file.");
         }
-    #endif
+    // #endif
 
         // Read the data from the file into the vector.
         input_file.read(reinterpret_cast<char*>(binary_data_vec.data()), row_length);
-    #ifdef DEBUG
+        // if(binary_data_vec.size() == 0){
+        //     ERROR_MSG_AND_EXIT("Error: Unable to read from the file.");
+        // }
+    // #ifdef DEBUG
     if (input_file.fail() && !input_file.eof()) {
         ERROR_MSG_AND_EXIT("Error: Unable to read from the file.");
     }
-    #endif
-        input_file.close();
+    // #endif
+        // input_file.close();
 
         switch(data_type_size){
             case 1:{
@@ -167,41 +179,21 @@ void ShannonFano::Write_Binary_Frequencies_Per_Row_To_Json_File(const std::files
 
                 start_position = output_file.tellp();
                 // write the json to the file
-                if((byte_frequencies_vec == previous_byte_frequencies_vec) && row_number != 0 && (row_number % 100 == 0)){
-                    // delete bytes from start_position to end of file
-                    output_file.close();
-                    output_file.open(json_path, std::ios::binary | std::ios::out | std::ios::in);
-                    output_file.seekp(start_position);
+                // if((byte_to_index_map == previous_byte_to_index_map) && row_number != 0 && (row_number % 100 == 0)){
+                //     // delete bytes from previous_start_position to end of file
+                //     output_file.close();
+                //     output_file.open(json_path, std::ios::binary | std::ios::out | std::ios::in);
+                //     output_file.seekp(previous_start_position);
 
-                    output_file << "{\n";
-                    output_file << "    \"" << binary_path_string << "_row_" << previous_row_number << '_' << row_number << "\": {\n";
-                    output_file << "        \"total_amount_of_unique_bytes\": " << previous_byte_frequencies_vec.size() << ",\n";
-                    // write the lookup table to the file
-                    output_file << "        \"data_type_size\": 1" << ",\n";
-                    output_file << "        \"lookup_table\": {\n";
-                    for(auto it = previous_byte_to_index_map.begin(); it != previous_byte_to_index_map.end(); it++){
-                        output_file << "        \"" << static_cast<unsigned int>(static_cast<uint8_t>(it->first)) << "\": " << it->second;
-                        if(std::next(it) != previous_byte_to_index_map.end()){
-                            output_file << ",\n";
-                        } else {
-                            output_file << "\n";
-                        }
-                    }
-                    output_file << "        }\n";
-                    output_file << "    }\n";
-                    output_file << "}\n\n";
-                    break;
-                }
-                // if(byte_frequencies_vec.size() < 16){
                 //     output_file << "{\n";
-                //     output_file << "    \"" << binary_path_string << "_row_" << row_number << "\": {\n";
-                //     output_file << "        \"total_amount_of_unique_bytes\": " << byte_frequencies_vec.size() << ",\n";
+                //     output_file << "    \"" << binary_path_string << "_row_" << previous_row_number << '_' << row_number << "\": {\n";
+                //     output_file << "        \"total_amount_of_unique_bytes\": " << previous_byte_frequencies_vec.size() << ",\n";
                 //     // write the lookup table to the file
-                //     output_file << "        \"data_type_size\": " << data_type_size << ",\n";
+                //     output_file << "        \"data_type_size\": 1" << ",\n";
                 //     output_file << "        \"lookup_table\": {\n";
-                //     for(auto it = byte_to_index_map.begin(); it != byte_to_index_map.end(); it++){
+                //     for(auto it = previous_byte_to_index_map.begin(); it != previous_byte_to_index_map.end(); it++){
                 //         output_file << "        \"" << static_cast<unsigned int>(static_cast<uint8_t>(it->first)) << "\": " << it->second;
-                //         if(std::next(it) != byte_to_index_map.end()){
+                //         if(std::next(it) != previous_byte_to_index_map.end()){
                 //             output_file << ",\n";
                 //         } else {
                 //             output_file << "\n";
@@ -210,11 +202,32 @@ void ShannonFano::Write_Binary_Frequencies_Per_Row_To_Json_File(const std::files
                 //     output_file << "        }\n";
                 //     output_file << "    }\n";
                 //     output_file << "}\n\n";
+                // }else{
+                //     previous_row_number = row_number;
+                //     previous_byte_to_index_map = byte_to_index_map;
+                //     previous_byte_frequencies_vec = byte_frequencies_vec;
+                //     previous_start_position = start_position;
                 // }
-                previous_row_number = row_number;
-                previous_byte_to_index_map = byte_to_index_map;
-                previous_byte_frequencies_vec = byte_frequencies_vec;
-                previous_start_position = start_position;
+                if(byte_frequencies_vec.size() < 16){
+                    output_file << "{\n";
+                    output_file << "    \"" << binary_path_string << "_row_" << row_number << "\": {\n";
+                    output_file << "        \"total_amount_of_unique_bytes\": " << byte_frequencies_vec.size() << ",\n";
+                    // write the lookup table to the file
+                    output_file << "        \"data_type_size\": " << data_type_size << ",\n";
+                    output_file << "        \"lookup_table\": {\n";
+                    for(auto it = byte_to_index_map.begin(); it != byte_to_index_map.end(); it++){
+                        output_file << "        \"" << static_cast<unsigned int>(static_cast<uint8_t>(it->first)) << "\": " << it->second;
+                        if(std::next(it) != byte_to_index_map.end()){
+                            output_file << ",\n";
+                        } else {
+                            output_file << "\n";
+                        }
+                    }
+                    output_file << "        }\n";
+                    output_file << "    }\n";
+                    output_file << "}\n\n";
+                }
+
 
                 output_file.close();
                 break;
@@ -380,213 +393,314 @@ void ShannonFano::Write_Binary_Frequencies_Per_Row_To_Json_File(const std::files
 
 }
 
-void ShannonFano::Write_Binary_Frequencies_Per_File_To_Json_File(const std::filesystem::path& binary_path, const std::filesystem::path& json_path, const int& number_of_bytes_to_read) const{
-    std::vector<char> binary_data_vec;
-    const uint8_t volatile data_type_size = this->Get_Data_Type_Size();
-    std::ifstream input_file(binary_path, std::ios::binary);
-#ifdef DEBUG
-    if(!input_file) {
-        ERROR_MSG_AND_EXIT("Error: Unable to open the file.");
-    }
-#endif
-
-    binary_data_vec.resize(number_of_bytes_to_read);
-    // populate the binary data vector with the data from the file starting at number_of_bytes_to_read * row
-    std::streampos start_position = 0;
-    input_file.seekg(start_position);
-#ifdef DEBUG
-    if (input_file.fail()) {
-        ERROR_MSG_AND_EXIT("Error: Unable to seek to the specified position in the file.");
-    }
-#endif
-
-    // Read the data from the file into the vector.
-    input_file.read(reinterpret_cast<char*>(binary_data_vec.data()), number_of_bytes_to_read);
-#ifdef DEBUG
-if (input_file.fail() && !input_file.eof()) {
-    ERROR_MSG_AND_EXIT("Error: Unable to read from the file.");
+std::string ShannonFano::Format_Path_String(const std::filesystem::path& path) const {
+    std::string formatted_string = path.string();
+    std::replace(formatted_string.begin(), formatted_string.end(), '-', '_');
+    std::replace(formatted_string.begin(), formatted_string.end(), '/', '_');
+    std::replace(formatted_string.begin(), formatted_string.end(), '.', '_');
+    return formatted_string;
 }
-#endif
-    input_file.close();
 
-    switch(data_type_size){
-        case 1:{
-            //get the frequencies of each byte in the binary data vector
-            std::unordered_map<char, int> byte_frequencies;
-            for(int i = 0; i < binary_data_vec.size(); i++){
-                byte_frequencies[binary_data_vec[i]]++;
-            }
-            // std::ofstream output_file(json_path, std::ios::binary);
-            // append to the file
-            std::ofstream output_file(json_path, std::ios::binary | std::ios::app);
-#ifdef DEBUG
-    if(!output_file) {
-        ERROR_MSG_AND_EXIT("Error: Unable to open the file.");
+std::string ShannonFano::Format_Byte_Pair(int byte_pair) const {
+    std::stringstream ss;
+    ss << "[" << ((byte_pair >> 8) & 0xFF) << ", " << (byte_pair & 0xFF) << "]";
+    return ss.str();
+}
+
+std::string ShannonFano::Format_Byte_Quartet(uint32_t byte_quartet) const {
+    std::stringstream ss;
+    ss << "[" << ((byte_quartet >> 24) & 0xFF) << ", "
+       << ((byte_quartet >> 16) & 0xFF) << ", "
+       << ((byte_quartet >> 8) & 0xFF) << ", "
+       << (byte_quartet & 0xFF) << "]";
+    return ss.str();
+}
+
+// Definitions for helper functions
+std::ifstream ShannonFano::Open_File(const std::filesystem::path& path, std::ios::openmode mode) const {
+    std::ifstream file(path, mode);
+    if (!file) {
+        throw std::runtime_error("Error: Unable to open file at " + path.string());
     }
-#endif
+    return file;
+}
 
-            // remove all - from the path and replace them with _
-            std::string binary_path_string = binary_path.string();
-            std::replace(binary_path_string.begin(), binary_path_string.end(), '-', '_');
-            // remove all / from the path and replace them with _
-            std::replace(binary_path_string.begin(), binary_path_string.end(), '/', '_');
-            // remove all . from the path and replace them with _
-            std::replace(binary_path_string.begin(), binary_path_string.end(), '.', '_');
-
-            //sort the map by value
-            std::vector<std::pair<char, int>> byte_frequencies_vec(byte_frequencies.begin(), byte_frequencies.end());
-            std::sort(byte_frequencies_vec.begin(), byte_frequencies_vec.end(), [](const std::pair<char, int>& a, const std::pair<char, int>& b){
-                return a.second > b.second;
-            });
-
-            // write the json to the file
-            if(byte_frequencies_vec.size() < 16){
-                output_file << "{\n";
-                // output_file << "    \"" << binary_path_string << "\": {\n";
-                // output_file << "        \"total_amount_of_unique_bytes\": " << byte_frequencies_vec.size() << ",\n";
-                // write the lookup table to the file
-                output_file << "        " << binary_path_string << ": {\n";
-                // output_file << "        \"lookup_table\": {\n";
-                // output_file << "#pragma once\n\n";
-
-                // output_file << "const uint8_t " << binary_path_string << "_lookup_table[" << std::to_string(byte_frequencies_vec.size()) << "] = {";
-
-                // for(auto it = byte_frequencies_vec.begin(); it != byte_frequencies_vec.end(); it++){
-                //     output_file << static_cast<unsigned int>(static_cast<uint8_t>(it->first));
-                //     if(std::next(it) != byte_frequencies_vec.end()){
-                //         output_file << ", ";
-                //     }
-                // }
-
-                // iterate through the sorted vector and write the bytes to the file
-                // uint64_t count = 0;
-                for (auto it = byte_frequencies_vec.begin(); it != byte_frequencies_vec.end(); it++) {
-                    output_file << "        \"" << static_cast<unsigned int>(static_cast<uint8_t>(it->first)) << "\": " << it->second;
-                    if (std::next(it) != byte_frequencies_vec.end()) {
-                        output_file << ",\n";
-                    } else {
-                        output_file << "\n";
-                    }
-                    // count++;
-                }
-                // output_file << "        }\n";
-                output_file << "    }\n";
-                output_file << "}\n\n";
-            }
-            break;
-        }
-        case 2:{
-            // use int, int where the key is the first and second byte of the char array and the value is the frequency
-            std::unordered_map<int, int> byte_pair_frequencies;
-            for(int i = 0; i < binary_data_vec.size(); i+=2){
-                int byte_pair = static_cast<unsigned int>(static_cast<uint8_t>(binary_data_vec[i])) << 8 | static_cast<unsigned int>(static_cast<uint8_t>(binary_data_vec[i+1]));
-                byte_pair_frequencies[byte_pair]++;
-            }
-
-            // std::ofstream output_file(json_path, std::ios::binary);
-            // append to the file
-            std::ofstream output_file(json_path, std::ios::binary | std::ios::app);
-#ifdef DEBUG
-    if(!output_file) {
-        ERROR_MSG_AND_EXIT("Error: Unable to open the file.");
+std::vector<char> ShannonFano::Read_Binary_Data(std::ifstream& input_file, int number_of_bytes) const {
+    std::vector<char> data(number_of_bytes);
+    input_file.read(reinterpret_cast<char*>(data.data()), number_of_bytes);
+    if (input_file.fail() && !input_file.eof()) {
+        throw std::runtime_error("Error: Unable to read from the binary file.");
     }
-#endif
+    return data;
+}
 
-            // remove all - from the path and replace them with _
-            std::string binary_path_string = binary_path.string();
-            std::replace(binary_path_string.begin(), binary_path_string.end(), '-', '_');
-            // remove all / from the path and replace them with _
-            std::replace(binary_path_string.begin(), binary_path_string.end(), '/', '_');
-            // remove all . from the path and replace them with _
-            std::replace(binary_path_string.begin(), binary_path_string.end(), '.', '_');
-            // binary_path_string = binary_path_string + std::string{"_lookup_table"};
+template <typename T>
+std::pair<std::unordered_map<T, int>, std::vector<std::pair<T, int>>> ShannonFano::Create_And_Sort_Frequency_Vector(const std::vector<char>& data) const {
+    std::unordered_map<T, int> frequencies;
+    for (auto byte : data) {
+        frequencies[byte]++;
+    }
+    std::vector<std::pair<T, int>> freq_vec(frequencies.begin(), frequencies.end());
+    std::sort(freq_vec.begin(), freq_vec.end(), [](const auto& a, const auto& b) {
+        return a.second > b.second;
+    });
+    return {frequencies, freq_vec};
+}
 
-            // sort the map by value where value = 0 is the most frequent byte pair
-            std::vector<std::pair<int, int>> byte_pair_frequencies_vec(byte_pair_frequencies.begin(), byte_pair_frequencies.end());
-            std::sort(byte_pair_frequencies_vec.begin(), byte_pair_frequencies_vec.end(), [](const std::pair<int, int>& a, const std::pair<int, int>& b){
-                return a.second > b.second;
-            });
+std::string ShannonFano::Generate_Macro_Name(const std::filesystem::path& path) const {
+    std::string name = path.stem().string() + "_LUT";
+    std::transform(name.begin(), name.end(), name.begin(), ::toupper);
+    return name;
+}
 
-            // change the value of the map to be the index of the byte pair in the sorted vector
-            std::unordered_map<int, int> byte_pair_to_index_map;
-            for(int i = 0; i < byte_pair_frequencies_vec.size(); i++){
-                byte_pair_to_index_map[byte_pair_frequencies_vec[i].first] = i;
+void ShannonFano::Write_Binary_Frequencies_Per_File_To_Json_File(const std::filesystem::path& binary_path, const std::filesystem::path& json_path, const int& number_of_bytes_to_read) const {
+    auto input_file = Open_File(binary_path, std::ios::binary);
+    auto binary_data_vec = Read_Binary_Data(input_file, number_of_bytes_to_read);
+
+    std::ofstream output_file(json_path, std::ios::binary | std::ios::trunc);
+    if (!output_file) {
+        ERROR_MSG_AND_EXIT("Error: Unable to open the JSON file.");
+    }
+
+    const uint8_t data_type_size = this->Get_Data_Type_Size();
+
+    switch(data_type_size) {
+        case 1: {
+
+            auto [byte_frequencies, byte_frequencies_vec] = Create_And_Sort_Frequency_Vector<char>(binary_data_vec);
+
+            std::unordered_map<char, int> lookup_table;
+            for (int i = 0; i < byte_frequencies_vec.size(); ++i) {
+                lookup_table[byte_frequencies_vec[i].first] = i;
             }
 
-            // write the json to the file similar to case 2 but with 4 bytes instead of 2
-            if(byte_pair_frequencies_vec.size() < UINT8_MAX){
+            if (lookup_table.size() < 16) {
                 output_file << "{\n";
-                // output_file << "        \"total_amount_of_unique_bytes\": " << byte_pair_frequencies_vec.size() << ",\n";
-                output_file << "        \"" << binary_path_string << "\": {\n";
-                for (auto it = byte_pair_to_index_map.begin(); it != byte_pair_to_index_map.end(); it++) {
-                    output_file << "        \"" << static_cast<unsigned int>(static_cast<uint8_t>(it->first >> 8)) << static_cast<unsigned int>(static_cast<uint8_t>(it->first)) << "\": " << it->second;
-                    if (std::next(it) != byte_pair_to_index_map.end()) {
-                        output_file << ",\n";
-                    } else {
-                        output_file << "\n";
-                    }
+                output_file << "    \"" << Format_Path_String(binary_path) << "\": {\n";
+                output_file << "        \"Data Type Size\": " << static_cast<int>(data_type_size) << ",\n";
+                output_file << "        \"Lookup Table\": {\n";
+                for (const auto& pair : byte_frequencies_vec) {
+                    char byte = pair.first;
+                    int index = lookup_table[byte];
+                    output_file << "            \"" << static_cast<int>(byte) << "\": " << index;
+                    output_file << (pair != byte_frequencies_vec.back() ? "," : "") << "\n";
                 }
+                output_file << "        }\n";
                 output_file << "    }\n";
-                output_file << "}\n\n";
-            }
-
-        }
-        case 4:{
-            // use int, int where the key is the first and second byte of the char array and the value is the frequency
-            std::unordered_map<int, int> byte_pair_frequencies;
-            for(int i = 0; i < binary_data_vec.size(); i+=4){
-                int byte_pair = static_cast<unsigned int>(static_cast<uint8_t>(binary_data_vec[i])) << 24 | static_cast<unsigned int>(static_cast<uint8_t>(binary_data_vec[i+1])) << 16 | static_cast<unsigned int>(static_cast<uint8_t>(binary_data_vec[i+2])) << 8 | static_cast<unsigned int>(static_cast<uint8_t>(binary_data_vec[i+3]));
-                byte_pair_frequencies[byte_pair]++;
-            }
-
-            std::ofstream output_file(json_path, std::ios::binary | std::ios::app);
-
-
-            // remove all - from the path and replace them with _
-            std::string binary_path_string = binary_path.string();
-            std::replace(binary_path_string.begin(), binary_path_string.end(), '-', '_');
-            // remove all / from the path and replace them with _
-            std::replace(binary_path_string.begin(), binary_path_string.end(), '/', '_');
-            // remove all . from the path and replace them with _
-            std::replace(binary_path_string.begin(), binary_path_string.end(), '.', '_');
-            // binary_path_string = binary_path_string + std::string{"_lookup_table"};
-
-            // sort the map by value where value = 0 is the most frequent byte pair
-            std::vector<std::pair<int, int>> byte_pair_frequencies_vec(byte_pair_frequencies.begin(), byte_pair_frequencies.end());
-            std::sort(byte_pair_frequencies_vec.begin(), byte_pair_frequencies_vec.end(), [](const std::pair<int, int>& a, const std::pair<int, int>& b){
-                return a.second > b.second;
-            });
-
-            if(byte_pair_frequencies_vec.size() < UINT16_MAX){
-                output_file << "{\n";
-                // output_file << "    \"" << binary_path_string << "\": {\n";
-                // output_file << "        \"total_amount_of_unique_bytes\": " << byte_pair_frequencies_vec.size() << ",\n";;
-                output_file << "        " << binary_path_string << ": {\n";
-                for (auto it = byte_pair_frequencies_vec.begin(); it != byte_pair_frequencies_vec.end(); it++) {
-                    output_file << "        \"" << static_cast<unsigned int>(static_cast<uint8_t>(it->first >> 24)) << static_cast<unsigned int>(static_cast<uint8_t>(it->first >> 16)) << static_cast<unsigned int>(static_cast<uint8_t>(it->first >> 8)) << static_cast<unsigned int>(static_cast<uint8_t>(it->first)) << "\": " << it->second;
-                    if (std::next(it) != byte_pair_frequencies_vec.end()) {
-                        output_file << ",\n";
-                    } else {
-                        output_file << "\n";
-                    }
-                }
-                output_file << "    }\n";
-                output_file << "}\n\n";
+                output_file << "}\n";
             }
 
             break;
+        }
+        case 2: {
+            auto [byte_pair_frequencies, byte_pair_frequencies_vec] = Create_And_Sort_Frequency_Vector<int>(binary_data_vec);
 
+            // Create lookup table mapping byte pairs to indices
+            std::unordered_map<int, int> lookup_table;
+            for (int i = 0; i < byte_pair_frequencies_vec.size(); ++i) {
+                lookup_table[byte_pair_frequencies_vec[i].first] = i;
+            }
+
+            // Write the lookup table to the JSON file
+            if (lookup_table.size() < UINT8_MAX) {
+                output_file << "{\n";
+                output_file << "    \"" << Format_Path_String(binary_path) << "\": {\n";
+                output_file << "        \"Data Type Size\": " << static_cast<int>(data_type_size) << ",\n";
+                output_file << "        \"Lookup Table\": {\n";
+                for (const auto& pair : byte_pair_frequencies_vec) {
+                    int byte_pair = pair.first;
+                    int index = lookup_table[byte_pair];
+                    output_file << "            \"" << Format_Byte_Pair(byte_pair) << "\": " << index;
+                    output_file << (pair != byte_pair_frequencies_vec.back() ? "," : "") << "\n";
+                }
+                output_file << "        }\n";
+                output_file << "    }\n";
+                output_file << "}\n";
+            }
+            break;
+        }
+        case 4: {
+            auto [byte_quartet_frequencies, byte_quartet_frequencies_vec] = Create_And_Sort_Frequency_Vector<uint32_t>(binary_data_vec);
+
+            std::unordered_map<uint32_t, int> lookup_table;
+            for (int i = 0; i < byte_quartet_frequencies_vec.size(); ++i) {
+                lookup_table[byte_quartet_frequencies_vec[i].first] = i;
+            }
+            if (lookup_table.size() < UINT16_MAX) {
+                output_file << "{\n";
+                output_file << "    \"" << Format_Path_String(binary_path) << "\": {\n";
+                output_file << "        \"Data Type Size\": " << static_cast<int>(data_type_size) << ",\n";
+                output_file << "        \"Lookup Table\": {\n";
+                for (const auto& pair : byte_quartet_frequencies_vec) {
+                    uint32_t byte_quartet = pair.first;
+                    int index = lookup_table[byte_quartet];
+                    output_file << "            \"" << Format_Byte_Quartet(byte_quartet) << "\": " << index;
+                    output_file << (pair != byte_quartet_frequencies_vec.back() ? "," : "") << "\n";
+                }
+                output_file << "        }\n";
+                output_file << "    }\n";
+                output_file << "}\n";
+            }
+            break;
         }
         default:
             ERROR_MSG_AND_EXIT("Error: Invalid data type size.");
             break;
     }
 
-        //if output file is empty then delete it
-    std::filesystem::path output_file_path = json_path;
-    std::ifstream output_file(output_file_path);
-    if(output_file.peek() == std::ifstream::traits_type::eof()){
+    // If output file is empty then delete it
+    if(output_file.tellp() == 0) {
         output_file.close();
-        std::filesystem::remove(output_file_path);
+        std::filesystem::remove(json_path);
     }
+
+    output_file.close();
+
+}
+
+void ShannonFano::Write_Lookup_Table_To_Header_File(const std::filesystem::path& binary_path, const std::filesystem::path& header_path, const int& number_of_bytes_to_read) const {
+    auto input_file = Open_File(binary_path, std::ios::binary);
+    auto binary_data_vec = Read_Binary_Data(input_file, number_of_bytes_to_read);
+
+    std::ofstream output_file(header_path, std::ios::binary | std::ios::app);
+    if (!output_file) {
+        ERROR_MSG_AND_EXIT("Error: Unable to open the header file.");
+    }
+
+    const uint8_t data_type_size = this->Get_Data_Type_Size();
+    std::string macro_name = Generate_Macro_Name(binary_path);
+
+    switch(data_type_size) {
+        case 1: {
+            auto [byte_frequencies, byte_frequencies_vec] = Create_And_Sort_Frequency_Vector<char>(binary_data_vec);
+            std::unordered_map<char, int> lookup_table;
+            for (int i = 0; i < byte_frequencies_vec.size(); ++i) {
+                lookup_table[byte_frequencies_vec[i].first] = i;
+            }
+
+            if (lookup_table.size() < 16) {
+                std::string macro_name = Format_Path_String(binary_path) + "_LUT";
+                std::transform(macro_name.begin(), macro_name.end(), macro_name.begin(), ::toupper); // Convert macro name to uppercase
+                output_file << "#ifndef " << macro_name << "_H\n";
+                output_file << "#define " << macro_name << "_H\n";
+                output_file << "namespace PlanetData_LUT {\n";
+                output_file << "\n";
+                output_file << "#define " << macro_name << " { \\\n";
+                for (const auto& pair : byte_frequencies_vec) {
+                    char byte = pair.first;
+                    int index = lookup_table[byte];
+                    if(index > 15){
+                        ERROR_MSG_AND_EXIT("Error: Index is greater than 15.");
+                    }
+
+                    output_file << "    { " << static_cast<int>(byte) << ", " << index << " }";
+                    if (pair != byte_frequencies_vec.back()) {
+                        output_file << ", \\\n";
+                    }
+                }
+                output_file << "}\n";
+                output_file << "}\n";  // End of namespace
+                output_file << "#endif // " << macro_name << "_H\n";
+            }
+
+            break;
+        }
+        case 2: {
+            auto [byte_pair_frequencies, byte_pair_frequencies_vec] = Create_And_Sort_Frequency_Vector<int>(binary_data_vec);
+
+            // Create lookup table mapping byte pairs to indices
+            std::unordered_map<int, int> lookup_table;
+            for (int i = 0; i < byte_pair_frequencies_vec.size(); ++i) {
+                lookup_table[byte_pair_frequencies_vec[i].first] = i;
+            }
+
+            if (lookup_table.size() < UINT8_MAX) {
+                std::string macro_name = Format_Path_String(binary_path) + "_LUT";
+                std::transform(macro_name.begin(), macro_name.end(), macro_name.begin(), ::toupper); // Convert macro name to uppercase
+
+                output_file << "#ifndef " << macro_name << "_H\n";
+                output_file << "#define " << macro_name << "_H\n";
+                output_file << "namespace PlanetData_LUT {\n";
+                output_file << "\n";
+                output_file << "#define " << macro_name << " { \\\n";
+                for (const auto& pair : byte_pair_frequencies_vec) {
+                    int byte_pair = pair.first;
+                    int index = lookup_table[byte_pair];
+                    if(index > 255){
+                        ERROR_MSG_AND_EXIT("Error: Index is greater than 255.");
+                    }
+                    output_file << "    { "  << "{ " << static_cast<int>((byte_pair >> 8 & 0xFF)) << ", " << static_cast<int>((byte_pair) & 0xFF) << " }" << ", " << index << " }";
+                    if (pair != byte_pair_frequencies_vec.back()) {
+                        output_file << ", \\\n";
+                    }
+                }
+
+                output_file << "}\n";
+                output_file << "}\n";  // End of namespace
+                output_file << "#endif // " << macro_name << "_H\n";
+            }
+            break;
+        }
+        case 4: {
+            auto [byte_quartet_frequencies, byte_quartet_frequencies_vec] = Create_And_Sort_Frequency_Vector<uint32_t>(binary_data_vec);
+
+            std::unordered_map<uint32_t, int> lookup_table;
+            for (int i = 0; i < byte_quartet_frequencies_vec.size(); ++i) {
+                lookup_table[byte_quartet_frequencies_vec[i].first] = i;
+            }
+            std::string macro_name = Format_Path_String(binary_path) + "_LUT";
+            std::transform(macro_name.begin(), macro_name.end(), macro_name.begin(), ::toupper); // Convert macro name to uppercase
+
+            if (lookup_table.size() < UINT16_MAX) {
+                output_file << "#ifndef " << macro_name << "_H\n";
+                output_file << "#define " << macro_name << "_H\n";
+                output_file << "namespace PlanetData_LUT {\n";
+                output_file << "\n";
+                output_file << "#define " << macro_name << " { \\\n";
+                for (const auto& pair : byte_quartet_frequencies_vec) {
+                    uint32_t byte_quartet = pair.first;
+                    int index = lookup_table[byte_quartet];
+                    if(index > 65535){
+                        ERROR_MSG_AND_EXIT("Error: Index is greater than 65535.");
+                    }
+                    if(lookup_table.size() < UINT8_MAX){
+                        output_file << "    { {"
+                                    << static_cast<int>((byte_quartet >> 24) & 0xFF) << ", "
+                                    << static_cast<int>((byte_quartet >> 16) & 0xFF) << ", "
+                                    << static_cast<int>((byte_quartet >> 8) & 0xFF) << ", "
+                                    << static_cast<int>(byte_quartet & 0xFF)
+                                    << " },  "
+                                    << index
+                                    << " }";
+                    } else{
+                            output_file << "    {  {"
+                                        << static_cast<int>((byte_quartet >> 24) & 0xFF) << ", "
+                                        << static_cast<int>((byte_quartet >> 16) & 0xFF) << ", "
+                                        << static_cast<int>((byte_quartet >> 8) & 0xFF) << ", "
+                                        << static_cast<int>(byte_quartet & 0xFF)
+                                        << " }, { "
+                                        << static_cast<int>((index >> 8) & 0xFF) << ", "
+                                        << static_cast<int>(index & 0xFF)
+                                        << " } }";
+                    }
+                    if (pair != byte_quartet_frequencies_vec.back()) {
+                        output_file << ", \\\n";
+                    }
+                }
+
+                output_file << "}\n";
+                output_file << "}\n";  // End of namespace
+                output_file << "#endif // " << macro_name << "_H\n";
+            }
+            break;
+        }
+        default:
+            ERROR_MSG_AND_EXIT("Error: Invalid data type size.");
+            break;
+    }
+
+    if(output_file.tellp() == 0) {
+        std::filesystem::remove(header_path);
+    }
+    output_file.close();
 }

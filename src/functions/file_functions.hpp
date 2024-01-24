@@ -14,6 +14,14 @@ class RLR;
 // class Control_Stats;
 
 
+std::ifstream Open_Input_File(const std::filesystem::path& file_path);
+
+template <typename Predicate>
+int Count_Files_With_Condition(const std::filesystem::path& dir_path, Predicate pred);
+
+template <typename Predicate>
+std::vector<std::filesystem::path> Get_Files_With_Condition(const std::filesystem::path& dir_path, Predicate pred);
+
 void Generate_Random_Binary_File(const char* filename, long long fileSize, double zeroProbability);
 
 const uint64_t Get_File_Size_Bytes(const std::filesystem::path& file_path);
@@ -38,4 +46,9 @@ const int Get_Lod_Number(const std::filesystem::path& stem_path);
 
 void Run_RLR_Compression_Decompression_On_Files(const std::vector<std::filesystem::path>& files, RLR& rlr_obj);
 
+void Run_LUT_Compression_Decompression_On_Files(const std::vector<std::filesystem::path>& files, RLR& rlr_obj);
+
+
 void Write_Shannon_Fano_Frequencies_To_Files(const std::vector<std::filesystem::path>& files, ShannonFano& shannon_fano);
+
+void Write_Shannon_Fano_Lookup_Table_To_Files(const std::vector<std::filesystem::path>& files, ShannonFano& shannon_fano);
