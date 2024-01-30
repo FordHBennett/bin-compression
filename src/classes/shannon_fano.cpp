@@ -453,7 +453,61 @@ std::string ShannonFano::Generate_Macro_Name(const std::filesystem::path& path) 
     return name;
 }
 
-void ShannonFano::Write_Binary_Frequencies_Per_File_To_Json_File(const std::filesystem::path& binary_path, const std::filesystem::path& json_path, const int& number_of_bytes_to_read) const {
+template<typename T>
+std::unordered_map<T, int> ShannonFano::Create_Lookup_Table(const std::vector<std::pair<T, int>>& frequency_vec) {
+    std::unordered_map<T, int> lookup_table;
+    for (int i = 0; i < frequency_vec.size(); ++i) {
+        lookup_table[frequency_vec[i].first] = i;
+    }
+    return lookup_table;
+}
+
+template<typename T>
+void ShannonFano::Write_To_Json(std::ofstream& output_file, const std::filesystem::path& binary_path, uint8_t data_type_size, const std::vector<std::pair<T, int>>& frequency_vec, const std::unordered_map<T, int>& lookup_table) {
+    output_file << "{\n";
+    output_file << "    \"" << Format_Path_String(binary_path) << "\": {\n";
+    output_file << "        \"Data Type Size\": " << static_cast<int>(data_type_size) << ",\n";
+    output_file << "        \"Lookup Table\": {\n";
+
+    for (auto it = frequency_vec.begin(); it != frequency_vec.end(); ++it) {
+        T byte_value = it->first;
+        int index = lookup_table.at(byte_value);
+        output_file << "            \"" << Format_Byte_Value(byte_value) << "\": {\n";
+        output_file << "                \"Index\": " << index << ",\n";
+        output_file << "                \"Frequency\": " << it->second << "\n";
+        output_file << "            }" << (std::next(it) != frequency_vec.end() ? "," : "") << "\n";
+    }
+
+    output_file << "        }\n";
+    output_file << "    }\n";
+    output_file << "}\n";
+}
+
+
+std::string ShannonFano::Format_Byte_Value(char byte) const {
+    return std::to_string(static_cast<int>(byte));
+}
+
+std::string ShannonFano::Format_Byte_Value(int byte_pair) const {
+    std::stringstream ss;
+    ss << "[" << ((byte_pair >> 8) & 0xFF) << ", " << (byte_pair & 0xFF) << "]";
+    return ss.str();
+}
+
+
+std::string ShannonFano::Format_Byte_Value(uint32_t byte_quartet) const {
+    std::stringstream ss;
+    ss << "[" << ((byte_quartet >> 24) & 0xFF) << ", "
+       << ((byte_quartet >> 16) & 0xFF) << ", "
+       << ((byte_quartet >> 8) & 0xFF) << ", "
+       << (byte_quartet & 0xFF) << "]";
+    return ss.str();
+}
+
+
+
+
+void ShannonFano::Write_Binary_Frequencies_Per_File_To_Json_File(const std::filesystem::path& binary_path, const std::filesystem::path& json_path, const int& number_of_bytes_to_read) {
     auto input_file = Open_File(binary_path, std::ios::binary);
     auto binary_data_vec = Read_Binary_Data(input_file, number_of_bytes_to_read);
 
@@ -466,81 +520,36 @@ void ShannonFano::Write_Binary_Frequencies_Per_File_To_Json_File(const std::file
 
     switch(data_type_size) {
         case 1: {
+            auto [byte_frequencies, byte_frequencies_vec] = Create_And_Sort_Frequency_Vector<u_char>(binary_data_vec);
+            auto lookup_table = Create_Lookup_Table<u_char>(byte_frequencies_vec);
+            Write_To_Json<u_char>(output_file, binary_path, data_type_size, byte_frequencies_vec, lookup_table);
 
-            auto [byte_frequencies, byte_frequencies_vec] = Create_And_Sort_Frequency_Vector<char>(binary_data_vec);
-
-            std::unordered_map<char, int> lookup_table;
-            for (int i = 0; i < byte_frequencies_vec.size(); ++i) {
-                lookup_table[byte_frequencies_vec[i].first] = i;
-            }
-
-            if (lookup_table.size() < 16) {
-                output_file << "{\n";
-                output_file << "    \"" << Format_Path_String(binary_path) << "\": {\n";
-                output_file << "        \"Data Type Size\": " << static_cast<int>(data_type_size) << ",\n";
-                output_file << "        \"Lookup Table\": {\n";
-                for (const auto& pair : byte_frequencies_vec) {
-                    char byte = pair.first;
-                    int index = lookup_table[byte];
-                    output_file << "            \"" << static_cast<int>(byte) << "\": " << index;
-                    output_file << (pair != byte_frequencies_vec.back() ? "," : "") << "\n";
-                }
-                output_file << "        }\n";
-                output_file << "    }\n";
-                output_file << "}\n";
-            }
-
+            // Write the lookup table to the JSON file
+            // if (lookup_table.size() < 16) {
+                // Write_To_Json(output_file, binary_path, data_type_size, byte_frequencies_vec, lookup_table);
+            // }
             break;
         }
         case 2: {
             auto [byte_pair_frequencies, byte_pair_frequencies_vec] = Create_And_Sort_Frequency_Vector<int>(binary_data_vec);
-
-            // Create lookup table mapping byte pairs to indices
-            std::unordered_map<int, int> lookup_table;
-            for (int i = 0; i < byte_pair_frequencies_vec.size(); ++i) {
-                lookup_table[byte_pair_frequencies_vec[i].first] = i;
-            }
+            auto lookup_table = Create_Lookup_Table<int>(byte_pair_frequencies_vec);
+            // Write_To_Json(output_file, binary_path, data_type_size, byte_pair_frequencies_vec, lookup_table);
+            Write_To_Json<int>(output_file, binary_path, data_type_size, byte_pair_frequencies_vec, lookup_table);
 
             // Write the lookup table to the JSON file
-            if (lookup_table.size() < UINT8_MAX) {
-                output_file << "{\n";
-                output_file << "    \"" << Format_Path_String(binary_path) << "\": {\n";
-                output_file << "        \"Data Type Size\": " << static_cast<int>(data_type_size) << ",\n";
-                output_file << "        \"Lookup Table\": {\n";
-                for (const auto& pair : byte_pair_frequencies_vec) {
-                    int byte_pair = pair.first;
-                    int index = lookup_table[byte_pair];
-                    output_file << "            \"" << Format_Byte_Pair(byte_pair) << "\": " << index;
-                    output_file << (pair != byte_pair_frequencies_vec.back() ? "," : "") << "\n";
-                }
-                output_file << "        }\n";
-                output_file << "    }\n";
-                output_file << "}\n";
-            }
+            // if (lookup_table.size() < UINT8_MAX) {
+                // Write_To_Json(output_file, binary_path, data_type_size, byte_pair_frequencies_vec, lookup_table);
+            // }
             break;
         }
         case 4: {
             auto [byte_quartet_frequencies, byte_quartet_frequencies_vec] = Create_And_Sort_Frequency_Vector<uint32_t>(binary_data_vec);
-
-            std::unordered_map<uint32_t, int> lookup_table;
-            for (int i = 0; i < byte_quartet_frequencies_vec.size(); ++i) {
-                lookup_table[byte_quartet_frequencies_vec[i].first] = i;
-            }
-            if (lookup_table.size() < UINT16_MAX) {
-                output_file << "{\n";
-                output_file << "    \"" << Format_Path_String(binary_path) << "\": {\n";
-                output_file << "        \"Data Type Size\": " << static_cast<int>(data_type_size) << ",\n";
-                output_file << "        \"Lookup Table\": {\n";
-                for (const auto& pair : byte_quartet_frequencies_vec) {
-                    uint32_t byte_quartet = pair.first;
-                    int index = lookup_table[byte_quartet];
-                    output_file << "            \"" << Format_Byte_Quartet(byte_quartet) << "\": " << index;
-                    output_file << (pair != byte_quartet_frequencies_vec.back() ? "," : "") << "\n";
-                }
-                output_file << "        }\n";
-                output_file << "    }\n";
-                output_file << "}\n";
-            }
+            auto lookup_table = Create_Lookup_Table<uint32_t>(byte_quartet_frequencies_vec);
+            // Write_To_Json(output_file, binary_path, data_type_size, byte_quartet_frequencies_vec, lookup_table);
+            Write_To_Json<uint32_t>(output_file, binary_path, data_type_size, byte_quartet_frequencies_vec, lookup_table);
+            // if (lookup_table.size() < UINT16_MAX) {
+                // Write_To_Json(output_file, binary_path, data_type_size, byte_quartet_frequencies_vec, lookup_table);
+            // }
             break;
         }
         default:

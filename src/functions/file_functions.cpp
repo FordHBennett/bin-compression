@@ -282,14 +282,14 @@ void Run_RLR_Compression_Decompression_On_Files(const std::vector<std::filesyste
                 rlr_obj.row_number = row;
                 rlr_obj.Read_File(file, bytes_per_row, row);
 
-                rlr_obj.Compute_Time_Encoded([&rlr_obj](){
-                    rlr_obj.Encode_With_Move_To_Front_Transformation_With_One_Byte_Run_Length();
-                });
-
-
                 // rlr_obj.Compute_Time_Encoded([&rlr_obj](){
-                //     rlr_obj.Encode_With_One_Byte_Run_Length();
+                //     rlr_obj.Encode_With_Move_To_Front_Transformation_With_One_Byte_Run_Length();
                 // });
+
+
+                rlr_obj.Compute_Time_Encoded([&rlr_obj](){
+                    rlr_obj.Encode_With_One_Byte_Run_Length();
+                });
 
                 // rlr_obj.Compute_Time_Encoded([&rlr_obj](){
                 //     rlr_obj.Encode_With_XOR_Transformation();
@@ -297,9 +297,9 @@ void Run_RLR_Compression_Decompression_On_Files(const std::vector<std::filesyste
 
                 rlr_obj.Write_Compressed_File(encoded_file_path);
 
-                // rlr_obj.Compute_Time_Decoded([&rlr_obj](){
-                //     rlr_obj.Decode_With_One_Byte_Run_Length();
-                // });
+                rlr_obj.Compute_Time_Decoded([&rlr_obj](){
+                    rlr_obj.Decode_With_One_Byte_Run_Length();
+                });
 
 
 
@@ -309,9 +309,9 @@ void Run_RLR_Compression_Decompression_On_Files(const std::vector<std::filesyste
 
 
 
-                rlr_obj.Compute_Time_Decoded([&rlr_obj](){
-                    rlr_obj.Decode_With_Move_To_Front_Transformation_With_One_Byte_Run_Length();
-                });
+                // rlr_obj.Compute_Time_Decoded([&rlr_obj](){
+                //     rlr_obj.Decode_With_Move_To_Front_Transformation_With_One_Byte_Run_Length();
+                // });
 
                 rlr_obj.Write_Decompressed_File(decoded_file_path);
 
@@ -350,13 +350,13 @@ void Write_Shannon_Fano_Frequencies_To_Files(const std::vector<std::filesystem::
         //     shannon_fano.Write_Binary_Frequencies_Per_File_To_Json_File(file, json_path,  Get_File_Size_Bytes(file));
         // } else {
         //     // for(uint64_t row = 0; row<num_rows; row++){
-        //         shannon_fano.Write_Binary_Frequencies_Per_Row_To_Json_File(file, json_path, bytes_per_row, Get_File_Size_Bytes(file));
+        //         shannon_fano.Write_Binary_Frequencies_Per_File_To_Json_File(file, json_path, bytes_per_row, Get_File_Size_Bytes(file));
         //     // }
         // }
+        // shannon_fano.Write_Binary_Frequencies_Per_File_To_Json_File(file, json_path, bytes_per_row, Get_File_Size_Bytes(file));
+        shannon_fano.Write_Binary_Frequencies_Per_File_To_Json_File(file, json_path, Get_File_Size_Bytes(file));
 
-        shannon_fano.Write_Binary_Frequencies_Per_File_To_Json_File(file, json_path,  Get_File_Size_Bytes(file));
 
-        // shannon_fano.Write_Frequencies_To_JSON_File(file, json_path);
     }
 }
 
@@ -381,15 +381,13 @@ void Write_Shannon_Fano_Lookup_Table_To_Files(const std::vector<std::filesystem:
 
 
         // if(shannon_fano.Get_Data_Type_Size() == 4) {
-        //     shannon_fano.Write_Binary_Frequencies_Per_File_To_Json_File(file, json_path,  Get_File_Size_Bytes(file));
+        //     shannon_fano.Write_Lookup_Table_To_Header_File(file, json_path,  Get_File_Size_Bytes(file));
         // } else {
         //     // for(uint64_t row = 0; row<num_rows; row++){
-        //         shannon_fano.Write_Binary_Frequencies_Per_Row_To_Json_File(file, json_path, bytes_per_row, Get_File_Size_Bytes(file));
+        //         shannon_fano.Write_Lookup_Table_To_Header_File(file, json_path, bytes_per_row, Get_File_Size_Bytes(file));
         //     // }
         // }
 
         shannon_fano.Write_Lookup_Table_To_Header_File(file, header_path,  Get_File_Size_Bytes(file));
-
-        // shannon_fano.Write_Frequencies_To_JSON_File(file, json_path);
     }
 }

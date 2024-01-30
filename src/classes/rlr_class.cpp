@@ -40,9 +40,6 @@ constexpr size_t TWO_BYTE_COMBINATIONS = 65536;
 //Constructors
 RLR::RLR(){}
 
-
-
-
 constexpr std::array<std::pair<uint8_t, uint8_t>, 65536> Generate_Two_Byte_Alphabet() {
     std::array<std::pair<uint8_t, uint8_t>, 65536> alphabet{};
     int index = 0;
@@ -87,247 +84,203 @@ if (input_file.fail() && !input_file.eof()) {
     input_file.close();
 }
 
-void RLR::Encode_With_One_Byte_Run_Length() {
-    encoded_data_vec.clear();
-    const uint8_t data_type_size = this->Get_Data_Type_Size();
-    const size_t data_size = binary_data_vec.size();
-    encoded_data_vec.reserve(data_size); // reserve based on expected size
-    size_t byte_index = 0;
+// Helper Function for Run-Length Encoding
+template<typename T>
+void RLR::Run_Length_Encode(const std::vector<char>& data, std::vector<char>& encoded_data) {
+    T current_byte = *reinterpret_cast<const T*>(data.data());
+    uint8_t run_length = 1;
+    for (size_t i = sizeof(T); i < data.size(); i += sizeof(T)) {
+        T next_byte;
+        std::memcpy(&next_byte, &data[i], sizeof(T));
 
-    switch(data_type_size) {
-        case 1: {
-            char current_byte = binary_data_vec[0];
-            uint8_t run_length = 1;
-            for(size_t i = 1; i < data_size; ++i) {
-                if(binary_data_vec[i] == current_byte && run_length < ONE_BYTE_MAX) {
-                    ++run_length;
-                } else {
-                    encoded_data_vec.push_back(static_cast<char>(run_length));
-                    encoded_data_vec.push_back(current_byte);
-                    current_byte = binary_data_vec[i];
-                    run_length = 1;
-                }
-            }
-            encoded_data_vec.push_back(static_cast<char>(run_length));
-            encoded_data_vec.push_back(current_byte);
-            break;
-        }
-        case 2: {
-            char current_bytes[2] = {binary_data_vec[0], binary_data_vec[1]};
-            uint8_t run_length = 1;
-            for(size_t i = 2; i < data_size; i += 2) {
-                if((binary_data_vec[i] == current_bytes[0] && binary_data_vec[i + 1] == current_bytes[1]) && run_length < ONE_BYTE_MAX) {
-                    ++run_length;
-                } else {
-                    encoded_data_vec.push_back(static_cast<char>(run_length));
-                    encoded_data_vec.push_back(current_bytes[0]);
-                    encoded_data_vec.push_back(current_bytes[1]);
-                    current_bytes[0] = binary_data_vec[i];
-                    current_bytes[1] = binary_data_vec[i + 1];
-                    run_length = 1;
-                }
-            }
-            encoded_data_vec.push_back(static_cast<char>(run_length));
-            encoded_data_vec.push_back(current_bytes[0]);
-            encoded_data_vec.push_back(current_bytes[1]);
-            break;
-        }
-        case 4: {
-            char current_bytes[4] = {binary_data_vec[0], binary_data_vec[1], binary_data_vec[2], binary_data_vec[3]};
-            uint8_t run_length = 1;
-            for(size_t i = 4; i < data_size; i += 4) {
-                if((binary_data_vec[i] == current_bytes[0] && binary_data_vec[i + 1] == current_bytes[1] && binary_data_vec[i + 2] == current_bytes[2] && binary_data_vec[i + 3] == current_bytes[3]) && run_length < ONE_BYTE_MAX) {
-                    ++run_length;
-                } else {
-                    encoded_data_vec.push_back(static_cast<char>(run_length));
-                    encoded_data_vec.push_back(current_bytes[0]);
-                    encoded_data_vec.push_back(current_bytes[1]);
-                    encoded_data_vec.push_back(current_bytes[2]);
-                    encoded_data_vec.push_back(current_bytes[3]);
-                    current_bytes[0] = binary_data_vec[i];
-                    current_bytes[1] = binary_data_vec[i + 1];
-                    current_bytes[2] = binary_data_vec[i + 2];
-                    current_bytes[3] = binary_data_vec[i + 3];
-                    run_length = 1;
-                }
-            }
-            encoded_data_vec.push_back(static_cast<char>(run_length));
-            encoded_data_vec.push_back(current_bytes[0]);
-            encoded_data_vec.push_back(current_bytes[1]);
-            encoded_data_vec.push_back(current_bytes[2]);
-            encoded_data_vec.push_back(current_bytes[3]);
-            break;
-        }
-        default: {
-            ERROR_MSG_AND_EXIT("Error: Invalid data type size.");
-            break;
+        if (next_byte == current_byte && run_length < ONE_BYTE_MAX) {
+            ++run_length;
+        } else {
+            encoded_data.push_back(static_cast<char>(run_length));
+            encoded_data.insert(encoded_data.end(), reinterpret_cast<char*>(&current_byte), reinterpret_cast<char*>(&current_byte) + sizeof(T));
+            current_byte = next_byte;
+            run_length = 1;
         }
     }
+    encoded_data.push_back(static_cast<char>(run_length));
+    encoded_data.insert(encoded_data.end(), reinterpret_cast<char*>(&current_byte), reinterpret_cast<char*>(&current_byte) + sizeof(T));
+}
 
-    encoded_data_vec.shrink_to_fit();
+// Helper Function for Run-Length Decoding
+template<typename T>
+void RLR::Run_Length_Decode(const std::vector<char>& encoded_data, std::vector<char>& decoded_data, size_t& write_index) {
+    for (size_t i = 0; i < (encoded_data.size()); i += sizeof(T) + 1) {
+        if (i + 1 + sizeof(T) > encoded_data.size()) {
+            PRINT_DEBUG("Error: Invalid run-length encoded data.");
+            ERROR_MSG_AND_EXIT("Size of encoded data:" + std::to_string(encoded_data.size()) + ", i: " + std::to_string(i) + ", sizeof(T): " + std::to_string(sizeof(T)));
+        }
+
+        uint8_t run_length = static_cast<uint8_t>(encoded_data[i]);
+        T value;
+        std::memcpy(&value, &encoded_data[i + 1], sizeof(T)); // Use memcpy for alignment-safe access
+
+        std::fill_n(reinterpret_cast<T*>(&decoded_data[write_index]), run_length, value);
+        write_index += run_length * sizeof(T);
+    }
 }
 
 
-void RLR::Decode_With_One_Byte_Run_Length() {
-    decoded_data_vec.clear();
-    const uint8_t data_type_size = this->Get_Data_Type_Size();
-    const size_t encoded_size = encoded_data_vec.size();
-    size_t write_index = 0;
-    decoded_data_vec.resize(number_of_bytes_per_row);  // Assuming this is correctly set
+void RLR::Encode_With_One_Byte_Run_Length() {
+    encoded_data_vec.clear();
+    const size_t data_size = binary_data_vec.size();
+    encoded_data_vec.reserve(data_size);
 
-    switch(data_type_size) {
-        case 1: {
-            for(size_t i = 0; i < encoded_size; i += 2) {
-                uint8_t run_length = static_cast<uint8_t>(encoded_data_vec[i]);
-                std::memset(&decoded_data_vec[write_index], encoded_data_vec[i + 1], run_length);
-                write_index += run_length;
-            }
+    switch (this->Get_Data_Type_Size()) {
+        case 1:
+            Run_Length_Encode<uint8_t>(binary_data_vec, encoded_data_vec);
             break;
-        }
-
-        case 2: {
-            for(size_t i = 0; i < encoded_size; i += 3) {
-                uint8_t run_length = static_cast<uint8_t>(encoded_data_vec[i]);
-                char current_bytes[2] = {encoded_data_vec[i + 1], encoded_data_vec[i + 2]};
-                for(uint8_t j = 0; j < run_length; ++j) {
-                    decoded_data_vec[write_index] = current_bytes[0];
-                    decoded_data_vec[write_index + 1] = current_bytes[1];
-                    write_index += 2;
-                }
-            }
+        case 2:
+            Run_Length_Encode<uint16_t>(binary_data_vec, encoded_data_vec);
             break;
-        }
-
-        case 4: {
-            for(size_t i = 0; i < encoded_size; i += 5) {
-                uint8_t run_length = static_cast<uint8_t>(encoded_data_vec[i]);
-                char current_bytes[4] = {encoded_data_vec[i + 1], encoded_data_vec[i + 2], encoded_data_vec[i + 3], encoded_data_vec[i + 4]};
-                for(uint8_t j = 0; j < run_length; ++j) {
-                    std::memcpy(&decoded_data_vec[write_index], current_bytes, 4);
-                    write_index += 4;
-                }
-            }
+        case 4:
+            Run_Length_Encode<uint32_t>(binary_data_vec, encoded_data_vec);
             break;
-        }
-
         default:
             ERROR_MSG_AND_EXIT("Error: Invalid data type size.");
             break;
     }
-
-    decoded_data_vec.shrink_to_fit();
 }
 
+void RLR::Decode_With_One_Byte_Run_Length() {
+    decoded_data_vec.clear();
+    decoded_data_vec.resize(number_of_bytes_per_row);
+    size_t write_index = 0;
+
+    switch (this->Get_Data_Type_Size()) {
+        case 1:
+            Run_Length_Decode<uint8_t>(encoded_data_vec, decoded_data_vec, write_index);
+            break;
+        case 2:
+            Run_Length_Decode<uint16_t>(encoded_data_vec, decoded_data_vec, write_index);
+            break;
+        case 4:
+            Run_Length_Decode<uint32_t>(encoded_data_vec, decoded_data_vec, write_index);
+            break;
+        default:
+            ERROR_MSG_AND_EXIT("Error: Invalid data type size.");
+            break;
+    }
+}
+
+template<typename T>
+std::vector<T> RLR::MTF_Encode_1Byte(const std::vector<T>& data) {
+    std::list<uint8_t> mtf_list = ONE_BYTE_ALPHABET_VEC;
+    std::vector<T> encoded_data;
+
+    for (auto byte : data) {
+        auto it = std::find(mtf_list.begin(), mtf_list.end(), byte);
+        int index = std::distance(mtf_list.begin(), it);
+        encoded_data.push_back(static_cast<T>(index));
+        mtf_list.erase(it);
+        mtf_list.push_front(byte);
+    }
+
+    return encoded_data;
+}
+
+// MTF Decoding for 1-byte elements
+template<typename T>
+std::vector<T> RLR::MTF_Decode_1Byte(const std::vector<T>& encoded_data) {
+    std::list<uint8_t> mtf_list = ONE_BYTE_ALPHABET_VEC;
+    std::vector<T> decoded_data;
+
+    for (auto index : encoded_data) {
+        if (index >= mtf_list.size()) {
+            ERROR_MSG_AND_EXIT("Error: MTF index out of bounds.");
+        }
+        auto it = std::next(mtf_list.begin(), index);
+        auto byte = *it;
+        decoded_data.push_back(byte);
+        mtf_list.erase(it);
+        mtf_list.push_front(byte);
+    }
+
+    return decoded_data;
+}
+
+// MTF Encoding for 2-byte elements
+template<typename T>
+std::vector<T> RLR::MTF_Encode_2Byte(const std::vector<T>& data) {
+    constexpr auto TWO_BYTE_ALPHABET = Generate_Two_Byte_Alphabet();
+    std::list<std::pair<uint8_t, uint8_t>> mtf_list(TWO_BYTE_ALPHABET.begin(), TWO_BYTE_ALPHABET.end());
+    std::vector<T> encoded_data;
+
+    for (size_t i = 0; i < data.size(); i += 2) {
+        std::pair<uint8_t, uint8_t> byte_pair(data[i], data[i + 1]);
+        auto it = std::find(mtf_list.begin(), mtf_list.end(), byte_pair);
+        int index = std::distance(mtf_list.begin(), it);
+
+        // Store the index as two bytes
+        encoded_data.push_back((index >> 8) & 0xFF); // Higher byte of index
+        encoded_data.push_back(index & 0xFF);       // Lower byte of index
+
+        // Move to front
+        mtf_list.erase(it);
+        mtf_list.push_front(byte_pair);
+    }
+
+    return encoded_data;
+}
+
+// MTF Decoding for 2-byte elements
+template<typename T>
+std::vector<T> RLR::MTF_Decode_2Byte(const std::vector<T>& encoded_data) {
+    constexpr auto TWO_BYTE_ALPHABET = Generate_Two_Byte_Alphabet();
+    std::list<std::pair<uint8_t, uint8_t>> mtf_list(TWO_BYTE_ALPHABET.begin(), TWO_BYTE_ALPHABET.end());
+    std::vector<T> decoded_data;
+
+    for (size_t i = 0; i < encoded_data.size(); i += 2) {
+        unsigned int highByte = static_cast<unsigned int>(static_cast<unsigned char>(encoded_data[i]));
+        unsigned int lowByte = static_cast<unsigned int>(static_cast<unsigned char>(encoded_data[i + 1]));
+        int index = (highByte << 8) | lowByte;
+
+        // std::cout << "High byte: " << highByte << ", Low byte: " << lowByte << ", Index: " << index << ", MTF List Size: " << mtf_list.size() << std::endl;
+
+        if (index < 0 || index >= static_cast<int>(mtf_list.size())) {
+            ERROR_MSG_AND_EXIT("Error: MTF index out of bounds.");
+        }
+
+        auto it = std::next(mtf_list.begin(), index);
+        std::pair<uint8_t, uint8_t> byte_pair = *it;
+
+        decoded_data.push_back(byte_pair.first);
+        decoded_data.push_back(byte_pair.second);
+
+        // Move the byte pair to the front of the MTF list
+        mtf_list.erase(it);
+        mtf_list.push_front(byte_pair);
+    }
+
+    return decoded_data;
+}
+
+
 void RLR::Encode_With_Move_To_Front_Transformation_With_One_Byte_Run_Length() {
-    // Initialize the Move-To-Front list with all possible byte values (0-255)
-
     const uint8_t data_type_size = this->Get_Data_Type_Size();
-    const size_t data_size = binary_data_vec.size();
-    size_t byte_index = 0;
     std::vector<char> rlr_encoded_data_vec;
-    rlr_encoded_data_vec.reserve(data_size);
-    encoded_data_vec.clear();
-
+    rlr_encoded_data_vec.reserve(binary_data_vec.size());
 
     switch(data_type_size) {
         case 1: {
-            std::list<uint8_t> mtf_list = ONE_BYTE_ALPHABET_VEC;
-            // for (int i = 0; i < 256; ++i) {
-            //     mtf_list.push_back(i);
-            // }
-
-            for (uint8_t byte : binary_data_vec) {
-                // Find the position of the current byte in the MTF list
-                auto it = std::find(mtf_list.begin(), mtf_list.end(), byte);
-                int index = std::distance(mtf_list.begin(), it);
-
-                // Add the index to the encoded data
-                encoded_data_vec.push_back(static_cast<uint8_t>(index));
-
-                // Move the byte to the front of the MTF list
-                mtf_list.erase(it);
-                mtf_list.push_front(byte);
-            }
-
-            char current_byte = encoded_data_vec[0];
-            uint8_t run_length = 1;
-            for(size_t i = 1; i < data_size; ++i) {
-                if(encoded_data_vec[i] == current_byte && run_length < ONE_BYTE_MAX) {
-                    ++run_length;
-                } else {
-                    rlr_encoded_data_vec.push_back(static_cast<char>(run_length));
-                    rlr_encoded_data_vec.push_back(current_byte);
-                    current_byte = encoded_data_vec[i];
-                    run_length = 1;
-                }
-            }
-            rlr_encoded_data_vec.push_back(static_cast<char>(run_length));
-            rlr_encoded_data_vec.push_back(current_byte);
+            auto mtf_encoded_data = MTF_Encode_1Byte(binary_data_vec);
+            Run_Length_Encode<uint8_t>(mtf_encoded_data, rlr_encoded_data_vec);
             break;
         }
         case 2: {
 
-            constexpr auto TWO_BYTE_ALPHABET = Generate_Two_Byte_Alphabet();
-
-            std::list<std::pair<uint8_t, uint8_t>> mtf_list(TWO_BYTE_ALPHABET.begin(), TWO_BYTE_ALPHABET.end());
-
-            for (size_t i = 0; i < data_size; i += 2) {
-                std::pair<uint8_t, uint8_t> byte_pair(binary_data_vec[i], binary_data_vec[i + 1]);
-                auto it = std::find(mtf_list.begin(), mtf_list.end(), byte_pair);
-                int index = std::distance(mtf_list.begin(), it);
-
-                // Store the index as two bytes
-                encoded_data_vec.push_back((index >> 8) & 0xFF); // Higher byte of index
-                encoded_data_vec.push_back(index & 0xFF);       // Lower byte of index
-
-                // Move to front
-                mtf_list.erase(it);
-                mtf_list.push_front(byte_pair);
-            }
-
-            char current_bytes[2] = {encoded_data_vec[0], encoded_data_vec[1]};
-            uint8_t run_length = 1;
-            for(size_t i = 2; i < data_size; i += 2) {
-                if((encoded_data_vec[i] == current_bytes[0] && encoded_data_vec[i + 1] == current_bytes[1]) && run_length < ONE_BYTE_MAX) {
-                    ++run_length;
-                } else {
-                    rlr_encoded_data_vec.push_back(static_cast<char>(run_length));
-                    rlr_encoded_data_vec.push_back(current_bytes[0]);
-                    rlr_encoded_data_vec.push_back(current_bytes[1]);
-                    current_bytes[0] = encoded_data_vec[i];
-                    current_bytes[1] = encoded_data_vec[i + 1];
-                    run_length = 1;
-                }
-            }
-            rlr_encoded_data_vec.push_back(static_cast<char>(run_length));
-            rlr_encoded_data_vec.push_back(current_bytes[0]);
-            rlr_encoded_data_vec.push_back(current_bytes[1]);
+            // constexpr auto TWO_BYTE_ALPHABET = Generate_Two_Byte_Alphabet();
+            auto mtf_encoded_data = MTF_Encode_2Byte(binary_data_vec);
+            Run_Length_Encode<u_int16_t>(mtf_encoded_data, rlr_encoded_data_vec);
             break;
         }
         case 4: {
-            char current_bytes[4] = {encoded_data_vec[0], encoded_data_vec[1], encoded_data_vec[2], encoded_data_vec[3]};
-            uint8_t run_length = 1;
-            for(size_t i = 4; i < data_size; i += 4) {
-                if((encoded_data_vec[i] == current_bytes[0] && encoded_data_vec[i + 1] == current_bytes[1] && encoded_data_vec[i + 2] == current_bytes[2] && encoded_data_vec[i + 3] == current_bytes[3]) && run_length < ONE_BYTE_MAX) {
-                    ++run_length;
-                } else {
-                    rlr_encoded_data_vec.push_back(static_cast<char>(run_length));
-                    rlr_encoded_data_vec.push_back(current_bytes[0]);
-                    rlr_encoded_data_vec.push_back(current_bytes[1]);
-                    rlr_encoded_data_vec.push_back(current_bytes[2]);
-                    rlr_encoded_data_vec.push_back(current_bytes[3]);
-                    current_bytes[0] = encoded_data_vec[i];
-                    current_bytes[1] = encoded_data_vec[i + 1];
-                    current_bytes[2] = encoded_data_vec[i + 2];
-                    current_bytes[3] = encoded_data_vec[i + 3];
-                    run_length = 1;
-                }
-            }
-            rlr_encoded_data_vec.push_back(static_cast<char>(run_length));
-            rlr_encoded_data_vec.push_back(current_bytes[0]);
-            rlr_encoded_data_vec.push_back(current_bytes[1]);
-            rlr_encoded_data_vec.push_back(current_bytes[2]);
-            rlr_encoded_data_vec.push_back(current_bytes[3]);
+            // Run_Length_Encode<uint8_t>(mtf_encoded_data, rlr_encoded_data_vec);
+            Run_Length_Encode<uint32_t>(binary_data_vec, rlr_encoded_data_vec);
             break;
         }
         default: {
@@ -336,70 +289,27 @@ void RLR::Encode_With_Move_To_Front_Transformation_With_One_Byte_Run_Length() {
         }
     }
 
-    //assign the rlr_encoded_data_vec to the encoded_data_vec
-    // encoded_data_vec = rlr_encoded_data_vec;
     encoded_data_vec = std::move(rlr_encoded_data_vec);
     encoded_data_vec.shrink_to_fit();
 }
 
 void RLR::Decode_With_Move_To_Front_Transformation_With_One_Byte_Run_Length() {
-        if (encoded_data_vec.empty()) {
-        ERROR_MSG_AND_EXIT("Error: Encoded data vector is empty.");
-        return;
-    }
+    std::vector<char> rlr_decoded_data_vec(number_of_bytes_per_row);
+    size_t write_index = 0;
 
-    std::vector<char> rlr_decoded_data_vec;
-    rlr_decoded_data_vec.reserve(encoded_data_vec.size());
-
-    const uint8_t data_type_size = this->Get_Data_Type_Size();
-    size_t read_index = 0;
-
-    while (read_index < encoded_data_vec.size()) {
-        switch(data_type_size) {
-            case 1: {
-                if (read_index + 1 >= encoded_data_vec.size()) break;
-
-                uint8_t run_length = static_cast<uint8_t>(encoded_data_vec[read_index]);
-                char value = encoded_data_vec[read_index + 1];
-                rlr_decoded_data_vec.insert(rlr_decoded_data_vec.end(), run_length, value);
-                read_index += 2;
-                break;
-            }
-            case 2: {
-                if (read_index + 2 >= encoded_data_vec.size()) break;
-
-                uint8_t run_length = static_cast<uint8_t>(encoded_data_vec[read_index]);
-                char value1 = encoded_data_vec[read_index + 1];
-                char value2 = encoded_data_vec[read_index + 2];
-                for (uint8_t i = 0; i < run_length; ++i) {
-                    rlr_decoded_data_vec.push_back(value1);
-                    rlr_decoded_data_vec.push_back(value2);
-                }
-                read_index += 3;
-                break;
-            }
-            case 4: {
-                if (read_index + 4 >= encoded_data_vec.size()) break;
-
-                uint8_t run_length = static_cast<uint8_t>(encoded_data_vec[read_index]);
-                char value1 = encoded_data_vec[read_index + 1];
-                char value2 = encoded_data_vec[read_index + 2];
-                char value3 = encoded_data_vec[read_index + 3];
-                char value4 = encoded_data_vec[read_index + 4];
-                for (uint8_t i = 0; i < run_length; ++i) {
-                    rlr_decoded_data_vec.push_back(value1);
-                    rlr_decoded_data_vec.push_back(value2);
-                    rlr_decoded_data_vec.push_back(value3);
-                    rlr_decoded_data_vec.push_back(value4);
-                }
-                read_index += 5;
-                break;
-            }
-            default: {
-                ERROR_MSG_AND_EXIT("Error: Invalid data type size.");
-                break;
-            }
-        }
+    switch (this->Get_Data_Type_Size()) {
+        case 1:
+            Run_Length_Decode<uint8_t>(encoded_data_vec, rlr_decoded_data_vec, write_index);
+            break;
+        case 2:
+            Run_Length_Decode<uint16_t>(encoded_data_vec, rlr_decoded_data_vec, write_index);
+            break;
+        case 4:
+            Run_Length_Decode<uint32_t>(encoded_data_vec, rlr_decoded_data_vec, write_index);
+            break;
+        default:
+            ERROR_MSG_AND_EXIT("Error: Invalid data type size.");
+            break;
     }
 
     decoded_data_vec.clear();
@@ -407,8 +317,8 @@ void RLR::Decode_With_Move_To_Front_Transformation_With_One_Byte_Run_Length() {
 
     std::list<uint8_t> mtf_list;
 
-    switch (data_type_size) {
-        case 1:{
+    switch (this->Get_Data_Type_Size()) {
+        case 1: {
             mtf_list = ONE_BYTE_ALPHABET_VEC;
 
             for (uint8_t index : rlr_decoded_data_vec) {
@@ -433,8 +343,6 @@ void RLR::Decode_With_Move_To_Front_Transformation_With_One_Byte_Run_Length() {
                 unsigned int lowByte = static_cast<unsigned int>(static_cast<unsigned char>(rlr_decoded_data_vec[i + 1]));
                 int index = (highByte << 8) | lowByte;
 
-                // std::cout << "High byte: " << highByte << ", Low byte: " << lowByte << ", Index: " << index << ", MTF List Size: " << mtf_list.size() << std::endl;
-
                 if (index < 0 || index >= static_cast<int>(mtf_list.size())) {
                     ERROR_MSG_AND_EXIT("Error: MTF index out of bounds.");
                     break;
@@ -455,180 +363,8 @@ void RLR::Decode_With_Move_To_Front_Transformation_With_One_Byte_Run_Length() {
         default:
             break;
     }
-
 }
 
-void RLR::Encode_With_Move_To_Front_Transformation_With_Two_Byte_Run_Length(){
-    // Initialize the Move-To-Front list with all possible byte values (0-255)
-    std::list<uint8_t> mtf_list;
-    for (int i = 0; i < 256; ++i) {
-        mtf_list.push_back(i);
-    }
-
-    encoded_data_vec.clear();
-    for (uint8_t byte : binary_data_vec) {
-        // Find the position of the current byte in the MTF list
-        auto it = std::find(mtf_list.begin(), mtf_list.end(), byte);
-        int index = std::distance(mtf_list.begin(), it);
-
-        // Add the index to the encoded data
-        encoded_data_vec.push_back(static_cast<uint8_t>(index));
-
-        // Move the byte to the front of the MTF list
-        mtf_list.erase(it);
-        mtf_list.push_front(byte);
-    }
-
-    const uint8_t data_type_size = this->Get_Data_Type_Size();
-    const size_t data_size = binary_data_vec.size();
-    size_t byte_index = 0;
-    std::vector<char> rlr_encoded_data_vec;
-    rlr_encoded_data_vec.reserve(data_size);
-
-    switch(data_type_size) {
-        case 1: {
-            char current_byte = encoded_data_vec[0];
-            uint8_t run_length = 1;
-            for(size_t i = 1; i < data_size; ++i) {
-                if(encoded_data_vec[i] == current_byte && run_length < TWO_BYTE_MAX) {
-                    ++run_length;
-                } else {
-                    rlr_encoded_data_vec.push_back(static_cast<char>(run_length >> 8));
-                    rlr_encoded_data_vec.push_back(static_cast<char>(run_length));
-                    rlr_encoded_data_vec.push_back(current_byte);
-                    current_byte = encoded_data_vec[i];
-                    run_length = 1;
-                }
-            }
-            rlr_encoded_data_vec.push_back(static_cast<char>(run_length >> 8));
-            rlr_encoded_data_vec.push_back(static_cast<char>(run_length));
-            rlr_encoded_data_vec.push_back(current_byte);
-            break;
-        }
-        case 2: {
-            char current_bytes[2] = {encoded_data_vec[0], encoded_data_vec[1]};
-            uint8_t run_length = 1;
-            for(size_t i = 2; i < data_size; i += 2) {
-                if((encoded_data_vec[i] == current_bytes[0] && encoded_data_vec[i + 1] == current_bytes[1]) && run_length < TWO_BYTE_MAX) {
-                    ++run_length;
-                } else {
-                    rlr_encoded_data_vec.push_back(static_cast<char>(run_length >> 8));
-                    rlr_encoded_data_vec.push_back(static_cast<char>(run_length));
-                    rlr_encoded_data_vec.push_back(current_bytes[0]);
-                    rlr_encoded_data_vec.push_back(current_bytes[1]);
-                    current_bytes[0] = encoded_data_vec[i];
-                    current_bytes[1] = encoded_data_vec[i + 1];
-                    run_length = 1;
-                }
-            }
-            rlr_encoded_data_vec.push_back(static_cast<char>(run_length >> 8));
-            rlr_encoded_data_vec.push_back(static_cast<char>(run_length));
-            rlr_encoded_data_vec.push_back(current_bytes[0]);
-            rlr_encoded_data_vec.push_back(current_bytes[1]);
-            break;
-        }
-        case 4: {
-            char current_bytes[4] = {encoded_data_vec[0], encoded_data_vec[1], encoded_data_vec[2], encoded_data_vec[3]};
-            uint8_t run_length = 1;
-            for(size_t i = 4; i < data_size; i += 4) {
-                if((encoded_data_vec[i] == current_bytes[0] && encoded_data_vec[i + 1] == current_bytes[1] && encoded_data_vec[i + 2] == current_bytes[2] && encoded_data_vec[i + 3] == current_bytes[3]) && run_length < TWO_BYTE_MAX) {
-                    ++run_length;
-                } else {
-                    rlr_encoded_data_vec.push_back(static_cast<char>(run_length >> 8));
-                    rlr_encoded_data_vec.push_back(static_cast<char>(run_length));
-                    rlr_encoded_data_vec.push_back(current_bytes[0]);
-                    rlr_encoded_data_vec.push_back(current_bytes[1]);
-                    rlr_encoded_data_vec.push_back(current_bytes[2]);
-                    rlr_encoded_data_vec.push_back(current_bytes[3]);
-                    current_bytes[0] = encoded_data_vec[i];
-                    current_bytes[1] = encoded_data_vec[i + 1];
-                    current_bytes[2] = encoded_data_vec[i + 2];
-                    current_bytes[3] = encoded_data_vec[i + 3];
-                    run_length = 1;
-                }
-            }
-            rlr_encoded_data_vec.push_back(static_cast<char>(run_length >> 8));
-            rlr_encoded_data_vec.push_back(static_cast<char>(run_length));
-            rlr_encoded_data_vec.push_back(current_bytes[0]);
-            rlr_encoded_data_vec.push_back(current_bytes[1]);
-            rlr_encoded_data_vec.push_back(current_bytes[2]);
-            rlr_encoded_data_vec.push_back(current_bytes[3]);
-            break;
-        }
-        default: {
-            ERROR_MSG_AND_EXIT("Error: Invalid data type size.");
-            break;
-        }
-    }
-
-    //assign the rlr_encoded_data_vec to the encoded_data_vec
-    // encoded_data_vec = rlr_encoded_data_vec;
-    encoded_data_vec = std::move(rlr_encoded_data_vec);
-    encoded_data_vec.shrink_to_fit();
-}
-
-void RLR::Decode_With_Move_To_Front_Transformation_With_Two_Byte_Run_Length(){
-    if (encoded_data_vec.empty()) {
-        ERROR_MSG_AND_EXIT("Error: Encoded data vector is empty.");
-        return;
-    }
-
-    std::vector<char> rlr_decoded_data_vec;
-    rlr_decoded_data_vec.reserve(encoded_data_vec.size());
-
-    const uint8_t data_type_size = this->Get_Data_Type_Size();
-    size_t read_index = 0;
-
-    while (read_index < encoded_data_vec.size()) {
-        switch(data_type_size) {
-            case 1: {
-                if (read_index + 2 >= encoded_data_vec.size()) break;
-
-                uint8_t run_length = static_cast<uint8_t>(encoded_data_vec[read_index]) << 8 | static_cast<uint8_t>(encoded_data_vec[read_index + 1]);
-                char value = encoded_data_vec[read_index + 2];
-                rlr_decoded_data_vec.insert(rlr_decoded_data_vec.end(), run_length, value);
-                read_index += 3;
-                break;
-            }
-            case 2: {
-                if (read_index + 3 >= encoded_data_vec.size()) break;
-
-                uint8_t run_length = static_cast<uint8_t>(encoded_data_vec[read_index]) << 8 | static_cast<uint8_t>(encoded_data_vec[read_index + 1]);
-                char value1 = encoded_data_vec[read_index + 2];
-                char value2 = encoded_data_vec[read_index + 3];
-                for (uint8_t i = 0; i < run_length; ++i) {
-                    rlr_decoded_data_vec.push_back(value1);
-                    rlr_decoded_data_vec.push_back(value2);
-                }
-                read_index += 4;
-                break;
-            }
-            case 4: {
-                if (read_index + 5 >= encoded_data_vec.size()) break;
-
-                uint8_t run_length = static_cast<uint8_t>(encoded_data_vec[read_index]) << 8 | static_cast<uint8_t>(encoded_data_vec[read_index + 1]);
-                char value1 = encoded_data_vec[read_index + 2];
-                char value2 = encoded_data_vec[read_index + 3];
-                char value3 = encoded_data_vec[read_index + 4];
-                char value4 = encoded_data_vec[read_index + 5];
-                for (uint8_t i = 0; i < run_length; ++i) {
-                    rlr_decoded_data_vec.push_back(value1);
-                    rlr_decoded_data_vec.push_back(value2);
-                    rlr_decoded_data_vec.push_back(value3);
-                    rlr_decoded_data_vec.push_back(value4);
-                }
-                read_index += 6;
-                break;
-            }
-            default: {
-                ERROR_MSG_AND_EXIT("Error: Invalid data type size.");
-                break;
-            }
-        }
-    }
-
-    decoded_data_vec.shrink_to_fit();
-}
 
 // burrow wheeler transform with move to front transformation then run length encoding
 
@@ -661,10 +397,18 @@ void RLR::Write_Decompressed_File(const std::filesystem::path& file_path) const 
 
 
 //getters
-const char* RLR::Get_Compression_Type() const {return compression_type;}
+const char* RLR::Get_Compression_Type() const {
+    return compression_type;
+}
 
-const std::vector<char> RLR::Get_Encoded_Data_Vec() const {return encoded_data_vec;}
+const std::vector<char>& RLR::Get_Encoded_Data_Vec() const {
+    return encoded_data_vec;
+}
 
-const std::vector<char> RLR::Get_Decoded_Data_Vec() const {return decoded_data_vec;}
+const std::vector<char>& RLR::Get_Decoded_Data_Vec() const {
+    return decoded_data_vec;
+}
 
-const std::vector<char> RLR::Get_Binary_Data_Vec() const {return binary_data_vec;}
+const std::vector<char>& RLR::Get_Binary_Data_Vec() const {
+    return binary_data_vec;
+}
