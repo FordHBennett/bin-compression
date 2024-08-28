@@ -1,8 +1,7 @@
-#include "file_functions.hpp"
-#include "../classes/rlr_class.hpp"
-#include "../classes/common_stats.hpp"
-#include "../classes/shannon_fano.hpp"
-#include <nlohmann/json.hpp>
+#include "file_functions.h"
+#include "../classes/rlr_class.h"
+#include "../classes/common_stats.h"
+#include <nlohmann/json.h>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
@@ -58,38 +57,6 @@ std::vector<std::filesystem::path> Get_Files_With_Condition(const std::filesyste
     }
     return files;
 }
-
-
-void Generate_Random_Binary_File(const char* filename, long long fileSize, double zeroProbability) {
-    // std::ofstream outFile(filename, std::ios::binary);
-    // if (!outFile) {
-    //     std::cout << "Error: Unable to open the file for writing." << '\n';
-    //     return;
-    // }
-
-    // // Determine the number of zero bytes to write
-    // long long zeroBytes = static_cast<long long>(zeroProbability * fileSize);
-
-    // for (long long i = 0; i < zeroBytes; ++i) {
-    //     char byte = 0;  // Write zero bytes
-    //     outFile.write(reinterpret_cast<const char*>(&byte), sizeof(char));
-    // }
-
-    // // Determine the number of non-zero bytes to write
-    // long long nonZeroBytes = fileSize - zeroBytes;
-
-    // std::default_random_engine generator;
-    // std::bernoulli_distribution distribution(0.5); // 50% probability for non-zero bits
-
-    // for (long long i = 0; i < nonZeroBytes; ++i) {
-    //     bool bit = distribution(generator);
-    //     char byte = static_cast<char>(bit);
-    //     outFile.write(reinterpret_cast<const char*>(&byte), sizeof(char));
-    // }
-
-    // outFile.close();
-}
-
 
 const uint64_t Get_File_Size_Bytes(const std::filesystem::path& file_path)
 {
@@ -282,36 +249,15 @@ void Run_RLR_Compression_Decompression_On_Files(const std::vector<std::filesyste
                 rlr_obj.row_number = row;
                 rlr_obj.Read_File(file, bytes_per_row, row);
 
-                // rlr_obj.Compute_Time_Encoded([&rlr_obj](){
-                //     rlr_obj.Encode_With_Move_To_Front_Transformation_With_One_Byte_Run_Length();
-                // });
-
-
                 rlr_obj.Compute_Time_Encoded([&rlr_obj](){
                     rlr_obj.Encode_With_One_Byte_Run_Length();
                 });
-
-                // rlr_obj.Compute_Time_Encoded([&rlr_obj](){
-                //     rlr_obj.Encode_With_XOR_Transformation();
-                // });
 
                 rlr_obj.Write_Compressed_File(encoded_file_path);
 
                 rlr_obj.Compute_Time_Decoded([&rlr_obj](){
                     rlr_obj.Decode_With_One_Byte_Run_Length();
                 });
-
-
-
-                // rlr_obj.Compute_Time_Decoded([&rlr_obj](){
-                //     rlr_obj.Decode_With_XOR_Transformation();
-                // });
-
-
-
-                // rlr_obj.Compute_Time_Decoded([&rlr_obj](){
-                //     rlr_obj.Decode_With_Move_To_Front_Transformation_With_One_Byte_Run_Length();
-                // });
 
                 rlr_obj.Write_Decompressed_File(decoded_file_path);
 
@@ -321,73 +267,11 @@ void Run_RLR_Compression_Decompression_On_Files(const std::vector<std::filesyste
             }
             rlr_obj.Compute_Compression_Ratio(file, encoded_file_path);
             rlr_obj.Compute_Compressed_File_Size(encoded_file_path);
-            // if(!(iteration == number_of_iterations - 1)) {
+
             Delete_Files_In_Directory(encoded_file_path.parent_path());
-            // }
+            
         }
         std::filesystem::remove_all(encoded_file_path.parent_path().parent_path());
     }
 }
 
-void Write_Shannon_Fano_Frequencies_To_Files(const std::vector<std::filesystem::path>& files, ShannonFano& shannon_fano) {
-    shannon_fano.Set_Data_Type_Size_And_Side_Resolutions(Get_Geometa_File_Path(files.at(0).parent_path()));
-
-    for(const auto& file : files) {
-        const std::filesystem::path stem_path = file.stem();
-        const std::filesystem::path json_path = std::filesystem::path{"shannon_fano_frequency_files"} /
-                                                        file.parent_path() / std::filesystem::path{stem_path.string() + std::string{".json"}};
-
-        if(!std::filesystem::exists(json_path.parent_path())) {
-            std::filesystem::create_directories(json_path.parent_path());
-        }
-        // const int lod_number = Get_Lod_Number(stem_path);
-        const uint64_t side_resolution = Get_Side_Resolution(stem_path, shannon_fano);
-        uint64_t bytes_per_row = side_resolution * shannon_fano.Get_Data_Type_Size();
-        uint64_t num_rows = Get_File_Size_Bytes(file) / bytes_per_row;
-
-
-        // if(shannon_fano.Get_Data_Type_Size() == 4) {
-        //     shannon_fano.Write_Binary_Frequencies_Per_File_To_Json_File(file, json_path,  Get_File_Size_Bytes(file));
-        // } else {
-        //     // for(uint64_t row = 0; row<num_rows; row++){
-        //         shannon_fano.Write_Binary_Frequencies_Per_File_To_Json_File(file, json_path, bytes_per_row, Get_File_Size_Bytes(file));
-        //     // }
-        // }
-        // shannon_fano.Write_Binary_Frequencies_Per_File_To_Json_File(file, json_path, bytes_per_row, Get_File_Size_Bytes(file));
-        shannon_fano.Write_Binary_Frequencies_Per_File_To_Json_File(file, json_path, Get_File_Size_Bytes(file));
-
-
-    }
-}
-
-void Write_Shannon_Fano_Lookup_Table_To_Files(const std::vector<std::filesystem::path>& files, ShannonFano& shannon_fano) {
-    shannon_fano.Set_Data_Type_Size_And_Side_Resolutions(Get_Geometa_File_Path(files.at(0).parent_path()));
-
-    for(const auto& file : files) {
-        const std::filesystem::path stem_path = file.stem();
-        const std::filesystem::path header_path = std::filesystem::path{"PlanetData_LUT"} /
-                                                        std::filesystem::path{file.parent_path().string() + std::string{".h"}};
-
-
-
-        if(!std::filesystem::exists(header_path.parent_path())) {
-            std::filesystem::create_directories(header_path.parent_path());
-        }
-        // const int lod_number = Get_Lod_Number(stem_path);
-        const uint64_t side_resolution = Get_Side_Resolution(stem_path, shannon_fano);
-        uint64_t bytes_per_row = side_resolution * shannon_fano.Get_Data_Type_Size();
-        uint64_t num_rows = Get_File_Size_Bytes(file) / bytes_per_row;
-
-
-
-        // if(shannon_fano.Get_Data_Type_Size() == 4) {
-        //     shannon_fano.Write_Lookup_Table_To_Header_File(file, json_path,  Get_File_Size_Bytes(file));
-        // } else {
-        //     // for(uint64_t row = 0; row<num_rows; row++){
-        //         shannon_fano.Write_Lookup_Table_To_Header_File(file, json_path, bytes_per_row, Get_File_Size_Bytes(file));
-        //     // }
-        // }
-
-        shannon_fano.Write_Lookup_Table_To_Header_File(file, header_path,  Get_File_Size_Bytes(file));
-    }
-}

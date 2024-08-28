@@ -1,12 +1,12 @@
-#include "common_stats.hpp"
-#include <nlohmann/json.hpp>
+#include "common_stats.h"
+#include <nlohmann/json.h>
 #include <iostream>
 #include <chrono>
 #include <fstream>
 #include <filesystem>
 #include <sstream>
 #include <iomanip>
-#include "../functions/file_functions.hpp"
+#include "../functions/file_functions.h"
 
 #define ERROR_MSG(msg) \
     std::cerr << msg << " OCCURED IN: " << '\n'; \
@@ -231,7 +231,7 @@ void CommonStats::Set_Data_Type_Size_And_Side_Resolutions(const std::filesystem:
 
 //getters
 const int64_t CommonStats::Get_Side_Resolution(const uint8_t& lod_number) const {
-    return (1 + (1 << (6 + lod_number)));
+    return 1 + std::pow(2, 6 + lod_number);
 }
 const int CommonStats::Get_Data_Type_Size() const {
     return data_type_byte_size;
