@@ -1,6 +1,7 @@
 #pragma once
 
 #include <filesystem>
+#include <iostream>
 
 #define ERROR_MSG(msg) \
     std::cerr << msg << " OCCURED IN: " << '\n'; \
@@ -19,7 +20,7 @@
     std::cerr << msg << '\n'; \
 
 
-class RLR;
+// class RLR;
 
 std::ifstream Open_Input_File(const std::filesystem::path& file_path);
 

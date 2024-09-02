@@ -1,4 +1,4 @@
-build/bin/*
+build/**
 *.geobin
 *.geometa
 PlanetData_2023_10_14.zip
@@ -6,3 +6,4 @@ PlanetData_2023_10_14.zip
 src/classes/TODO.txt
 PlanetData.zip
 .vscode/settings.json
+/.vscode
