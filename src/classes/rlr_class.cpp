@@ -1,11 +1,11 @@
 #include "rlr_class.h"
-#include "alphabet_table.h"
+// #include "alphabet_table.h"
 #include <fstream>
 #include <iostream>
 #include <vector>
 #include <algorithm>
-#include <list>
-#include <boost/multiprecision/cpp_int.h>
+// #include <list>
+// #include <boost/multiprecision/cpp_int.h>
 // #include "../PlanetData_LUT/PlanetData/Earth/Local/Hawaii.h"
 
 #define ONE_NIBBLE_MAX 15
@@ -40,49 +40,38 @@ constexpr size_t TWO_BYTE_COMBINATIONS = 65536;
 //Constructors
 RLR::RLR(){}
 
-constexpr std::array<std::pair<uint8_t, uint8_t>, 65536> Generate_Two_Byte_Alphabet() {
-    std::array<std::pair<uint8_t, uint8_t>, 65536> alphabet{};
-    int index = 0;
-    for (uint16_t i = 0; i < 256; ++i) {
-        for (uint16_t j = 0; j < 256; ++j) {
-            alphabet[index++] = {static_cast<uint8_t>(i), static_cast<uint8_t>(j)};
-        }
-    }
-    return alphabet;
-}
 
+// void RLR::Read_File(const std::filesystem::path& file_path, const int& number_of_bytes_to_read, const int& row) {
+//     // clear the binary data vector
+//     binary_data_vec.clear();
 
-void RLR::Read_File(const std::filesystem::path& file_path, const int& number_of_bytes_to_read, const int& row) {
-    // clear the binary data vector
-    binary_data_vec.clear();
+//     std::ifstream input_file(file_path, std::ios::binary);
+// #ifdef DEBUG
+//     if(!input_file) {
+//         ERROR_MSG_AND_EXIT("Error: Unable to open the file.");
+//     }
+// #endif
 
-    std::ifstream input_file(file_path, std::ios::binary);
-#ifdef DEBUG
-    if(!input_file) {
-        ERROR_MSG_AND_EXIT("Error: Unable to open the file.");
-    }
-#endif
+//     binary_data_vec.resize(number_of_bytes_to_read);
+//     // populate the binary data vector with the data from the file starting at number_of_bytes_to_read * row
+//     std::streampos start_position = static_cast<std::streampos>(number_of_bytes_to_read) * row;
+//     input_file.seekg(start_position);
+// #ifdef DEBUG
+//     if (input_file.fail()) {
+//         ERROR_MSG_AND_EXIT("Error: Unable to seek to the specified position in the file.");
+//     }
+// #endif
 
-    binary_data_vec.resize(number_of_bytes_to_read);
-    // populate the binary data vector with the data from the file starting at number_of_bytes_to_read * row
-    std::streampos start_position = static_cast<std::streampos>(number_of_bytes_to_read) * row;
-    input_file.seekg(start_position);
-#ifdef DEBUG
-    if (input_file.fail()) {
-        ERROR_MSG_AND_EXIT("Error: Unable to seek to the specified position in the file.");
-    }
-#endif
+//     // Read the data from the file into the vector.
+//     input_file.read(reinterpret_cast<char*>(binary_data_vec.data()), number_of_bytes_to_read);
+// #ifdef DEBUG
+// if (input_file.fail() && !input_file.eof()) {
+//     ERROR_MSG_AND_EXIT("Error: Unable to read from the file.");
+// }
+// #endif
 
-    // Read the data from the file into the vector.
-    input_file.read(reinterpret_cast<char*>(binary_data_vec.data()), number_of_bytes_to_read);
-#ifdef DEBUG
-if (input_file.fail() && !input_file.eof()) {
-    ERROR_MSG_AND_EXIT("Error: Unable to read from the file.");
-}
-#endif
-
-    input_file.close();
-}
+//     input_file.close();
+// }
 
 // Helper Function for Run-Length Encoding
 template<typename T>
@@ -107,22 +96,22 @@ void RLR::Run_Length_Encode(const std::vector<char>& data, std::vector<char>& en
 }
 
 // Helper Function for Run-Length Decoding
-template<typename T>
-void RLR::Run_Length_Decode(const std::vector<char>& encoded_data, std::vector<char>& decoded_data, size_t& write_index) {
-    for (size_t i = 0; i < (encoded_data.size()); i += sizeof(T) + 1) {
-        if (i + 1 + sizeof(T) > encoded_data.size()) {
-            PRINT_DEBUG("Error: Invalid run-length encoded data.");
-            ERROR_MSG_AND_EXIT("Size of encoded data:" + std::to_string(encoded_data.size()) + ", i: " + std::to_string(i) + ", sizeof(T): " + std::to_string(sizeof(T)));
-        }
+// template<typename T>
+// void RLR::Run_Length_Decode(const std::vector<char>& encoded_data, std::vector<char>& decoded_data, size_t& write_index) {
+//     for (size_t i = 0; i < (encoded_data.size()); i += sizeof(T) + 1) {
+//         if (i + 1 + sizeof(T) > encoded_data.size()) {
+//             PRINT_DEBUG("Error: Invalid run-length encoded data.");
+//             ERROR_MSG_AND_EXIT("Size of encoded data:" + std::to_string(encoded_data.size()) + ", i: " + std::to_string(i) + ", sizeof(T): " + std::to_string(sizeof(T)));
+//         }
 
-        uint8_t run_length = static_cast<uint8_t>(encoded_data[i]);
-        T value;
-        std::memcpy(&value, &encoded_data[i + 1], sizeof(T)); // Use memcpy for alignment-safe access
+//         uint8_t run_length = static_cast<uint8_t>(encoded_data[i]);
+//         T value;
+//         std::memcpy(&value, &encoded_data[i + 1], sizeof(T)); 
 
-        std::fill_n(reinterpret_cast<T*>(&decoded_data[write_index]), run_length, value);
-        write_index += run_length * sizeof(T);
-    }
-}
+//         std::fill_n(reinterpret_cast<T*>(&decoded_data[write_index]), run_length, value);
+//         write_index += run_length * sizeof(T);
+//     }
+// }
 
 
 void RLR::Encode_With_One_Byte_Run_Length() {
@@ -169,30 +158,30 @@ void RLR::Decode_With_One_Byte_Run_Length() {
 
 
 
-void RLR::Write_Compressed_File(const std::filesystem::path& file_path) const {
-    try {
+// void RLR::Write_Compressed_File(const std::filesystem::path& file_path) const {
+//     try {
 
-        std::ofstream encoded_output_file(file_path, std::ios::binary | std::ios::app);
+//         std::ofstream encoded_output_file(file_path, std::ios::binary | std::ios::app);
 
-        encoded_output_file.write(encoded_data_vec.data(), encoded_data_vec.size());
+//         encoded_output_file.write(encoded_data_vec.data(), encoded_data_vec.size());
 
-        encoded_output_file.close();
-    } catch (const std::exception& e) {
-        ERROR_MSG_AND_EXIT(std::string{"Error: Unable to create the run-length encoded file.\n"} + std::string{"ERROR CODE: "} + std::string{e.what()});
-    }
-}
+//         encoded_output_file.close();
+//     } catch (const std::exception& e) {
+//         ERROR_MSG_AND_EXIT(std::string{"Error: Unable to create the run-length encoded file.\n"} + std::string{"ERROR CODE: "} + std::string{e.what()});
+//     }
+// }
 
-void RLR::Write_Decompressed_File(const std::filesystem::path& file_path) const {
-    try{
-        std::ofstream decoded_output_file(file_path, std::ios::binary | std::ios::app);
+// void RLR::Write_Decompressed_File(const std::filesystem::path& file_path) const {
+//     try{
+//         std::ofstream decoded_output_file(file_path, std::ios::binary | std::ios::app);
 
-        decoded_output_file.write(decoded_data_vec.data(), decoded_data_vec.size());
+//         decoded_output_file.write(decoded_data_vec.data(), decoded_data_vec.size());
 
-        decoded_output_file.close();
-    } catch (const std::exception& e) {
-        ERROR_MSG_AND_EXIT(std::string{"Error: Unable to create the run-length decoded file.\n"} + std::string{"ERROR CODE: "} + std::string{e.what()});
-    }
-}
+//         decoded_output_file.close();
+//     } catch (const std::exception& e) {
+//         ERROR_MSG_AND_EXIT(std::string{"Error: Unable to create the run-length decoded file.\n"} + std::string{"ERROR CODE: "} + std::string{e.what()});
+//     }
+// }
 
 
 

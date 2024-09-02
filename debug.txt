@@ -1,0 +1,1 @@
+cmake .. -B build -DCMAKE_CXX_COMPILER=clang -DCMAKE_BUILD_TYPE=DEBUG -DCMAKE_TOOLCHAIN_FILE=/Users/forb/space_teams/vcpkg/scripts/buildsystems/vcpkg.cmake

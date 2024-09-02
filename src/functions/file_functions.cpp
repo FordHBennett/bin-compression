@@ -1,3 +1,5 @@
+#pragma once
+
 #include "file_functions.h"
 #include "../classes/rlr_class.h"
 #include "../classes/common_stats.h"
@@ -22,9 +24,7 @@
 #define PRINT_DEBUG(msg) \
     std::cerr << msg << '\n'; \
 
-#define MAX_CHUNK_SIZE (1<<15)
-
-
+// #define MAX_CHUNK_SIZE (1<<15)
 
 using json = nlohmann::json;
 
@@ -36,27 +36,89 @@ std::ifstream Open_Input_File(const std::filesystem::path& file_path) {
     return file;
 }
 
-template <typename Predicate>
-int Count_Files_With_Condition(const std::filesystem::path& dir_path, Predicate pred) {
-    int count = 0;
-    for (const auto& entry : std::filesystem::directory_iterator(dir_path)) {
-        if (pred(entry)) {
-            count++;
-        }
+// template <typename Predicate>
+// int Count_Files_With_Condition(const std::filesystem::path& dir_path, Predicate pred) {
+//     int count = 0;
+//     for (const auto& entry : std::filesystem::directory_iterator(dir_path)) {
+//         if (pred(entry)) {
+//             count++;
+//         }
+//     }
+//     return count;
+// }
+
+
+std::vector<char> Read_File(const std::filesystem::path& file_path, const int& number_of_bytes_to_read, const int& row) {
+    vector<char> binary_data;
+    binary_data.resize(number_of_bytes_to_read);
+
+    std::ifstream input_file(file_path, std::ios::binary);
+#ifdef DEBUG
+    if(!input_file) {
+        ERROR_MSG_AND_EXIT("Error: Unable to open the file.");
     }
-    return count;
+#endif
+
+    // populate the binary data vector with the data from the file starting at number_of_bytes_to_read * row
+    std::streampos start_position = static_cast<std::streampos>(number_of_bytes_to_read) * row;
+    input_file.seekg(start_position);
+#ifdef DEBUG
+    if (input_file.fail()) {
+        ERROR_MSG_AND_EXIT("Error: Unable to seek to the specified position in the file.");
+    }
+#endif
+
+    // Read the data from the file into the vector.
+    input_file.read(reinterpret_cast<char*>(binary_data_vec.data()), number_of_bytes_to_read);
+#ifdef DEBUG
+if (input_file.fail() && !input_file.eof()) {
+    ERROR_MSG_AND_EXIT("Error: Unable to read from the file.");
+}
+#endif
+
+    input_file.close();
+
+    return binary_data;
 }
 
-template <typename Predicate>
-std::vector<std::filesystem::path> Get_Files_With_Condition(const std::filesystem::path& dir_path, Predicate pred) {
-    std::vector<std::filesystem::path> files;
-    for (const auto& entry : std::filesystem::recursive_directory_iterator(dir_path)) {
-        if (pred(entry)) {
-            files.push_back(entry.path());
-        }
-    }
-    return files;
-}
+// template<typename T>
+// void Write_Compressed_File(const std::filesystem::path& file_path, T& binary_data) {
+//     try {
+
+//         std::ofstream encoded_output_file(file_path, std::ios::binary | std::ios::app);
+
+//         encoded_output_file.write(binary_data.data(), binary_data.size());
+
+//         encoded_output_file.close();
+//     } catch (const std::exception& e) {
+//         ERROR_MSG_AND_EXIT(std::string{"Error: Unable to create the run-length encoded file.\n"} + std::string{"ERROR CODE: "} + std::string{e.what()});
+//     }
+// }
+
+// templete <typename T>
+// void Write_Decompressed_File(const std::filesystem::path& file_path, T& binary_data) {
+//     try{
+//         std::ofstream decoded_output_file(file_path, std::ios::binary | std::ios::app);
+
+//         decoded_output_file.write(binary_data.data(), binary_data.size());
+
+//         decoded_output_file.close();
+//     } catch (const std::exception& e) {
+//         ERROR_MSG_AND_EXIT(std::string{"Error: Unable to create the run-length decoded file.\n"} + std::string{"ERROR CODE: "} + std::string{e.what()});
+//     }
+// }
+
+
+// template <typename Predicate>
+// std::vector<std::filesystem::path> Get_Files_With_Condition(const std::filesystem::path& dir_path, Predicate pred) {
+//     std::vector<std::filesystem::path> files;
+//     for (const auto& entry : std::filesystem::recursive_directory_iterator(dir_path)) {
+//         if (pred(entry)) {
+//             files.push_back(entry.path());
+//         }
+//     }
+//     return files;
+// }
 
 const uint64_t Get_File_Size_Bytes(const std::filesystem::path& file_path)
 {
@@ -196,9 +258,9 @@ const int Get_Lod_Number(const std::filesystem::path& stem_path) {
 }
 
 void Run_RLR_Compression_Decompression_On_Files(const std::vector<std::filesystem::path>& files_vec, RLR& rlr_obj) {
-#ifdef DEBUG_MODE
+
     assert(std::filesystem::equivalent(files_vec[0].parent_path(), files_vec.at(0).parent_path()));
-#endif
+
 
     rlr_obj.Set_Data_Type_Size_And_Side_Resolutions(Get_Geometa_File_Path(files_vec.at(0).parent_path()));
 
@@ -247,19 +309,22 @@ void Run_RLR_Compression_Decompression_On_Files(const std::vector<std::filesyste
         for(int iteration = 0; iteration < rlr_obj.Get_Number_Of_Iterations(); iteration++){
             for(uint64_t row = 0; row<num_rows; row++){
                 rlr_obj.row_number = row;
-                rlr_obj.Read_File(file, bytes_per_row, row);
+                // rlr_obj.Read_File(file, bytes_per_row, row);
+                rlr_obj.Set_Binary_Data_Vec(Read_File(file, bytes_per_row, row));
 
                 rlr_obj.Compute_Time_Encoded([&rlr_obj](){
                     rlr_obj.Encode_With_One_Byte_Run_Length();
                 });
 
-                rlr_obj.Write_Compressed_File(encoded_file_path);
+                // rlr_obj.Write_Compressed_File(encoded_file_path);
+                Write_Compressed_File(encoded_file_path, rlr_obj.Get_Encoded_Data_Vec());
 
                 rlr_obj.Compute_Time_Decoded([&rlr_obj](){
                     rlr_obj.Decode_With_One_Byte_Run_Length();
                 });
 
-                rlr_obj.Write_Decompressed_File(decoded_file_path);
+                // rlr_obj.Write_Decompressed_File(decoded_file_path);
+                Write_Decompressed_File(decoded_file_path, rlr_obj.Get_Decoded_Data_Vec());
 
                 if(!rlr_obj.Is_Decoded_Data_Equal_To_Original_Data(rlr_obj.Get_Decoded_Data_Vec(), rlr_obj.Get_Binary_Data_Vec())){
                     ERROR_MSG_AND_EXIT(std::string{"ERROR: Decoded data is not equal to original data."});

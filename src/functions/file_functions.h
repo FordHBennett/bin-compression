@@ -1,20 +1,78 @@
 #pragma once
 
-#include "../classes/common_stats.h"
-#include "../classes/shannon_fano.h"
 #include <filesystem>
-#include <unordered_map>
+
+#define ERROR_MSG(msg) \
+    std::cerr << msg << " OCCURED IN: " << '\n'; \
+    std::cerr << "      File: " << __FILE__ << '\n'; \
+    std::cerr << "      Function: " << __PRETTY_FUNCTION__ << '\n'; \
+    std::cerr << "      Line: " << __LINE__ << '\n'; \
+
+#define ERROR_MSG_AND_EXIT(msg) \
+    std::cerr << msg << " OCCURED IN: " << '\n'; \
+    std::cerr << "      File: " << __FILE__ << '\n'; \
+    std::cerr << "      Function: " << __PRETTY_FUNCTION__ << '\n'; \
+    std::cerr << "      Line: " << __LINE__ << std::endl; \
+    std::exit(EXIT_FAILURE);
+
+#define PRINT_DEBUG(msg) \
+    std::cerr << msg << '\n'; \
 
 
 class RLR;
 
 std::ifstream Open_Input_File(const std::filesystem::path& file_path);
 
-template <typename Predicate>
-int Count_Files_With_Condition(const std::filesystem::path& dir_path, Predicate pred);
+std::vector<char> Read_File(const std::filesystem::path& file_path, const int& number_of_bytes_to_read, const int& row);
+
+template<typename T>
+void Write_Compressed_File(const std::filesystem::path& file_path, T& binary_data){
+    try {
+
+        std::ofstream encoded_output_file(file_path, std::ios::binary | std::ios::app);
+
+        encoded_output_file.write(binary_data.data(), binary_data.size());
+
+        encoded_output_file.close();
+    } catch (const std::exception& e) {
+        ERROR_MSG_AND_EXIT(std::string{"Error: Unable to create the run-length encoded file.\n"} + std::string{"ERROR CODE: "} + std::string{e.what()});
+    }
+}
+
+template <typename T>
+void Write_Decompressed_File(const std::filesystem::path& file_path, T& binary_data){
+    try{
+        std::ofstream decoded_output_file(file_path, std::ios::binary | std::ios::app);
+
+        decoded_output_file.write(binary_data.data(), binary_data.size());
+
+        decoded_output_file.close();
+    } catch (const std::exception& e) {
+        ERROR_MSG_AND_EXIT(std::string{"Error: Unable to create the run-length decoded file.\n"} + std::string{"ERROR CODE: "} + std::string{e.what()});
+    }
+}
 
 template <typename Predicate>
-std::vector<std::filesystem::path> Get_Files_With_Condition(const std::filesystem::path& dir_path, Predicate pred);
+int Count_Files_With_Condition(const std::filesystem::path& dir_path, Predicate pred){
+    int count = 0;
+    for (const auto& entry : std::filesystem::directory_iterator(dir_path)) {
+        if (pred(entry)) {
+            count++;
+        }
+    }
+    return count;
+}
+
+template <typename Predicate>
+std::vector<std::filesystem::path> Get_Files_With_Condition(const std::filesystem::path& dir_path, Predicate pred) {
+    std::vector<std::filesystem::path> files;
+    for (const auto& entry : std::filesystem::recursive_directory_iterator(dir_path)) {
+        if (pred(entry)) {
+            files.push_back(entry.path());
+        }
+    }
+    return files;
+}
 
 
 
